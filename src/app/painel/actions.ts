@@ -1,0 +1,182 @@
+"use server";
+
+import { and, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { carros, lojas, simulacoesFinanciamento as sim } from "@/lib/db/schema";
+import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
+import { onlyDigits, reaisToCentavos, slugify } from "@/lib/masks";
+import { deleteCnhs, deleteFotos, uploadFoto } from "@/lib/r2";
+import { getLojaId } from "@/lib/session";
+
+// Server actions são endpoints públicos: toda action revalida a sessão e escopa por loja_id.
+
+export type FormState = { error?: string } | undefined;
+
+const MAX_FOTOS = 15;
+const uuid = z.uuid();
+const anoAtual = new Date().getFullYear();
+
+const carroSchema = z.object({
+  marca: z.string().trim().min(1, "Informe a marca").max(40),
+  modelo: z.string().trim().min(1, "Informe o modelo").max(80),
+  ano: z.coerce.number().int().min(1950, "Ano inválido").max(anoAtual + 1, "Ano inválido"),
+  km: z.string().transform((v) => Number(onlyDigits(v) || 0)),
+  preco: z.string().transform(reaisToCentavos).refine((c) => c > 0, "Informe o preço"),
+  cambio: z.enum(["Manual", "Automático"]).optional(),
+  combustivel: z.enum(["Flex", "Gasolina", "Etanol", "Diesel", "Elétrico", "Híbrido"]).optional(),
+  cor: z.string().trim().max(30).optional(),
+  descricao: z.string().trim().max(2000).optional(),
+  status: z.enum(["disponivel", "vendido"]).default("disponivel"),
+});
+
+const str = (fd: FormData, k: string) => {
+  const v = fd.get(k);
+  return typeof v === "string" && v.trim() !== "" ? v : undefined;
+};
+
+export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormState> {
+  const lojaId = await getLojaId();
+  if (!lojaId) return { error: "Sessão expirada. Entre novamente." };
+
+  const parsed = carroSchema.safeParse({
+    marca: str(fd, "marca"),
+    modelo: str(fd, "modelo"),
+    ano: str(fd, "ano"),
+    km: str(fd, "km") ?? "",
+    preco: str(fd, "preco") ?? "",
+    cambio: str(fd, "cambio"),
+    combustivel: str(fd, "combustivel"),
+    cor: str(fd, "cor"),
+    descricao: str(fd, "descricao"),
+    status: str(fd, "status"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const editId = str(fd, "id");
+  if (editId && !uuid.safeParse(editId).success) return { error: "Carro não encontrado" };
+  const carroId = editId ?? crypto.randomUUID();
+
+  let fotosAtuais: string[] = [];
+  if (editId) {
+    const [atual] = await db
+      .select({ fotos: carros.fotos })
+      .from(carros)
+      .where(and(eq(carros.id, editId), eq(carros.lojaId, lojaId)))
+      .limit(1);
+    if (!atual) return { error: "Carro não encontrado" };
+    fotosAtuais = atual.fotos;
+  }
+  // Só remove chaves que já pertencem a este carro
+  const remover = new Set(fd.getAll("removerFotos").filter((k) => fotosAtuais.includes(k as string)) as string[]);
+  const mantidas = fotosAtuais.filter((k) => !remover.has(k));
+
+  const novas = fd.getAll("fotos").filter((f): f is File => f instanceof File && f.size > 0);
+  if (mantidas.length + novas.length > MAX_FOTOS) return { error: `Máximo de ${MAX_FOTOS} fotos` };
+
+  // Valida todas antes de enviar qualquer uma
+  const arquivos = [];
+  for (const file of novas) {
+    if (file.size > MAX_UPLOAD_BYTES) return { error: "Cada foto deve ter até 5MB" };
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const tipo = detectFile(bytes, ["image/jpeg", "image/png", "image/webp"]);
+    if (!tipo) return { error: "Fotos devem ser JPG, PNG ou WEBP" };
+    arquivos.push({ bytes, tipo });
+  }
+
+  const enviadas: string[] = [];
+  try {
+    for (const { bytes, tipo } of arquivos) {
+      const key = `${lojaId}/${carroId}/${crypto.randomUUID()}.${tipo.ext}`;
+      await uploadFoto(key, bytes, tipo.type);
+      enviadas.push(key);
+    }
+
+    const { preco, ...resto } = parsed.data;
+    const valores = { ...resto, precoCentavos: preco, fotos: [...mantidas, ...enviadas] };
+    if (editId) {
+      await db.update(carros).set(valores).where(and(eq(carros.id, editId), eq(carros.lojaId, lojaId)));
+    } else {
+      await db.insert(carros).values({ ...valores, id: carroId, lojaId });
+    }
+  } catch (err) {
+    if (enviadas.length) await deleteFotos(enviadas).catch(() => {});
+    throw err;
+  }
+
+  if (remover.size) await deleteFotos([...remover]).catch(() => {}); // órfã no bucket público não é crítica
+  revalidatePath("/painel", "layout");
+  redirect("/painel/estoque");
+}
+
+const lojaSchema = z.object({
+  nome: z.string().trim().min(2, "Informe o nome da loja").max(80),
+  whatsapp: z
+    .string()
+    .transform(onlyDigits)
+    .refine((d) => d.length === 10 || d.length === 11, "WhatsApp com DDD, ex.: (11) 98765-4321"),
+});
+
+export async function salvarLoja(_prev: FormState, fd: FormData): Promise<FormState> {
+  const lojaId = await getLojaId();
+  if (!lojaId) return { error: "Sessão expirada. Entre novamente." };
+  const parsed = lojaSchema.safeParse({ nome: str(fd, "nome"), whatsapp: str(fd, "whatsapp") ?? "" });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  await db.update(lojas).set(parsed.data).where(eq(lojas.id, lojaId));
+  revalidatePath("/painel", "layout");
+  return {};
+}
+
+export async function criarLoja(_prev: FormState, fd: FormData): Promise<FormState> {
+  const session = await auth();
+  if (!session) return { error: "Sessão expirada. Entre novamente." };
+  if (session.user.loja_id) redirect("/painel");
+
+  const parsed = lojaSchema.safeParse({ nome: str(fd, "nome"), whatsapp: str(fd, "whatsapp") ?? "" });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  // Sufixo aleatório evita colisão de slug; o slug não muda ao renomear (link da vitrine estável).
+  const slug = `${slugify(parsed.data.nome) || "loja"}-${crypto.randomUUID().slice(0, 4)}`;
+  // Conflito = duplo envio; a loja já criada vale. O jwt callback (lib/auth) põe o loja_id na sessão.
+  await db
+    .insert(lojas)
+    .values({ ...parsed.data, slug, authUserId: session.user.id! })
+    .onConflictDoNothing({ target: lojas.authUserId });
+
+  redirect("/painel/estoque");
+}
+
+export async function excluirSimulacao(id: string): Promise<FormState> {
+  const lojaId = await getLojaId();
+  if (!lojaId || !uuid.safeParse(id).success) return { error: "Não encontrado" };
+
+  const [row] = await db
+    .select({ cnhKey: sim.cnhKey })
+    .from(sim)
+    .where(and(eq(sim.id, id), eq(sim.lojaId, lojaId)))
+    .limit(1);
+  if (!row) return { error: "Não encontrado" };
+
+  // Apaga a CNH antes da linha: se o R2 falhar, o registro continua e o cron ainda acha o arquivo.
+  if (row.cnhKey && !(await deleteCnhs([row.cnhKey])).includes(row.cnhKey)) {
+    return { error: "Não foi possível excluir a CNH. Tente novamente." };
+  }
+  await db.delete(sim).where(and(eq(sim.id, id), eq(sim.lojaId, lojaId)));
+  revalidatePath("/painel", "layout");
+  return {};
+}
+
+/** Tira o lead do contador de "novas" quando o garagista age sobre ele. */
+export async function marcarContato(id: string) {
+  const lojaId = await getLojaId();
+  if (!lojaId || !uuid.safeParse(id).success) return;
+  await db
+    .update(sim)
+    .set({ status: "em_contato" })
+    .where(and(eq(sim.id, id), eq(sim.lojaId, lojaId), eq(sim.status, "novo")));
+  revalidatePath("/painel", "layout");
+}
