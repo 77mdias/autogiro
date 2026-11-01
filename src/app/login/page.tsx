@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import Link from "next/link";
+import { Wordmark } from "@/components/wordmark";
 import { redirect } from "next/navigation";
 import { signIn } from "@/lib/auth";
 import { getSession } from "@/lib/session";
@@ -30,10 +32,13 @@ async function Login({ searchParams }: { searchParams: PageProps<"/login">["sear
 
 export default function LoginPage(props: PageProps<"/login">) {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-4 py-12">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-8 px-4 py-12">
+      <Link href="/" aria-label="AutoGiro, página inicial" className="self-start rounded-card">
+        <Wordmark />
+      </Link>
       <div className="grid grid-cols-1 gap-2">
-        <h1 className="text-display-md">Entrar no painel</h1>
-        <p className="text-muted-foreground">Use sua conta Google para gerenciar o estoque da sua loja.</p>
+        <h1 className="font-display text-3xl font-light">Entrar no painel</h1>
+        <p className="text-ink-2">Use sua conta Google para cuidar do estoque e dos interessados da sua loja.</p>
       </div>
       <Suspense>
         <Login searchParams={props.searchParams} />

@@ -2,15 +2,15 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Garagem Link",
-    short_name: "Garagem Link",
-    description: "Estoque, vitrine e simulações de financiamento para garagistas.",
+    name: "AutoGiro",
+    short_name: "AutoGiro",
+    description: "Vitrine online do estoque, contato por WhatsApp e simulações de financiamento para lojas de seminovos.",
     start_url: "/painel",
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#ffffff",
-    theme_color: "#ffffff",
+    background_color: "#f8f9fc",
+    theme_color: "#f8f9fc",
     lang: "pt-BR",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },

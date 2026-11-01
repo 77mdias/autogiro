@@ -1,4 +1,4 @@
-# Garagem Link
+# AutoGiro
 
 PWA mobile-first para garagistas: estoque, vitrine pública e simulações de financiamento.
 
@@ -46,14 +46,11 @@ src/
 
 ## Design
 
-Tokens em `src/app/globals.css` a partir do `DESIGN.md`: canvas branco, tinta preta, cards `#f0fdfa`, Inter, raio 8px (inputs, opções) / 12px (botões, cards) / 16px (modais), escala tipográfica como utilitários (`text-display-md`, `text-sub-lg`, `text-body-md`, `text-caption`…).
+O sistema está em `DESIGN.md` (tema Vantage da Hallmark com as cores do logo). Tokens em `src/app/tokens.css`, ligados ao shadcn em `src/app/globals.css`. As telas seguem a organização do projeto "AutoGiro PWA Platform" no Stitch.
 
-Desvios intencionais por acessibilidade (WCAG AA):
-- CTAs usam `#0b7a72` (5.2:1); `#0e9389` (`--brand`) fica para acentos (anel de foco, bordas). Branco sobre `#0e9389` dá 3.78:1.
-- `body`/`mute` do DESIGN.md (`#d6d6d6`/`#a3a3a3`) só como borda; texto secundário em `#525252`.
-- Botões com 48px de altura e inputs com 16px de fonte (evita zoom no iOS), acima do padding/tamanho do DESIGN.md.
-
-Ao usar um tamanho novo da escala, registre-o em `src/lib/utils.ts` (senão o `cn` o confunde com cor).
+- Landing (`/`): versão noturna (`.theme-night`), carro em nuvem de pontos em `src/components/landing/point-car.tsx`, capturas do painel em `public/landing/` (refaça ao mudar as telas).
+- Verificação de design: `node ~/.claude/skills/hallmark/scripts/sloplint.mjs src/app src/components --scope app`.
+- Ao usar um tamanho novo da escala, registre-o em `src/lib/utils.ts` (senão o `cn` o confunde com cor).
 
 ## Regras de isolamento (multi-tenant)
 

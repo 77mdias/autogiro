@@ -1,4 +1,6 @@
-/** Grupo de rádios nativos estilizados como pills: um toque, sem JS, acessível por teclado. */
+import { Check } from "lucide-react";
+
+/** Grupo de rádios nativos estilizados como pílulas: um toque, sem JS, acessível por teclado. */
 export function PillGroup({
   name,
   legend,
@@ -13,8 +15,8 @@ export function PillGroup({
   required?: boolean;
 }) {
   return (
-    <fieldset className="grid grid-cols-1 gap-2">
-      <legend className="mb-2 text-body-md font-medium">{legend}</legend>
+    <fieldset className="grid min-w-0 grid-cols-1 gap-2">
+      <legend className="mb-2 text-sm text-ink-2">{legend}</legend>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => {
           const { value, label } = typeof o === "string" ? { value: o, label: o } : o;
@@ -28,7 +30,8 @@ export function PillGroup({
                 required={required}
                 className="peer sr-only"
               />
-              <span className="inline-flex h-11 items-center rounded-sm border border-input bg-popover px-4 text-body-md font-medium transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50">
+              <span className="inline-flex h-11 items-center gap-2 rounded-full border border-rule-2 bg-paper px-4 text-sm text-ink-2 transition-colors duration-(--dur-micro) peer-checked:border-ink peer-checked:bg-ink peer-checked:text-paper peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus hover:border-ink motion-reduce:transition-none">
+                <Check className="hidden size-4 [:checked+*_&]:inline" aria-hidden />
                 {label}
               </span>
             </label>

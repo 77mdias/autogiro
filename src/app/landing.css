@@ -1,0 +1,15 @@
+/* Hallmark · shape: Map / Diagram · genre: modern-minimal · theme: Vantage (deal 1/3, seed para-lojas-carros-seminovos-1c94·1083cfa7·2026-11-01·r0) · job: sign up · draw: 20785e · brand: AutoGiro logo
+ * hero: Poster (swapped from Corridor: the cloud needs the width and a centred column would sit on it) · nav: edge-aligned · footer: letter close · imagery: the product, screenshots 3 (capture.mjs), sample cars from Wikimedia Commons inside them · signature: the car scanned as a point cloud, turning, the door lit green where a simulation landed · vantage: object/steel, night colourway
+ * axes: dark/grotesk-sans/chromatic-blue · posture: restrained · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H5 E4 S5 R4 V4 · weakest: P, a dealer tool page argues little; the map makes the claim (one link carries the buyer to your WhatsApp) and the CNH table shows the cost of getting it wrong */
+/* Hallmark · waive 23 · the canvas cloud paints --color-point-lo to --color-point-hi at chroma 0.04 to 0.07 on hue 256, the logo's hue, and reads as accent to the meter; the filled accent is one pill per screen · the point cloud is Vantage's material, not a field of colour */
+/* Hallmark · dismissed 41 · the accent token is --color-brand and its ink --color-brand-ink, applied on every filled pill (ui/button default variant) */
+
+/* Uma revelação só: o mapa acende nó por nó, uma vez. Visível sem script e com movimento reduzido. */
+.js .lp-reveal [data-reveal] { opacity: 0; transform: translateY(8px); transition: opacity var(--dur-long) var(--ease-out), transform var(--dur-long) var(--ease-out); transition-delay: calc(var(--i, 0) * 90ms); }
+.js .lp-reveal.is-in [data-reveal] { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .js .lp-reveal [data-reveal] { opacity: 1; transform: none; transition: none; } }
+
+/* Fios do mapa: hairline que não engorda quando o SVG estica */
+.lp-map path { fill: none; stroke: var(--color-rule-2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.lp-map path.is-signal { stroke: var(--color-signal); }

@@ -1,0 +1,32 @@
+[
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "site",
+  "shape": "Map / Diagram",
+  "theme": "vantage",
+  "axes": "dark/grotesk-sans/chromatic-blue",
+  "hero": "Poster",
+  "nav": "edge-aligned",
+  "footer": "letter close",
+  "imagery": "screenshots 3 (capture), sample cars from Wikimedia Commons",
+  "photos": [],
+  "entry": "none",
+  "fingerprint": "map-pinned-table-rows-band",
+  "sections": [
+   "hero",
+   "map",
+   "pinned",
+   "table",
+   "rows",
+   "band",
+   "footer"
+  ],
+  "signature": "the car scanned as a point cloud, turning, the door lit green where a simulation landed",
+  "waived": [
+   "23"
+  ],
+  "prompt": "landing e telas do AutoGiro para lojas de seminovos",
+  "date": "2026-11-01"
+ }
+]

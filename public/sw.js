@@ -1,6 +1,6 @@
 // Service worker mínimo: instalação + página offline.
 // Não faz cache de /painel nem /api — dados privados da loja nunca ficam no Cache Storage.
-const CACHE = "garagem-link-v1";
+const CACHE = "autogiro-v1";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {

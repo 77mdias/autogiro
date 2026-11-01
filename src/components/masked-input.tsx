@@ -37,9 +37,9 @@ export function MaskedInput({ mask, defaultValue = "", value, onValueChange, pre
   if (!prefix && !suffix) return input;
   return (
     <div className="relative">
-      {prefix && <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted-foreground">{prefix}</span>}
+      {prefix && <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-ink-3">{prefix}</span>}
       {input}
-      {suffix && <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-muted-foreground">{suffix}</span>}
+      {suffix && <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-ink-3">{suffix}</span>}
     </div>
   );
 }

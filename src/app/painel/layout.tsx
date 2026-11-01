@@ -6,12 +6,12 @@ import { BottomNav, Nav } from "@/components/bottom-nav";
 export default function PainelLayout({ children }: LayoutProps<"/painel">) {
   return (
     <div className="flex min-h-dvh flex-col">
-      <main className="mx-auto w-full max-w-xl flex-1 px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))]">
-        <Suspense fallback={<p className="text-muted-foreground">Carregando…</p>}>{children}</Suspense>
-      </main>
       <Suspense fallback={<Nav />}>
         <BottomNav />
       </Suspense>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:px-8 lg:pt-10 lg:pb-16">
+        <Suspense fallback={<p className="text-ink-3">Carregando…</p>}>{children}</Suspense>
+      </main>
     </div>
   );
 }

@@ -4,8 +4,8 @@ export function StatusBadge({ status, className }: { status: "disponivel" | "ven
   return (
     <span
       className={cn(
-        "inline-flex h-6 shrink-0 items-center whitespace-nowrap rounded-full px-2.5 text-caption font-semibold",
-        status === "vendido" ? "bg-foreground text-background" : "border border-brand bg-card text-primary",
+        "inline-flex h-7 shrink-0 items-center whitespace-nowrap rounded-full px-3 text-xs",
+        status === "vendido" ? "bg-ink text-paper" : "border border-rule-2 bg-paper text-ink",
         className,
       )}
     >

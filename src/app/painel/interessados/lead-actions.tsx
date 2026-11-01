@@ -22,48 +22,59 @@ export function LeadActions({ id, nome, temCnh, whatsappHref }: { id: string; no
   const contato = () => startTransition(() => marcarContato(id));
 
   return (
-    <div className="grid grid-cols-1 gap-2">
-      <div className="flex gap-2">
-        {temCnh ? (
-          <a href={`/api/simulacoes/${id}/cnh`} target="_blank" rel="noopener" onClick={contato} className={buttonVariants({ className: "min-w-0 flex-1 px-3" })}>
-            <IdCard aria-hidden /> Ver CNH
-          </a>
-        ) : (
-          <Button disabled className="min-w-0 flex-1 px-3">Sem CNH</Button>
-        )}
-        <a href={whatsappHref} target="_blank" rel="noopener" onClick={contato} className={buttonVariants({ variant: "outline", className: "min-w-0 flex-1 px-3" })}>
-          <MessageCircle aria-hidden /> WhatsApp
+    <div className="mt-auto grid grid-cols-1 gap-2">
+      {temCnh ? (
+        <a
+          href={`/api/simulacoes/${id}/cnh`}
+          target="_blank"
+          rel="noopener"
+          onClick={contato}
+          className={buttonVariants({ variant: "outline", className: "w-full justify-start" })}
+        >
+          <IdCard aria-hidden /> Ver CNH
+          <span className="ml-auto text-sm text-ink-3">link vale 5 minutos</span>
         </a>
-        <AlertDialog>
-          <AlertDialogTrigger render={<Button variant="ghost" size="icon" aria-label={`Excluir simulação de ${nome}`} />}>
-            <Trash2 className="text-muted-foreground" aria-hidden />
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Excluir simulação?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Os dados de {nome}, incluindo a CNH, serão apagados definitivamente.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                variant="destructive"
-                disabled={pending}
-                onClick={() =>
-                  startTransition(async () => {
-                    const r = await excluirSimulacao(id);
-                    setErro(r?.error);
-                  })
-                }
-              >
-                Excluir
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-      {erro && <p role="alert" className="text-body-md text-destructive">{erro}</p>}
+      ) : (
+        <p className="flex h-12 items-center gap-2 rounded-full border border-dashed border-rule-2 px-5 text-sm text-ink-3 pointer-fine:h-10">
+          <IdCard className="size-5" aria-hidden /> CNH não enviada ou já apagada
+        </p>
+      )}
+      <a href={whatsappHref} target="_blank" rel="noopener" onClick={contato} className={buttonVariants({ variant: "signal", className: "w-full" })}>
+        <MessageCircle aria-hidden /> Chamar no WhatsApp
+      </a>
+      <AlertDialog>
+        <AlertDialogTrigger
+          render={<Button variant="ghost" size="sm" className="justify-self-end text-ink-3" aria-label={`Descartar simulação de ${nome}`} />}
+        >
+          <Trash2 aria-hidden /> Descartar
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Descartar a simulação de {nome}?</AlertDialogTitle>
+            <AlertDialogDescription>Os dados e a CNH são apagados de vez. Não dá para desfazer.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={pending}
+              onClick={() =>
+                startTransition(async () => {
+                  const r = await excluirSimulacao(id);
+                  setErro(r?.error);
+                })
+              }
+            >
+              {pending ? "Apagando…" : "Descartar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {erro && (
+        <p role="alert" className="text-sm text-error">
+          {erro}
+        </p>
+      )}
     </div>
   );
 }

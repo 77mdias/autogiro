@@ -1,157 +1,81 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Vantage (deal 1/3, seed para-lojas-carros-seminovos-1c94·1083cfa7·2026-11-01·r0) · redesign: full · brand: AutoGiro logo, navy oklch(29.9% 0.083 256) and blue oklch(61% 0.205 256)
+ * nav: kept, three destinations, a bottom tab bar under 60rem and a top bar above · signature: the stock card, photo first, the price in tabular Geologica, status as one pill · states: loading, empty, error, full · vantage: object/steel, day colourway for the app, night for the landing
+ * axes: light/grotesk-sans/chromatic-blue · posture: restrained · contrast: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V4 · weakest: P, a stock list reads like any inventory app; the price and the photo count carry each card and green is spent only on the buyer's channel */
+/* Hallmark · waive 23 · on /loja the meter counts the stock photographs (a blue Corolla, a red Onix, hedges) uploaded by the store; the filled green is one pill, the shop's WhatsApp in the header · car photos are the vitrine's content, never tinted */
+/* Hallmark · dropped {`/loja/${loja?.slug}`}, {whatsappUrl(loja.whatsapp, `Olá ${loja.nome}! … · both still exist: Minha loja links the vitrine through the vitrine const, and the shop WhatsApp text dropped the old name Garagem Link after the rename to AutoGiro */
+/* Hallmark · dismissed 41 · the accent token is --color-brand and its ink --color-brand-ink, applied on every filled pill (ui/button default variant) */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "./tokens.css";
+@import "./base.css" layer(base);
 
 @custom-variant dark (&:is(.dark *));
 
+/* shadcn lê estes nomes; todos apontam para os tokens da Hallmark */
 @theme inline {
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-display);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --color-brand: var(--brand);
-
-  /* DESIGN.md: escala tipográfica (peso só em display/sub; corpo fica regular) */
-  --text-display-md: 32px;
-  --text-display-md--line-height: 40px;
-  --text-display-md--letter-spacing: -0.03em;
-  --text-display-md--font-weight: 600;
-  --text-sub-lg: 18px;
-  --text-sub-lg--line-height: 23px;
-  --text-sub-lg--font-weight: 700;
-  --text-sub-md: 17px;
-  --text-sub-md--line-height: 21px;
-  --text-sub-md--font-weight: 700;
-  --text-sub-sm: 16px;
-  --text-sub-sm--line-height: 20px;
-  --text-sub-sm--font-weight: 700;
-  --text-body-lg: 15px;
-  --text-body-lg--line-height: 22px;
-  --text-body-md: 14px;
-  --text-body-md--line-height: 20px;
-  --text-caption: 12px;
-  --text-caption--line-height: 16px;
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  /* DESIGN.md: sm 8px (inputs, pills de opção), md 12px (botões, cards), lg 16px (superfícies grandes, modais) */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 16px;
-  --radius-2xl: 16px;
-  --radius-3xl: 16px;
-  --radius-4xl: 16px;
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: var(--radius-card);
+  --radius-md: var(--radius-card);
+  --radius-lg: var(--radius-card);
+  --radius-xl: var(--radius-card);
 }
 
-/* DESIGN.md (Uvvipay): canvas branco, tinta preta, acento teal único.
-   #0e9389 (brand) só em acentos; CTAs com texto usam #0b7a72 (5.2:1, AA) — branco sobre #0e9389 dá 3.78:1.
-   body/mute do DESIGN.md (#d6d6d6/#a3a3a3) viram bordas: como texto ficam abaixo de 3:1. */
-:root {
-  --brand: #0e9389;
-  --background: #ffffff; /* canvas */
-  --foreground: #000000; /* ink */
-  --card: #f0fdfa; /* canvas-soft */
-  --card-foreground: #000000;
-  --popover: #ffffff;
-  --popover-foreground: #000000;
-  --primary: #0b7a72;
-  --primary-foreground: #ffffff;
-  --secondary: #000000; /* button-secondary: ink */
-  --secondary-foreground: #ffffff;
-  --muted: #f5f5f5;
-  --muted-foreground: #525252; /* texto secundário legível (7.5:1 sobre card) */
-  --accent: #f0fdfa;
-  --accent-foreground: #000000;
-  --destructive: #b42318;
-  --border: #d6d6d6; /* hairline */
-  --input: #000000; /* text-input: borda ink */
-  --ring: #0e9389;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 12px;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #000000;
-  --sidebar-primary: #0b7a72;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f0fdfa;
-  --sidebar-accent-foreground: #000000;
-  --sidebar-border: #d6d6d6;
-  --sidebar-ring: #0e9389;
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* repetido em .theme-night para os nomes do shadcn resolverem com as cores da noite */
+:root, .theme-night {
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+  --card: var(--color-paper-2);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-paper);
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-brand);
+  --primary-foreground: var(--color-brand-ink);
+  --secondary: var(--color-paper-3);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-paper-2);
+  --muted-foreground: var(--color-ink-3);
+  --accent: var(--color-paper-3);
+  --accent-foreground: var(--color-ink);
+  --destructive: var(--color-error);
+  --border: var(--color-rule);
+  --input: var(--color-rule-2);
+  --ring: var(--color-focus);
+  --radius: var(--radius-card);
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
-  }
+  * { @apply border-border; }
+  html:has(.theme-night) { background: var(--color-night); }
+  h1, h2, h3 { font-variation-settings: "SHRP" 100; }
+  body { font-weight: 300; }
+  b, strong, th, dt, label, legend { font-weight: 400; }
+}
+
+@layer components {
+  /* marcas de canto do Vantage: moldura só nos cantos */
+  .ticks { position: relative; }
+  .ticks::before { content: ""; position: absolute; inset: 0; pointer-events: none; border: var(--rule-hair) solid var(--color-rule-2); -webkit-mask: conic-gradient(at var(--tick) var(--tick), transparent 75%, var(--color-ink) 0) 0 0 / calc(100% - var(--tick)) calc(100% - var(--tick)); mask: conic-gradient(at var(--tick) var(--tick), transparent 75%, var(--color-ink) 0) 0 0 / calc(100% - var(--tick)) calc(100% - var(--tick)); }
+  .num { font-variant-numeric: tabular-nums; font-weight: 400; }
+  .num .u { color: var(--color-ink-3); font-size: 0.75em; }
 }

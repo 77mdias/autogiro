@@ -43,16 +43,16 @@ export function SimulacaoForm({ carroId, precoReais, lojaNome }: { carroId: stri
 
   if (enviado) {
     return (
-      <div role="status" className="grid grid-cols-1 justify-items-center gap-3 py-10 text-center">
-        <CheckCircle2 className="size-12" aria-hidden />
-        <h2 className="text-sub-lg">Simulação enviada!</h2>
-        <p className="text-muted-foreground">{lojaNome} vai falar com você pelo WhatsApp em breve.</p>
+      <div role="status" className="ticks grid grid-cols-1 content-start justify-items-start gap-3 px-6 py-10">
+        <CheckCircle2 className="size-10 text-signal" strokeWidth={1.5} aria-hidden />
+        <h2 className="font-display text-2xl font-light">Simulação enviada</h2>
+        <p className="text-ink-2">{lojaNome} recebeu seu pedido e vai falar com você pelo WhatsApp.</p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid grid-cols-1 gap-5">
+    <form onSubmit={onSubmit} className="grid min-w-0 grid-cols-1 content-start gap-5">
       <input type="hidden" name="carroId" value={carroId} />
 
       <Field label="Nome completo" htmlFor="nome">
@@ -96,10 +96,10 @@ export function SimulacaoForm({ carroId, precoReais, lojaNome }: { carroId: stri
       <PillGroup name="parcelas" legend="Parcelas" options={["24", "36", "48", "60"].map((p) => ({ value: p, label: `${p}x` }))} defaultValue="48" required />
 
       <div className="grid grid-cols-1 gap-2">
-        <span className="text-body-md font-medium">CNH (foto ou PDF)</span>
-        <label className="flex min-h-14 cursor-pointer items-center gap-3 rounded-sm border border-dashed border-input bg-popover px-4 py-3 focus-within:ring-3 focus-within:ring-ring/50">
+        <span className="text-sm text-ink-2">CNH (foto ou PDF)</span>
+        <label className="flex min-h-14 cursor-pointer items-center gap-3 rounded-card border border-dashed border-rule-2 bg-paper px-4 py-3 transition-colors duration-(--dur-micro) focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus hover:border-ink motion-reduce:transition-none">
           <FileUp className="size-5 shrink-0" aria-hidden />
-          <span className="min-w-0 flex-1 truncate text-body-md">{cnhNome ?? "Toque para anexar sua CNH"}</span>
+          <span className="min-w-0 flex-1 truncate">{cnhNome ?? "Toque para anexar sua CNH"}</span>
           <input
             type="file"
             name="cnh"
@@ -108,11 +108,11 @@ export function SimulacaoForm({ carroId, precoReais, lojaNome }: { carroId: stri
             onChange={(e) => setCnhNome(e.target.files?.[0]?.name)}
           />
         </label>
-        <p className="text-caption text-muted-foreground">Usada só para a análise de crédito e apagada automaticamente após o prazo legal.</p>
+        <p className="text-sm text-ink-3">Usada só para a análise de crédito e apagada automaticamente após o prazo legal.</p>
       </div>
 
-      <label className="flex items-start gap-3 rounded-sm bg-card p-4 text-body-md">
-        <input type="checkbox" name="lgpd" required className="mt-0.5 size-5 shrink-0 accent-primary" />
+      <label className="flex items-start gap-3 rounded-card bg-paper-2 p-4 text-sm text-ink-2">
+        <input type="checkbox" name="lgpd" required className="mt-0.5 size-5 shrink-0 accent-brand" />
         <span>
           Autorizo {lojaNome} a usar meus dados pessoais e a imagem da minha CNH exclusivamente para análise de financiamento, conforme a LGPD.
         </span>

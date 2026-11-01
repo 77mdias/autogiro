@@ -35,7 +35,7 @@ export function LojaForm({
         />
       </Field>
       <FormError message={state?.error} />
-      {state && !state.error && <p role="status" className="text-body-md font-medium">Dados salvos.</p>}
+      {state && !state.error && <p role="status" className="text-sm text-signal">Dados salvos.</p>}
       <Button type="submit" size="lg" disabled={pending} className="w-full">
         {pending ? "Salvando…" : submitLabel}
       </Button>
