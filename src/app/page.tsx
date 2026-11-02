@@ -249,7 +249,9 @@ export default function Home() {
             </ul>
           </nav>
           <div className="grid gap-4 border-t border-rule pt-6 text-sm text-ink-3 lg:col-span-12">
-            <Wordmark tone="night" className="text-md" />
+            <Link href="/" aria-label="AutoGiro, página inicial" className="self-start rounded-card">
+              <Wordmark tone="night" className="text-md" />
+            </Link>
             <p className="max-w-[90ch]">
               Fotos dos carros de exemplo nas telas:{" "}
               <a className="underline" href="https://commons.wikimedia.org/wiki/File:Chevrolet_Onix_Mk2_RS_2020_in_Maldonado_-_front.jpg">NaBUru38</a>,{" "}

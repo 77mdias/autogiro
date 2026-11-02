@@ -79,7 +79,7 @@ export default async function CarroPage({ params }: PageProps<"/loja/[slug]/carr
 
   return (
     <div className="min-h-dvh pb-[calc(9rem+env(safe-area-inset-bottom))] lg:pb-16">
-      <header className="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3 lg:px-8 lg:py-6">
+      <header className="mx-auto flex w-full items-center gap-3 px-4 py-3 lg:px-8 lg:py-6">
         <Link
           href={`/loja/${slug}`}
           className="inline-flex h-11 items-center gap-2 rounded-full pr-4 pl-1 text-ink-2 transition-colors duration-(--dur-micro) hover:text-ink motion-reduce:transition-none"
@@ -91,7 +91,7 @@ export default async function CarroPage({ params }: PageProps<"/loja/[slug]/carr
         </Link>
       </header>
 
-      <main className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-12 lg:px-8">
+      <main className="mx-auto grid w-full grid-cols-1 gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-12 lg:px-8">
         <div className="grid min-w-0 content-start gap-8">
           <Gallery fotos={carro.fotos.map(fotoUrl)} alt={`${titulo} ${carro.ano}`} />
           {carro.descricao && (

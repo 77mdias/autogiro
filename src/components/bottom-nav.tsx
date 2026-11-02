@@ -25,7 +25,7 @@ export function Nav({ pathname = "" }: { pathname?: string }) {
     <>
       <header className="sticky top-0 z-(--z-sticky-nav) border-b border-rule bg-paper">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-8 px-4 lg:h-16 lg:px-8">
-          <Link href="/painel/estoque" aria-label="AutoGiro, ir para o estoque" className="rounded-card">
+          <Link href="/" aria-label="AutoGiro, página inicial" className="rounded-card">
             <Wordmark />
           </Link>
           <nav aria-label="Navegação principal" className="hidden h-full lg:block">

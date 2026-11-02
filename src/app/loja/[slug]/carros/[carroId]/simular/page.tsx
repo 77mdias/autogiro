@@ -24,7 +24,7 @@ export default async function SimularPage({ params }: PageProps<"/loja/[slug]/ca
   if (!carro) notFound();
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-4 lg:px-8 lg:py-10">
+    <main className="mx-auto w-full px-4 py-4 lg:px-8 lg:py-10">
       <BackHeader href={`/loja/${slug}/carros/${carroId}`} title="Simular financiamento" />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12">
         <aside className="grid min-w-0 content-start gap-4 lg:sticky lg:top-8 lg:self-start">

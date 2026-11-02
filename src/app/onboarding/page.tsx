@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
@@ -18,7 +19,9 @@ async function Onboarding() {
 export default function OnboardingPage() {
   return (
     <main className="mx-auto grid w-full max-w-xl content-start gap-8 px-4 py-10 lg:py-20">
-      <Wordmark />
+      <Link href="/" aria-label="AutoGiro, página inicial" className="self-start rounded-card">
+        <Wordmark />
+      </Link>
       <div className="grid grid-cols-1 gap-2">
         <h1 className="font-display text-3xl font-light">Vamos criar sua loja</h1>
         <p className="text-ink-2">7 dias grátis, sem cartão. O link da vitrine sai na hora.</p>

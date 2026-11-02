@@ -72,7 +72,7 @@ export default async function VitrinePage({ params, searchParams }: PageProps<"/
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="border-b border-rule bg-paper">
-        <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-5 px-4 py-6 sm:grid-cols-[1fr_auto] sm:items-center lg:px-8 lg:py-10">
+        <div className="mx-auto grid w-full grid-cols-1 gap-5 px-4 py-6 sm:grid-cols-[1fr_auto] sm:items-center lg:px-8 lg:py-10">
           <div className="flex min-w-0 items-center gap-4">
             <span
               className="grid size-14 shrink-0 place-items-center rounded-full bg-navy font-display text-2xl font-light text-navy-ink lg:size-16"
@@ -102,7 +102,7 @@ export default async function VitrinePage({ params, searchParams }: PageProps<"/
         </div>
       </header>
 
-      <main className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 content-start gap-6 px-4 py-6 lg:gap-8 lg:px-8 lg:py-10">
+      <main className="mx-auto grid w-full flex-1 grid-cols-1 content-start gap-6 px-4 py-6 lg:gap-8 lg:px-8 lg:py-10">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,26rem)_1fr] lg:items-center">
           <form role="search" action={`/loja/${slug}`} className="relative">
             {status !== "todos" && <input type="hidden" name="status" value={status} />}
@@ -229,7 +229,7 @@ export default async function VitrinePage({ params, searchParams }: PageProps<"/
       </main>
 
       <footer className="border-t border-rule">
-        <div className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 py-6 text-sm text-ink-3 lg:px-8">
+        <div className="mx-auto flex w-full items-center gap-2 px-4 py-6 text-sm text-ink-3 lg:px-8">
           <span>Vitrine feita com</span>
           <Link href="/" aria-label="AutoGiro, conhecer o app" className="rounded-card">
             <Wordmark className="text-md" />
