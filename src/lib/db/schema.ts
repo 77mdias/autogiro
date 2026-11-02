@@ -9,6 +9,7 @@ import {
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 // Todas as tabelas com .enableRLS() sem policies: bloqueia o acesso via API REST do
 // Supabase (anon/authenticated). O app acessa só pelo Drizzle com a role do servidor.
@@ -24,8 +25,12 @@ export const lojas = pgTable("lojas", {
   slug: text("slug").notNull().unique(),
   whatsapp: text("whatsapp"),
   cidade: text("cidade"),
-  appmaxCustomerId: text("appmax_customer_id").unique(),
+  asaasCustomerId: text("asaas_customer_id").unique(),
+  asaasCheckoutId: text("asaas_checkout_id"),
+  asaasSubscriptionId: text("asaas_subscription_id").unique(),
   planoStatus: planoStatus("plano_status").notNull().default("trial"),
+  // 7 dias de teste grátis (TRIAL_DIAS em lib/plano.ts) contados da criação da loja
+  trialAte: timestamp("trial_ate", { withTimezone: true }).notNull().default(sql`now() + interval '7 days'`),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }).enableRLS();
 

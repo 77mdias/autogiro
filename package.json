@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test": "node --test src/**/*.test.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "loja": "node scripts/loja.mts",
+    "tunnel": "ngrok http 3000"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1161.0",

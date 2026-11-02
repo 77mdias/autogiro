@@ -8,6 +8,20 @@
       "when": 1793567135085,
       "tag": "0000_free_nebula",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793579017018,
+      "tag": "0001_asaas",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793579990851,
+      "tag": "0002_plano_asaas",
+      "breakpoints": true
     }
   ]
 }

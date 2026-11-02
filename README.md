@@ -26,7 +26,9 @@ src/
     auth.ts                      Auth.js (Google, sessão JWT); loja_id no token (callback jwt)
     session.ts                   getLojaId / requireLojaId — única fonte de loja_id
     r2.ts                        bucket público (fotos) e privado (CNH, URL assinada 5 min)
-    signature.ts                 HMAC e Bearer em tempo constante (node:crypto)
+    signature.ts                 token e Bearer em tempo constante (node:crypto)
+    plano.ts                     R$ 149/mês, 7 dias grátis; planoLiberado() decide painel e vitrine
+    asaas.ts                     API v3: Checkout de cartão (assinatura mensal) e fatura vencida
   app/
     loja/[slug]/                          vitrine pública (vendidos com sobreposição)
     loja/[slug]/carros/[carroId]/         detalhe + barra fixa WhatsApp / Simular
@@ -39,7 +41,7 @@ src/
     painel/actions.ts                     server actions (todas escopadas por loja_id)
     api/simulacoes                        POST público (lead + CNH)
     api/simulacoes/[id]/cnh               GET dono da loja → redirect p/ URL assinada (5 min)
-    api/webhooks/appmax                   webhook com HMAC + idempotência
+    api/webhooks/asaas                    webhook Asaas (asaas-access-token + idempotência pelo id do evento)
     api/cron/delete-expired-cnh           limpeza LGPD (Bearer CRON_SECRET)
   components/                             bottom-nav, masked-input, pill-group, loja-form…
 ```
@@ -51,6 +53,22 @@ O sistema está em `DESIGN.md` (tema Vantage da Hallmark com as cores do logo). 
 - Landing (`/`): versão noturna (`.theme-night`), carro em nuvem de pontos em `src/components/landing/point-car.tsx`, capturas do painel em `public/landing/` (refaça ao mudar as telas).
 - Verificação de design: `node ~/.claude/skills/hallmark/scripts/sloplint.mjs src/app src/components --scope app`.
 - Ao usar um tamanho novo da escala, registre-o em `src/lib/utils.ts` (senão o `cn` o confunde com cor).
+
+## Plano e pagamento (Asaas)
+
+R$ 149/mês, 7 dias grátis sem cartão (`lojas.trial_ate`). Plano pausado: o painel leva para Minha loja, a vitrine sai do ar e novas simulações são recusadas.
+
+**Fase 1, venda assistida (primeiros 5 a 10 garagistas).** `ASAAS_CHECKOUT` vazio: Minha loja mostra "Falar com a AutoGiro" (`AUTOGIRO_WHATSAPP`).
+1. No painel do Asaas, crie a cobrança da loja: link de pagamento ou assinatura mensal com forma de pagamento "Pergunte ao cliente" (Pix, boleto ou cartão).
+2. Pago, libere: `npm run loja -- liberar <slug> cus_...` (o `cus_` está em Clientes no Asaas). Sem o `cus_`, a loja fica ativa até você pausar.
+3. Com o `cus_` gravado, o webhook assume: cada cobrança que o Asaas gera no mês ativa (paga) ou pausa (vencida) a loja sozinho.
+4. `npm run loja -- listar` mostra todas; `npm run loja -- pausar <slug>` pausa.
+
+**Fase 2, autoatendimento.** `ASAAS_CHECKOUT=on`: "Assinar com cartão" abre o Checkout do Asaas; a primeira cobrança cai no fim do teste e o webhook liga a loja pelo `CHECKOUT_PAID`.
+
+**Webhook** (Integrações › Webhooks no Asaas): URL `https://<domínio>/api/webhooks/asaas`, token = `ASAAS_WEBHOOK_TOKEN`, envio **sequencial**, eventos `CHECKOUT_PAID`, `SUBSCRIPTION_*` e `PAYMENT_*`. Só cobranças de assinatura mudam o plano; cobrança avulsa não.
+
+**Em desenvolvimento,** `npm run dev` e, noutro terminal, `npm run tunnel -- --url=<seu-dominio>.ngrok-free.app`: o domínio fixo do ngrok vira a URL do webhook no Sandbox e o `APP_BASE_URL`.
 
 ## Regras de isolamento (multi-tenant)
 

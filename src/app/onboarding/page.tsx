@@ -21,7 +21,7 @@ export default function OnboardingPage() {
       <Wordmark />
       <div className="grid grid-cols-1 gap-2">
         <h1 className="font-display text-3xl font-light">Vamos criar sua loja</h1>
-        <p className="text-ink-2">Só o nome e o WhatsApp. O link da vitrine sai na hora.</p>
+        <p className="text-ink-2">7 dias grátis, sem cartão. O link da vitrine sai na hora.</p>
       </div>
       <Suspense>
         <Onboarding />

@@ -8,9 +8,10 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { carros, lojas, simulacoesFinanciamento as sim } from "@/lib/db/schema";
 import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
+import { AsaasError, criarCheckoutAssinatura, faturaVencida } from "@/lib/asaas";
 import { onlyDigits, reaisToCentavos, slugify } from "@/lib/masks";
 import { deleteCnhs, deleteFotos, uploadFoto } from "@/lib/r2";
-import { getLojaId } from "@/lib/session";
+import { getLojaId, lojaLiberada } from "@/lib/session";
 
 // Server actions são endpoints públicos: toda action revalida a sessão e escopa por loja_id.
 
@@ -41,6 +42,7 @@ const str = (fd: FormData, k: string) => {
 export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormState> {
   const lojaId = await getLojaId();
   if (!lojaId) return { error: "Sessão expirada. Entre novamente." };
+  if (!(await lojaLiberada(lojaId))) return { error: "Plano pausado. Regularize a assinatura em Minha loja." };
 
   const parsed = carroSchema.safeParse({
     marca: str(fd, "marca"),
@@ -120,10 +122,15 @@ const lojaSchema = z.object({
     .refine((d) => d.length === 10 || d.length === 11, "WhatsApp com DDD, ex.: (11) 98765-4321"),
 });
 
+const lojaCampos = (fd: FormData) => ({
+  nome: str(fd, "nome"),
+  whatsapp: str(fd, "whatsapp") ?? "",
+});
+
 export async function salvarLoja(_prev: FormState, fd: FormData): Promise<FormState> {
   const lojaId = await getLojaId();
   if (!lojaId) return { error: "Sessão expirada. Entre novamente." };
-  const parsed = lojaSchema.safeParse({ nome: str(fd, "nome"), whatsapp: str(fd, "whatsapp") ?? "" });
+  const parsed = lojaSchema.safeParse(lojaCampos(fd));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await db.update(lojas).set(parsed.data).where(eq(lojas.id, lojaId));
@@ -136,7 +143,7 @@ export async function criarLoja(_prev: FormState, fd: FormData): Promise<FormSta
   if (!session) return { error: "Sessão expirada. Entre novamente." };
   if (session.user.loja_id) redirect("/painel");
 
-  const parsed = lojaSchema.safeParse({ nome: str(fd, "nome"), whatsapp: str(fd, "whatsapp") ?? "" });
+  const parsed = lojaSchema.safeParse(lojaCampos(fd));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   // Sufixo aleatório evita colisão de slug; o slug não muda ao renomear (link da vitrine estável).
@@ -148,6 +155,42 @@ export async function criarLoja(_prev: FormState, fd: FormData): Promise<FormSta
     .onConflictDoNothing({ target: lojas.authUserId });
 
   redirect("/painel/estoque");
+}
+
+/**
+ * Assinatura: manda para o Checkout de cartão do Asaas, onde o pagador informa os próprios dados.
+ * A primeira cobrança cai no fim do teste grátis (ou hoje, se já acabou). Quem decide o plano é o webhook.
+ */
+export async function assinar(): Promise<FormState> {
+  const lojaId = await getLojaId();
+  if (!lojaId) return { error: "Sessão expirada. Entre novamente." };
+  const [loja] = await db.select().from(lojas).where(eq(lojas.id, lojaId)).limit(1);
+  if (!loja) return { error: "Loja não encontrada" };
+  if (loja.planoStatus === "ativo") return {};
+  if (process.env.ASAAS_CHECKOUT !== "on") return { error: "A assinatura é feita com a equipe AutoGiro por enquanto." };
+
+  let destino: string | null;
+  try {
+    if (loja.asaasSubscriptionId) {
+      // Já assinou: com atraso, o caminho é pagar a fatura vencida, não abrir outra assinatura.
+      destino = await faturaVencida(loja.asaasSubscriptionId);
+      if (!destino) return { error: "Sua assinatura já está registrada. Se o painel continuar pausado, fale com o suporte." };
+    } else {
+      const hoje = new Date();
+      const checkout = await criarCheckoutAssinatura({
+        lojaId,
+        primeiraCobranca: loja.trialAte > hoje ? loja.trialAte : hoje,
+        voltarPara: `${process.env.APP_BASE_URL}/painel/loja`,
+      });
+      // O webhook CHECKOUT_PAID acha a loja por este id e grava o cliente que o Asaas criou.
+      await db.update(lojas).set({ asaasCheckoutId: checkout.id }).where(eq(lojas.id, lojaId));
+      destino = checkout.url;
+    }
+  } catch (err) {
+    if (err instanceof AsaasError) return { error: `O Asaas recusou: ${err.message}` };
+    throw err;
+  }
+  redirect(destino);
 }
 
 export async function excluirSimulacao(id: string): Promise<FormState> {

@@ -3,12 +3,13 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { simulacoesFinanciamento as sim } from "@/lib/db/schema";
 import { cnhSignedUrl } from "@/lib/r2";
-import { getLojaId } from "@/lib/session";
+import { getLojaId, lojaLiberada } from "@/lib/session";
 
 // Gera, sob demanda, URL assinada (5 min) da CNH e redireciona — somente para o dono da loja.
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const lojaId = await getLojaId();
   if (!lojaId) return Response.json({ error: "não autenticado" }, { status: 401 });
+  if (!(await lojaLiberada(lojaId))) return Response.json({ error: "plano pausado" }, { status: 402 });
 
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) return Response.json({ error: "não encontrado" }, { status: 404 });

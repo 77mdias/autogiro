@@ -1,9 +1,10 @@
 import { and, eq, ne } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { carros, simulacoesFinanciamento } from "@/lib/db/schema";
+import { carros, lojas, simulacoesFinanciamento } from "@/lib/db/schema";
 import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
 import { onlyDigits, reaisToCentavos } from "@/lib/masks";
+import { planoLiberado } from "@/lib/plano";
 import { deleteCnhs, uploadCnh } from "@/lib/r2";
 
 const schema = z.object({
@@ -29,11 +30,12 @@ export async function POST(request: Request) {
   const { valorEntrada, valorFinanciar, ...data } = parsed.data;
 
   const [carro] = await db
-    .select({ lojaId: carros.lojaId })
+    .select({ lojaId: carros.lojaId, planoStatus: lojas.planoStatus, trialAte: lojas.trialAte, asaasSubscriptionId: lojas.asaasSubscriptionId })
     .from(carros)
+    .innerJoin(lojas, eq(lojas.id, carros.lojaId))
     .where(and(eq(carros.id, data.carroId), ne(carros.status, "vendido")))
     .limit(1);
-  if (!carro) return Response.json({ error: "Este carro não está mais disponível" }, { status: 404 });
+  if (!carro || !planoLiberado(carro)) return Response.json({ error: "Este carro não está mais disponível" }, { status: 404 });
 
   const id = crypto.randomUUID();
   let cnhKey: string | null = null;
