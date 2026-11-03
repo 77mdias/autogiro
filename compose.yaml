@@ -1,0 +1,33 @@
+# Sobe o AutoGiro com os segredos vindos do Criptenv. Nenhum .env no disco.
+#
+#   CRIPTENV_API_KEY=... CRIPTENV_VAULT_PASSWORD=... docker compose up --build
+#
+# As duas credenciais vêm do shell (de preferência do chaveiro do sistema, veja docs/segredos.md) e entram
+# no container como Docker secrets em /run/secrets: não aparecem em `docker inspect` nem no ambiente do app.
+services:
+  app:
+    build: .
+    image: autogiro:local
+    init: true # tini como PID 1: repassa SIGTERM e recolhe processos
+    ports:
+      - "3000:3000"
+    environment:
+      # Projeto `autogiro` no Criptenv (`criptenv projects list`); o ID não é segredo.
+      CRIPTENV_PROJECT: ${CRIPTENV_PROJECT:-659a2c2d-a35d-4801-b83e-b3d4d757362b}
+      CRIPTENV_ENV: ${CRIPTENV_ENV:-development}
+    secrets:
+      - criptenv_api_key
+      - criptenv_vault_password
+    # Sem read_only: o Compose grava os secrets vindos do shell dentro do container, e no modo só
+    # leitura ele só aceita secrets de arquivo do host (justamente o que não queremos).
+    tmpfs:
+      - /tmp # sessão temporária do criptenv, apagada antes do app subir
+      - /app/.next/cache:uid=1000,gid=1000 # cache de imagens do Next
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+secrets:
+  criptenv_api_key:
+    environment: CRIPTENV_API_KEY
+  criptenv_vault_password:
+    environment: CRIPTENV_VAULT_PASSWORD

@@ -4,6 +4,8 @@ PWA mobile-first para garagistas: estoque, vitrine pública e simulações de fi
 
 Next.js 16 (App Router, `proxy.ts`, Cache Components) · TypeScript · Tailwind v4 · shadcn/ui · Drizzle + Supabase Postgres · Auth.js (Google) · Cloudflare R2.
 
+Documentação completa em [`docs/`](docs/README.md): arquitetura, stack, decisões, pagamentos, desenvolvimento e testes.
+
 ## Setup
 
 ```bash
@@ -64,7 +66,7 @@ R$ 149/mês, 7 dias grátis sem cartão (`lojas.trial_ate`). Plano pausado: o pa
 3. Com o `cus_` gravado, o webhook assume: cada cobrança que o Asaas gera no mês ativa (paga) ou pausa (vencida) a loja sozinho.
 4. `npm run loja -- listar` mostra todas; `npm run loja -- pausar <slug>` pausa.
 
-**Fase 2, autoatendimento.** `ASAAS_CHECKOUT=on`: "Assinar com cartão" abre o Checkout do Asaas; a primeira cobrança cai no fim do teste e o webhook liga a loja pelo `CHECKOUT_PAID`.
+**Fase 2, autoatendimento.** `ASAAS_CHECKOUT=on`: "Assinar com cartão" abre o Checkout do Asaas; a primeira cobrança cai no fim do teste e o webhook liga a loja pelo `checkoutSession` da assinatura.
 
 **Webhook** (Integrações › Webhooks no Asaas): URL `https://<domínio>/api/webhooks/asaas`, token = `ASAAS_WEBHOOK_TOKEN`, envio **sequencial**, eventos `CHECKOUT_PAID`, `SUBSCRIPTION_*` e `PAYMENT_*`. Só cobranças de assinatura mudam o plano; cobrança avulsa não.
 

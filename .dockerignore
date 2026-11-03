@@ -1,0 +1,14 @@
+# Nada de segredo ou estado local entra no contexto do build
+.env*
+!.env.example
+.git
+.next
+node_modules
+.claude
+.claude-flow
+.swarm
+.hallmark
+.playwright-mcp
+ruvector.db
+*.tsbuildinfo
+docs

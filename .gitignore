@@ -46,3 +46,6 @@ next-env.d.ts
 .claude-flow/
 .swarm/
 ruvector.db
+
+# configuração local do Claude Code
+.claude/settings.local.json
