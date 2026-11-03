@@ -60,7 +60,7 @@ Instalado em `~/.local/bin/ngrok`, authtoken em `~/.config/ngrok/ngrok.yml`. Dom
 
 ## Migrações
 
-Altere `src/lib/db/schema.ts`, rode `pnpm db:generate` **no host** (só compara o schema com `drizzle/meta`, sem banco nem segredo; precisa de terminal interativo quando pergunta sobre renomear coluna) e depois `pnpm docker:exec pnpm db:migrate`. O watch leva o SQL novo de `drizzle/` para o container. Supabase já tem `0000`, `0001_asaas` e `0002_plano_asaas`; `0003_conta_email` (usuários e tokens de e-mail) ainda precisa ser aplicada.
+Altere `src/lib/db/schema.ts`, rode `pnpm db:generate` **no host** (só compara o schema com `drizzle/meta`, sem banco nem segredo; precisa de terminal interativo quando pergunta sobre renomear coluna) e depois `pnpm docker:exec pnpm db:migrate`. O watch leva o SQL novo de `drizzle/` para o container. O Supabase de dev já tem todas, até `0003_conta_email`. O banco de produção é outro projeto do Supabase: aplique tudo nele com `CRIPTENV_ENV=production pnpm docker:exec pnpm db:migrate`, com a API key de produção no chaveiro.
 
 ## Armadilhas conhecidas
 
