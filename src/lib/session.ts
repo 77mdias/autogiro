@@ -1,11 +1,12 @@
 import "server-only";
 import { connection } from "next/server";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { lojas } from "@/lib/db/schema";
 import { planoLiberado } from "@/lib/plano";
+import { ehAdmin } from "@/lib/admin";
 
 // Auth.js regrava o cookie da sessão (crypto aleatório); connection() marca o render como
 // dinâmico antes disso, senão o Cache Components acusa valor instável no prerender.
@@ -42,4 +43,12 @@ export async function requireLojaId(returnTo = "/painel", { exigePlano = true } 
   if (!session.user.loja_id) redirect("/onboarding");
   if (exigePlano && !(await lojaLiberada(session.user.loja_id))) redirect("/painel/loja");
   return session.user.loja_id;
+}
+
+/** Painel do dono do SaaS: sem sessão → login; logado sem permissão → 404, para não revelar a rota. */
+export async function requireAdmin(returnTo = "/admin") {
+  const session = await getSession();
+  if (!session) redirect(`/login?callbackUrl=${encodeURIComponent(returnTo)}`);
+  if (!ehAdmin(session.user.email)) notFound();
+  return session;
 }

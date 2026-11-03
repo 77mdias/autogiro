@@ -24,6 +24,7 @@ Cron ───────► POST /api/cron/delete-expired-cnh ──► apaga 
 | `/painel/estoque`, `/novo`, `/[id]` | dono | Lista, cadastro e edição de carros (fotos no R2) |
 | `/painel/interessados` | dono | Leads das simulações: ver CNH, WhatsApp, mudar status, excluir |
 | `/painel/loja` | dono | Plano (assinar/pagar), link da vitrine, números, dados da loja, sair |
+| `/admin` | e-mail em `ADMIN_EMAILS` | Dono do SaaS: MRR, lojas por situação do plano, carros e simulações por loja. Outros logados recebem 404 |
 | `/loja/[slug]` | público | Vitrine; fora do ar se o plano estiver pausado (`layout.tsx`) |
 | `/loja/[slug]/carros/[carroId]` | público | Detalhe do carro, WhatsApp e Simular |
 | `/loja/[slug]/carros/[carroId]/simular` | público | Formulário de simulação (LGPD + CNH opcional) |
@@ -33,7 +34,7 @@ Cron ───────► POST /api/cron/delete-expired-cnh ──► apaga 
 | `POST /api/cron/delete-expired-cnh` | cron | Apaga CNHs com mais de 90 dias (Bearer `CRON_SECRET`) |
 | `/api/auth/*` | Auth.js | Login e callback do Google |
 
-`src/proxy.ts` (o antigo middleware) é só uma barreira otimista: sem sessão, `/painel` e `/onboarding` vão para `/login`. A checagem de verdade fica em cada página e rota.
+`src/proxy.ts` (o antigo middleware) é só uma barreira otimista: sem sessão, `/painel`, `/admin` e `/onboarding` vão para `/login`. A checagem de verdade fica em cada página e rota.
 
 ## Dados (Supabase Postgres via Drizzle)
 
