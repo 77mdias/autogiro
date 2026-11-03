@@ -1,0 +1,20 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ContaShell } from "@/components/conta-shell";
+import { CadastroForm } from "@/components/conta-forms";
+
+export const metadata: Metadata = { title: "Criar conta" };
+
+export default function CadastroPage() {
+  return (
+    <ContaShell titulo="Criar sua conta" texto="Mandamos um link para o seu e-mail. Confirmado, você entra e monta a loja: 7 dias grátis, sem cartão.">
+      <CadastroForm />
+      <p className="text-sm text-ink-2">
+        Já tem conta?{" "}
+        <Link href="/login" className="rounded-card text-brand underline underline-offset-4">
+          Entrar
+        </Link>
+      </p>
+    </ContaShell>
+  );
+}
