@@ -2,6 +2,16 @@
 
 Mais recentes primeiro. Cada uma: o que foi decidido e por quê.
 
+## 2026-11-03 · Produção na Vercel, com migração automática no deploy
+Migrar o banco de produção na mão é passo esquecível. Fluxo igual ao do Criptenv: branch → PR → CI no GitHub Actions → merge na `main` → deploy automático.
+- **Vercel** pelo suporte nativo ao Next 16 e prévia por PR. Variáveis sincronizadas do Criptenv pela integração dele com a Vercel.
+- **Migração no build de produção** (`scripts/vercel-build.sh`), não ao subir: na Vercel cada instância de função subiria e migraria. Uma vez por deploy; se falhar, o deploy aborta.
+- **Nos containers** (dev e teste da imagem) a migração é ao subir (`src/instrumentation.ts`, `MIGRAR_AO_SUBIR=1`): é um processo só.
+- **CI** sem segredos: lint, tipos, testes, build e checagem de migração pendente.
+
+## 2026-11-03 · App só em container no dev
+Nada de `.env` no disco nem `next dev` no host: `pnpm docker:up` sobe o container com os segredos do Criptenv e hot reload pelo Compose Watch, que copia os arquivos (o container não escreve no host).
+
 ## 2026-11-02 · Segredos no Criptenv, sem `.env` no disco
 `.env.local` em texto claro fica ao alcance de agentes de IA, backups e de um `git add` errado. Os segredos passam para o Criptenv (zero-knowledge) e o app roda em Docker com eles só na memória.
 - Build da imagem sem segredos; em execução, `docker/entrypoint.sh` busca as variáveis com a CLI do Criptenv.

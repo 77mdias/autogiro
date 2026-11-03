@@ -3,7 +3,8 @@
 #   pnpm docker:up     (= docker compose -f compose.dev.yaml up --build --watch, credenciais do chaveiro)
 #
 # O Compose Watch copia para o container o que você edita no host; o next dev recarrega na hora.
-# Mudou package.json ou pnpm-lock.yaml: a imagem é refeita sozinha. Mudou next.config.ts: o container reinicia.
+# Mudou package.json ou pnpm-lock.yaml: a imagem é refeita sozinha. Mudou next.config.ts ou drizzle/: o container
+# reinicia (e as migrações novas são aplicadas ao subir, por src/instrumentation.ts).
 # Mesmo projeto e serviço do compose.yaml: subir um substitui o outro na porta 3000.
 services:
   app:
@@ -17,6 +18,7 @@ services:
     environment:
       CRIPTENV_PROJECT: ${CRIPTENV_PROJECT:-659a2c2d-a35d-4801-b83e-b3d4d757362b}
       CRIPTENV_ENV: ${CRIPTENV_ENV:-development}
+      MIGRAR_AO_SUBIR: "1" # aplica migrações pendentes ao subir (src/instrumentation.ts)
     secrets:
       - criptenv_api_key
       - criptenv_vault_password
@@ -30,7 +32,7 @@ services:
       watch:
         - { action: sync, path: ./src, target: /app/src }
         - { action: sync, path: ./public, target: /app/public }
-        - { action: sync, path: ./drizzle, target: /app/drizzle }
+        - { action: sync+restart, path: ./drizzle, target: /app/drizzle } # migração nova: reinicia e aplica
         - { action: sync, path: ./scripts, target: /app/scripts }
         - { action: sync+restart, path: ./next.config.ts, target: /app/next.config.ts }
         - { action: sync+restart, path: ./tsconfig.json, target: /app/tsconfig.json }

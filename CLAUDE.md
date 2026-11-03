@@ -29,6 +29,10 @@ pnpm tunnel -- --url=<domain>  # ngrok, needed for Asaas webhooks and Google OAu
 
 Before committing: `pnpm test`, `pnpm typecheck`, `pnpm lint`.
 
+**Git flow:** work on a branch, open a PR; GitHub Actions (`.github/workflows/ci.yml`) runs lint, typecheck, tests, build and a pending-migration check, and Vercel builds a preview. Merging into `main` deploys production on Vercel, and its build applies pending migrations first (`scripts/vercel-build.sh`). Never commit straight to `main`. Details in `docs/deploy.md`.
+
+**Migrations are automatic:** after `pnpm db:generate` (on the host), the dev container restarts and applies them on startup (`src/instrumentation.ts`, only when `MIGRAR_AO_SUBIR=1`, which the compose files set). Production applies them in the Vercel build.
+
 **The app only runs in Docker, with secrets from Criptenv. Never create a `.env`/`.env.local` or start `next dev` on the host** (plaintext secrets on disk are what the Criptenv setup removed; see `docs/segredos.md`). Tests, typecheck and lint run on the host and need no secrets. Anything that needs secrets goes through `pnpm docker:exec`.
 
 Tests run under plain `node --test`, so tested files in `src/lib/` must not use the `@/` alias and import siblings with explicit `.ts` extensions. Keep logic worth testing in those pure modules (`plano.ts`, `signature.ts`, `senha.ts`, `masks.ts`, `utils.ts`).

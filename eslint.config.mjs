@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Código de terceiros e ferramentas locais, fora do app
+    ".agents/**",
+    ".claude/**",
+    ".playwright-mcp/**",
+    "public/3D/draco/**",
   ]),
 ]);
 

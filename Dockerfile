@@ -51,6 +51,8 @@ WORKDIR /app
 COPY --from=build --chown=node:node /src/.next/standalone ./
 COPY --from=build --chown=node:node /src/.next/static ./.next/static
 COPY --from=build --chown=node:node /src/public ./public
+# Migrações aplicadas ao subir (src/instrumentation.ts)
+COPY --from=build --chown=node:node /src/drizzle ./drizzle
 USER node
 EXPOSE 3000
 CMD ["node", "/app/server.js"]

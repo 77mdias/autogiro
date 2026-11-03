@@ -15,6 +15,7 @@ services:
       # Projeto `autogiro` no Criptenv (`criptenv projects list`); o ID não é segredo.
       CRIPTENV_PROJECT: ${CRIPTENV_PROJECT:-659a2c2d-a35d-4801-b83e-b3d4d757362b}
       CRIPTENV_ENV: ${CRIPTENV_ENV:-development}
+      MIGRAR_AO_SUBIR: "1" # aplica migrações pendentes ao subir (src/instrumentation.ts)
     secrets:
       - criptenv_api_key
       - criptenv_vault_password

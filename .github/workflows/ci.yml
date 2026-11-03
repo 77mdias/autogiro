@@ -1,0 +1,42 @@
+# CI: valida todo PR e todo push na main. Nada aqui usa segredo: o app só lê variáveis em execução.
+# O deploy é da Vercel (integração com o GitHub): prévia por PR e produção a cada merge na main. docs/deploy.md
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, tipos, testes, build e migrações
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # versão do campo packageManager
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build # o mesmo build da Vercel, sem nenhum segredo
+      - name: Schema sem migração pendente
+        # drizzle-kit generate só compara schema.ts com drizzle/meta (sem banco). Se gerar arquivo, faltou commitar a migração.
+        run: |
+          pnpm db:generate
+          if [ -n "$(git status --porcelain -- drizzle)" ]; then
+            echo "::error::src/lib/db/schema.ts mudou sem migração. Rode pnpm db:generate e commite drizzle/."
+            git status --porcelain -- drizzle
+            exit 1
+          fi

@@ -60,7 +60,13 @@ Instalado em `~/.local/bin/ngrok`, authtoken em `~/.config/ngrok/ngrok.yml`. Dom
 
 ## Migrações
 
-Altere `src/lib/db/schema.ts`, rode `pnpm db:generate` **no host** (só compara o schema com `drizzle/meta`, sem banco nem segredo; precisa de terminal interativo quando pergunta sobre renomear coluna) e depois `pnpm docker:exec pnpm db:migrate`. O watch leva o SQL novo de `drizzle/` para o container. O Supabase de dev já tem todas, até `0003_conta_email`. O banco de produção é outro projeto do Supabase. Para migrá-lo, suba o container de dev apontando para produção (`CRIPTENV_ENV=production pnpm docker:up`, com a API key de produção no chaveiro), rode `pnpm docker:exec pnpm db:migrate` e volte para `development` em seguida. A imagem de produção (`docker:prod`) não tem o `drizzle-kit`, e o `docker:exec` herda o ambiente com que o container subiu.
+Altere `src/lib/db/schema.ts` e rode `pnpm db:generate` **no host** (só compara o schema com `drizzle/meta`, sem banco nem segredo; precisa de terminal interativo quando pergunta sobre renomear coluna). Não há passo manual depois:
+
+- **Dev:** o watch leva o SQL novo de `drizzle/` para o container, que reinicia e aplica as migrações ao subir (`MIGRAR_AO_SUBIR=1`, `src/instrumentation.ts`). Se a migração falhar, o container não sobe e o erro aparece no log.
+- **Produção:** depois do merge na `main`, o build da Vercel aplica as migrações antes do `next build` ([deploy.md](deploy.md)).
+- **Esqueceu o `db:generate`?** O CI do PR falha no passo "Schema sem migração pendente".
+
+`pnpm docker:exec pnpm db:migrate` continua disponível para aplicar na mão. O Supabase de dev já tem todas, até `0003_conta_email`.
 
 ## Armadilhas conhecidas
 
@@ -72,5 +78,7 @@ Altere `src/lib/db/schema.ts`, rode `pnpm db:generate` **no host** (só compara 
 - **Conexão direta do Supabase** (`db.<ref>.supabase.co`) é só IPv6; use o session pooler nas migrações.
 
 ## Git
+
+Branch por mudança → PR → CI (GitHub Actions) e prévia da Vercel → merge na `main` → deploy de produção automático ([deploy.md](deploy.md)).
 
 Branch `main`, remoto `origin` (`github.com/77mdias/autogiro`). `.env*` ignorado, exceto `.env.example`.

@@ -16,7 +16,7 @@
 | **GitHub** | Repositório `77mdias/autogiro`, branch `main` | — |
 | **Stitch** (Google) | Projeto "AutoGiro PWA Platform": referência das telas | — |
 
-Hospedagem de produção ainda não está definida no repositório; os comentários e o cron assumem Cloudflare (`AUTH_TRUST_HOST=true`).
+Hospedagem de produção: **Vercel** (deploy pela integração com o GitHub, migrações no build; [deploy.md](deploy.md)). Banco de produção num projeto Supabase separado do de dev. O cron continua num Cloudflare Worker.
 
 ## Ferramentas locais
 
