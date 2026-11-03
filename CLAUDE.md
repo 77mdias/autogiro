@@ -13,19 +13,23 @@ Full docs live in `docs/` (architecture, stack, decisions log, Asaas payments, d
 Package manager is pnpm.
 
 ```bash
-pnpm dev                       # next dev (pnpm dev:criptenv to load secrets from Criptenv instead of .env.local)
+pnpm docker:up                 # dev container on :3000: next dev + Compose Watch hot reload, secrets from Criptenv (keyring)
+pnpm docker:prod               # production standalone image instead (same port, replaces the dev container)
+pnpm docker:exec <cmd>         # run <cmd> inside the dev container with the secrets, e.g. pnpm docker:exec pnpm db:migrate
 pnpm build
 pnpm lint                      # eslint
 pnpm test                      # node --test src/**/*.test.ts (native Node TS stripping, no test framework)
 node --test src/lib/plano.test.ts   # single test file
-npx tsc --noEmit               # typecheck
-pnpm db:generate               # migration from src/lib/db/schema.ts (interactive on column renames)
-pnpm db:migrate                # apply drizzle/*.sql (uses DATABASE_URL_DIRECT = Supabase session pooler)
-pnpm loja -- listar | liberar <slug> [cus_...] | pausar <slug>   # manual plan ops (scripts/loja.mts)
+pnpm typecheck                 # next typegen (route types, no server/secrets) + tsc --noEmit
+pnpm db:generate                    # migration from src/lib/db/schema.ts, on the host: no DB, no secrets (interactive on column renames)
+pnpm docker:exec pnpm db:migrate    # apply drizzle/*.sql (uses DATABASE_URL_DIRECT = Supabase session pooler)
+pnpm docker:exec pnpm loja listar | liberar <slug> [cus_...] | pausar <slug>   # manual plan ops (scripts/loja.mts)
 pnpm tunnel -- --url=<domain>  # ngrok, needed for Asaas webhooks and Google OAuth in dev
 ```
 
-Before committing: `pnpm test`, `npx tsc --noEmit`, `pnpm lint`.
+Before committing: `pnpm test`, `pnpm typecheck`, `pnpm lint`.
+
+**The app only runs in Docker, with secrets from Criptenv. Never create a `.env`/`.env.local` or start `next dev` on the host** (plaintext secrets on disk are what the Criptenv setup removed; see `docs/segredos.md`). Tests, typecheck and lint run on the host and need no secrets. Anything that needs secrets goes through `pnpm docker:exec`.
 
 Tests run under plain `node --test`, so tested files in `src/lib/` must not use the `@/` alias and import siblings with explicit `.ts` extensions. Keep logic worth testing in those pure modules (`plano.ts`, `signature.ts`, `senha.ts`, `masks.ts`, `utils.ts`).
 
@@ -50,7 +54,7 @@ Next.js 16 App Router with `cacheComponents: true`, `output: "standalone"` (Dock
 ## Gotchas
 
 - Cache Components: auth reads go through `getSession()`, which calls `connection()` first; each panel page needs its own `loading.tsx`, or you get "uncached data during prerendering".
-- `ASAAS_API_KEY` starts with `$`: escape it as `\$aact_...` in `.env.local`.
+- `ASAAS_API_KEY` starts with `$`: in Criptenv store the raw value (`criptenv set 'ASAAS_API_KEY=$aact_...'`, single quotes).
 - Supabase direct connection is IPv6-only; migrations use the session pooler.
 - Design: new type-scale sizes must be registered in `src/lib/utils.ts`, or `cn` will treat them as colors. Tokens are in `src/app/tokens.css`, wired to shadcn in `globals.css`. Lint design with `node ~/.claude/skills/hallmark/scripts/sloplint.mjs src/app src/components --scope app`.
 - In dev, open the app through the ngrok domain (the login cookie is set there) and set `AUTH_URL` to it.

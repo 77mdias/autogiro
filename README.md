@@ -9,14 +9,13 @@ Documentação completa em [`docs/`](docs/README.md): arquitetura, stack, decis�
 ## Setup
 
 ```bash
-cp .env.example .env.local   # preencha os valores
-pnpm install
-pnpm db:migrate              # aplica drizzle/*.sql no Supabase (usa DATABASE_URL_DIRECT = session pooler, porta 5432; a conexão direta db.<ref>.supabase.co é só IPv6)
-pnpm dev
-pnpm test                    # testes de assinatura/token
+pnpm install                         # só para editor, testes e typecheck no host
+pnpm docker:up                       # app em http://localhost:3000, com hot reload e os segredos do Criptenv
+pnpm docker:exec pnpm db:migrate     # aplica drizzle/*.sql no Supabase (session pooler, porta 5432)
+pnpm test                            # testes (não precisam de segredo)
 ```
 
-Alterou `src/lib/db/schema.ts`? `pnpm db:generate` e depois `pnpm db:migrate`.
+Nada de `.env` no disco: os segredos vêm do Criptenv ([docs/segredos.md](docs/segredos.md)) e o app só roda em container. Alterou `src/lib/db/schema.ts`? `pnpm db:generate` (no host, sem segredo) e depois `pnpm docker:exec pnpm db:migrate`.
 
 ## Estrutura
 

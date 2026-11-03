@@ -18,8 +18,9 @@ host (chaveiro do sistema)            container (sem capabilities, usuário node
   senha do cofre                     ─► /run/secrets/criptenv_vault_password ┤
                                                                docker/entrypoint.sh
                                        lê os dois arquivos e faz exec de
-                                       criptenv run -e $CRIPTENV_ENV -p $CRIPTENV_PROJECT -- node server.js
-                                       (o criptenv busca e decifra, tira as credenciais do ambiente e faz exec do node)
+                                       criptenv run -e $CRIPTENV_ENV -p $CRIPTENV_PROJECT -- <CMD>
+                                       (o criptenv busca e decifra, tira as credenciais do ambiente e faz exec do comando:
+                                        `next dev` no alvo dev, `node server.js` no runtime)
 ```
 
 - **Build sem segredos:** o app não usa `NEXT_PUBLIC_*`; tudo é lido em execução. O `.dockerignore` tira qualquer `.env*` do contexto.
@@ -52,7 +53,7 @@ Requer criptenv **0.2.3+** (a 0.2.2 repassava a senha do cofre para o app e não
    secret-tool store --label "criptenv autogiro api key" service criptenv project autogiro item api-key
    secret-tool store --label "criptenv autogiro vault"   service criptenv project autogiro item vault-password
    ```
-6. **Apagar o `.env.local`** quando tudo estiver rodando pelo Criptenv: `shred -u .env.local`.
+6. **Apagar o `.env.local`** quando tudo estiver rodando pelo Criptenv: `shred -u .env.local`. Feito em 2026-11-03, depois de um `criptenv diff` sem nenhum valor só local.
 
 ## Usar
 
@@ -60,13 +61,13 @@ O Criptenv só aceita o **ID** do projeto (UUID, em `criptenv projects list`), n
 
 | Para | Comando |
 |---|---|
-| Subir no Docker | `pnpm docker:up` (lê as credenciais do chaveiro e roda `docker compose up --build`) |
-| Outro ambiente no Docker | `CRIPTENV_ENV=production pnpm docker:up` (com a API key de produção no chaveiro) |
-| Dev local sem Docker | `criptenv use <ID>` uma vez; depois `pnpm dev:criptenv` (usa a sua sessão da CLI e pede a senha do cofre) |
-| Qualquer comando com os segredos | `criptenv run -e development -p <ID> -- pnpm loja listar` (vale para `db:migrate` também) |
+| Desenvolver | `pnpm docker:up` (container de dev com hot reload; lê as credenciais do chaveiro por `docker/compose.sh`) |
+| Testar a imagem de produção | `pnpm docker:prod` |
+| Outro ambiente no Docker | `CRIPTENV_ENV=production pnpm docker:prod` (com a API key de produção no chaveiro) |
+| Qualquer comando com os segredos | `pnpm docker:exec pnpm loja listar` (vale para `db:migrate` também), com o container de dev no ar |
 | Ver o que mudou | `criptenv diff <arquivo> -e development -p <ID>` |
 
-No dev local, digite a senha do cofre no prompt em vez de exportar `CRIPTENV_VAULT_PASSWORD`: assim ela não fica no ambiente do shell nem no histórico.
+Não há fluxo fora do Docker: nada de `next dev` no host nem `.env` no disco.
 
 ## O que isso protege e o que não
 
@@ -87,7 +88,7 @@ No dev local, digite a senha do cofre no prompt em vez de exportar `CRIPTENV_VAU
   - `/tmp/.criptenv/vault.db` é criado vazio (só o esquema, em tmpfs).
 - A primeira API key não enxergava ambiente nenhum: o escopo foi digitado como `developer` em vez de `development` (ponto 12).
 
-`docker compose start`/`up` precisam das credenciais no shell: o Compose regrava os secrets a partir delas. Use sempre `pnpm docker:up`.
+`docker compose start`/`up` precisam das credenciais no shell: o Compose regrava os secrets a partir delas. Use sempre os scripts `pnpm docker:*`.
 
 ## Pontos a melhorar no Criptenv, vistos nesta integração
 

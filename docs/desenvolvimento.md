@@ -2,32 +2,42 @@
 
 ## Setup
 
+O app só roda em container, com os segredos do Criptenv ([segredos.md](segredos.md)). Não existe `.env` no disco.
+
 ```bash
-cp .env.example .env.local   # preencha (lista comentada no próprio arquivo)
-pnpm install
-pnpm db:migrate              # aplica drizzle/*.sql no Supabase (DATABASE_URL_DIRECT)
-pnpm dev                     # http://localhost:3000
+pnpm install                         # no host, só para editor, testes, lint e typecheck
+pnpm docker:up                       # http://localhost:3000, com hot reload
+pnpm docker:exec pnpm db:migrate     # aplica drizzle/*.sql no Supabase (DATABASE_URL_DIRECT)
 ```
 
-Sem `.env.local`: com o Criptenv configurado ([segredos.md](segredos.md)), use `pnpm dev:criptenv` ou `pnpm docker:up`.
+### Hot reload no container
+
+`pnpm docker:up` sobe o alvo `dev` do `Dockerfile` (`next dev`) pelo `compose.dev.yaml`, com o [Compose Watch](https://docs.docker.com/compose/how-tos/file-watch/):
+
+- Salvou algo em `src/`, `public/`, `drizzle/` ou `scripts/`: o arquivo é copiado para o container e o Next recarrega a página.
+- `next.config.ts` ou `tsconfig.json`: copia e reinicia o container.
+- `package.json` ou `pnpm-lock.yaml`: refaz a imagem (dependência nova entra sozinha).
+
+O container não monta a pasta do projeto: ele recebe cópias e não consegue escrever nos arquivos do host. O cache do Turbopack fica no volume `next-dev`. `Ctrl+C` para o watch; `docker compose -f compose.dev.yaml down` derruba o container.
+
+Para testar a imagem de produção (standalone, sem hot reload): `pnpm docker:prod`. Ela usa o mesmo serviço e a mesma porta e substitui o container de dev.
 
 ## Scripts
 
 | Comando | O que faz |
 |---|---|
-| `pnpm dev` / `build` / `start` | Next |
-| `pnpm dev:criptenv` | `next dev` com os segredos do ambiente `development` do Criptenv |
-| `pnpm docker:up` | Imagem e container com os segredos do Criptenv (credenciais do chaveiro) |
-| `pnpm lint` | ESLint |
-| `pnpm test` | `node --test` em `src/**/*.test.ts` |
-| `pnpm db:generate` | Gera migração a partir do `schema.ts` |
-| `pnpm db:migrate` | Aplica as migrações |
-| `pnpm loja -- listar \| liberar <slug> [cus_...] \| pausar <slug>` | Operação manual do plano (fase 1) |
+| `pnpm docker:up` | Container de dev com hot reload e os segredos do Criptenv (credenciais do chaveiro) |
+| `pnpm docker:prod` | Imagem de produção (standalone) com os mesmos segredos |
+| `pnpm docker:exec <comando>` | Roda o comando dentro do container de dev, com os segredos |
+| `pnpm lint` / `pnpm test` / `pnpm typecheck` | No host; não precisam de segredo (`typecheck` gera os tipos das rotas com `next typegen` antes do `tsc`) |
+| `pnpm db:generate` | Gera migração a partir do `schema.ts` (no host, sem segredo) |
+| `pnpm docker:exec pnpm db:migrate` | Aplica as migrações |
+| `pnpm docker:exec pnpm loja listar \| liberar <slug> [cus_...] \| pausar <slug>` | Operação manual do plano (fase 1) |
 | `pnpm tunnel -- --url=<dominio>` | ngrok para a porta 3000 |
 
 ## Variáveis de ambiente
 
-Todas listadas e comentadas em `.env.example`. As que mudam entre ambientes:
+Todas listadas e comentadas em `.env.example`, e cadastradas no Criptenv (um conjunto por ambiente). As que mudam entre ambientes:
 
 | Variável | Dev (ngrok) | Produção |
 |---|---|---|
@@ -41,7 +51,7 @@ Todas listadas e comentadas em `.env.example`. As que mudam entre ambientes:
 
 Instalado em `~/.local/bin/ngrok`, authtoken em `~/.config/ngrok/ngrok.yml`. Domínio fixo atual: `await-creation-manger.ngrok-free.dev`.
 
-1. Terminal 1: `pnpm dev`. Terminal 2: `pnpm tunnel -- --url=await-creation-manger.ngrok-free.dev`.
+1. Terminal 1: `pnpm docker:up`. Terminal 2: `pnpm tunnel -- --url=await-creation-manger.ngrok-free.dev`.
 2. Abra o app **pelo domínio do ngrok** (o cookie do login fica nele).
 3. No Google Cloud, o domínio está nas origens JavaScript e o callback `https://<dominio>/api/auth/callback/google` nos redirecionamentos (adicionados, sem apagar os de `localhost`).
 4. O webhook do Asaas Sandbox aponta para `https://<dominio>/api/webhooks/asaas`.
@@ -50,11 +60,12 @@ Instalado em `~/.local/bin/ngrok`, authtoken em `~/.config/ngrok/ngrok.yml`. Dom
 
 ## Migrações
 
-Altere `src/lib/db/schema.ts`, rode `pnpm db:generate` (precisa de terminal interativo quando pergunta sobre renomear coluna) e `pnpm db:migrate`. Supabase já tem `0000`, `0001_asaas` e `0002_plano_asaas`; `0003_conta_email` (usuários e tokens de e-mail) ainda precisa ser aplicada.
+Altere `src/lib/db/schema.ts`, rode `pnpm db:generate` **no host** (só compara o schema com `drizzle/meta`, sem banco nem segredo; precisa de terminal interativo quando pergunta sobre renomear coluna) e depois `pnpm docker:exec pnpm db:migrate`. O watch leva o SQL novo de `drizzle/` para o container. Supabase já tem `0000`, `0001_asaas` e `0002_plano_asaas`; `0003_conta_email` (usuários e tokens de e-mail) ainda precisa ser aplicada.
 
 ## Armadilhas conhecidas
 
-- **Chave do Asaas começa com `$`.** No `.env.local` escreva `ASAAS_API_KEY=\$aact_...`; sem a barra, o Next lê `$aact_` como variável e a chave fica vazia ("ASAAS_API_KEY não configurada"). Scripts que usam `process.loadEnvFile` recebem a barra junto e precisam tirá-la.
+- **Chave do Asaas começa com `$`.** No Criptenv guarde o valor real, sem barra: `criptenv set 'ASAAS_API_KEY=$aact_...'` (aspas simples, para o shell não expandir o `$`).
+- **`pnpm docker:exec` fora de um terminal** (agente, script): use `docker compose -f compose.dev.yaml exec -T app entrypoint.sh <comando>`; sem `-T` o Compose pede um TTY.
 - **`redirect_uri_mismatch` no Google pelo ngrok.** Faltou `AUTH_URL` com o domínio do ngrok.
 - **Erro "uncached data during prerendering or a navigation".** A página do painel precisa do seu próprio `loading.tsx`.
 - **`AUTOGIRO_WHATSAPP`** sem `+55`: o app acrescenta o 55.

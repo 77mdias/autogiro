@@ -1,8 +1,6 @@
-import { existsSync } from "node:fs";
 import { defineConfig } from "drizzle-kit";
 
-// drizzle-kit não lê o .env.local como o Next; em CI as variáveis já vêm do ambiente
-if (existsSync(".env.local")) process.loadEnvFile(".env.local");
+// Variáveis vêm do Criptenv: rode pelo container (`pnpm docker:exec pnpm db:migrate`).
 
 export default defineConfig({
   schema: "./src/lib/db/schema.ts",

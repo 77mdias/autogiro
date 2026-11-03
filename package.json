@@ -4,16 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:criptenv": "criptenv run -e development -- next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "node --test src/**/*.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "loja": "node scripts/loja.mts",
     "tunnel": "ngrok http 3000",
-    "docker:up": "CRIPTENV_API_KEY=\"$(secret-tool lookup service criptenv project autogiro item api-key)\" CRIPTENV_VAULT_PASSWORD=\"$(secret-tool lookup service criptenv project autogiro item vault-password)\" docker compose up --build"
+    "docker:up": "sh docker/compose.sh -f compose.dev.yaml up --build --watch",
+    "docker:prod": "sh docker/compose.sh up --build",
+    "docker:exec": "sh docker/compose.sh -f compose.dev.yaml exec app entrypoint.sh"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1161.0",

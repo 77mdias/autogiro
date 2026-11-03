@@ -35,7 +35,7 @@ Validade: qualquer data futura (ex.: `12/2030`). CVV: `123`. Nome e CPF do titul
 
 | O quê | Onde | Identificador |
 |---|---|---|
-| Conta Asaas Sandbox | sandbox.asaas.com (conta do dono do projeto) | chave em `.env.local` |
+| Conta Asaas Sandbox | sandbox.asaas.com (conta do dono do projeto) | `ASAAS_API_KEY` no Criptenv (`development`) |
 | Loja de teste da fase 2 | Supabase | slug `auto-giro-hehehe-bcb5` (ativa) |
 | Cliente Sandbox dessa loja | Asaas Sandbox | `cus_000009793589` |
 | Assinatura Sandbox dessa loja | Asaas Sandbox | `sub_g3mwecnktya7m6k3` (cartão, R$ 149/mês) |

@@ -1,11 +1,10 @@
-// Administração manual do plano (fase de venda assistida). Roda com o Node direto:
-//   npm run loja -- listar
-//   npm run loja -- liberar <slug> [cus_...]   ativa o plano; com o cliente do Asaas, o webhook assume as próximas cobranças
-//   npm run loja -- pausar <slug>              pausa painel e vitrine
-import { existsSync } from "node:fs";
+// Administração manual do plano (fase de venda assistida). Roda no container de dev, com os segredos do Criptenv:
+//   pnpm docker:exec pnpm loja listar
+//   pnpm docker:exec pnpm loja liberar <slug> [cus_...]   ativa o plano; com o cliente do Asaas, o webhook assume as próximas cobranças
+//   pnpm docker:exec pnpm loja pausar <slug>              pausa painel e vitrine
 import postgres from "postgres";
 
-if (existsSync(".env.local")) process.loadEnvFile(".env.local");
+// Variáveis vêm do Criptenv: rode pelo container (`pnpm docker:exec pnpm loja listar`).
 const url = process.env.DATABASE_URL_DIRECT ?? process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL não configurada");
 const sql = postgres(url, { prepare: false, max: 1 });
