@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { carros, lojas, simulacoesFinanciamento } from "@/lib/db/schema";
 import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
-import { onlyDigits, reaisToCentavos } from "@/lib/masks";
+import { MAX_CENTAVOS, onlyDigits, reaisToCentavos } from "@/lib/masks";
 import { planoLiberado } from "@/lib/plano";
 import { deleteCnhs, uploadCnh } from "@/lib/r2";
 
@@ -14,8 +14,12 @@ const schema = z.object({
     .string()
     .transform(onlyDigits)
     .refine((d) => d.length === 10 || d.length === 11, "WhatsApp com DDD"),
-  valorEntrada: z.string().default("").transform(reaisToCentavos),
-  valorFinanciar: z.string().transform(reaisToCentavos).refine((c) => c > 0, "Informe o valor a financiar"),
+  valorEntrada: z.string().default("").transform(reaisToCentavos).refine((c) => c <= MAX_CENTAVOS, "Entrada acima do limite"),
+  valorFinanciar: z
+    .string()
+    .transform(reaisToCentavos)
+    .refine((c) => c > 0, "Informe o valor a financiar")
+    .refine((c) => c <= MAX_CENTAVOS, "Valor a financiar acima do limite"),
   parcelas: z.coerce.number().pipe(z.union([z.literal(24), z.literal(36), z.literal(48), z.literal(60)], { error: "Escolha 24, 36, 48 ou 60 parcelas" })),
 });
 

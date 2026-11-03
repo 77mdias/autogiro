@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
 import { carros, lojas, simulacoesFinanciamento as sim } from "@/lib/db/schema";
 import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
 import { AsaasError, criarCheckoutAssinatura, faturaVencida } from "@/lib/asaas";
-import { onlyDigits, reaisToCentavos, slugify } from "@/lib/masks";
+import { MAX_CENTAVOS, onlyDigits, reaisToCentavos, slugify } from "@/lib/masks";
 import { deleteCnhs, deleteFotos, uploadFoto } from "@/lib/r2";
 import { getLojaId, lojaLiberada } from "@/lib/session";
 
@@ -25,8 +25,15 @@ const carroSchema = z.object({
   marca: z.string().trim().min(1, "Informe a marca").max(40),
   modelo: z.string().trim().min(1, "Informe o modelo").max(80),
   ano: z.coerce.number().int().min(1950, "Ano inválido").max(anoAtual + 1, "Ano inválido"),
-  km: z.string().transform((v) => Number(onlyDigits(v) || 0)),
-  preco: z.string().transform(reaisToCentavos).refine((c) => c > 0, "Informe o preço"),
+  km: z
+    .string()
+    .transform((v) => Number(onlyDigits(v) || 0))
+    .refine((k) => k <= 2_000_000, "Quilometragem inválida"),
+  preco: z
+    .string()
+    .transform(reaisToCentavos)
+    .refine((c) => c > 0, "Informe o preço")
+    .refine((c) => c <= MAX_CENTAVOS, "Preço acima do limite"),
   cambio: z.enum(["Manual", "Automático"]).optional(),
   combustivel: z.enum(["Flex", "Gasolina", "Etanol", "Diesel", "Elétrico", "Híbrido"]).optional(),
   cor: z.string().trim().max(30).optional(),
@@ -106,10 +113,27 @@ export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormS
     }
   } catch (err) {
     if (enviadas.length) await deleteFotos(enviadas).catch(() => {});
-    throw err;
+    console.error("salvarCarro", err);
+    return { error: "Não deu para salvar o carro agora. Tente de novo em alguns segundos." };
   }
 
   if (remover.size) await deleteFotos([...remover]).catch(() => {}); // órfã no bucket público não é crítica
+  revalidatePath("/painel", "layout");
+  redirect("/painel/estoque");
+}
+
+/** Exclui o carro e as fotos. As simulações ficam (carro_id vira null) para a loja ainda responder. */
+export async function excluirCarro(id: string): Promise<FormState> {
+  const lojaId = await getLojaId();
+  if (!lojaId || !uuid.safeParse(id).success) return { error: "Carro não encontrado" };
+
+  const [apagado] = await db
+    .delete(carros)
+    .where(and(eq(carros.id, id), eq(carros.lojaId, lojaId)))
+    .returning({ fotos: carros.fotos });
+  if (!apagado) return { error: "Carro não encontrado" };
+
+  if (apagado.fotos.length) await deleteFotos(apagado.fotos).catch(() => {}); // órfã no bucket público não é crítica
   revalidatePath("/painel", "layout");
   redirect("/painel/estoque");
 }

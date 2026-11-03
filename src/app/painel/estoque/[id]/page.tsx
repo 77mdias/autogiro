@@ -8,6 +8,7 @@ import { fotoUrl } from "@/lib/r2";
 import { requireLojaId } from "@/lib/session";
 import { BackHeader } from "@/components/back-header";
 import { CarroForm } from "../carro-form";
+import { ExcluirCarro } from "./excluir-carro";
 
 export const metadata: Metadata = { title: "Editar carro" };
 
@@ -27,6 +28,7 @@ export default async function EditarCarroPage({ params }: PageProps<"/painel/est
     <>
       <BackHeader href="/painel/estoque" title="Editar carro" />
       <CarroForm carro={{ ...carro, fotos: carro.fotos.map((key) => ({ key, url: fotoUrl(key) })) }} />
+      <ExcluirCarro id={carro.id} nome={`${carro.marca} ${carro.modelo}`} />
     </>
   );
 }
