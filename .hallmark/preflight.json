@@ -1,0 +1,23 @@
+{
+  "scanned": "2026-11-02",
+  "findings": {
+    "designMd": "DESIGN.md (sistema travado: tema Vantage, Geologica SHRP, noite na landing e dia no app)",
+    "fonts": "Geologica (next/font/google, src/app/layout.tsx:7)",
+    "palette": "OKLCH custom properties (src/app/tokens.css:4-106, mapeado em src/app/globals.css:17-65)",
+    "motion": "CSS transitions + IntersectionObserver (src/app/landing.css:9-11, src/components/landing/reveal.tsx)",
+    "spacing": "Custom properties --space-3xs a --space-4xl, --container 1440px (src/app/tokens.css:58-76)",
+    "framework": "Next.js 16.4.3 (App Router, Tailwind v4, @base-ui/react + shadcn)"
+  },
+  "preserve": [
+    "DESIGN.md",
+    "font stack (Geologica)",
+    "palette tokens (src/app/tokens.css)",
+    "spacing scale",
+    "multi-tenant & auth wiring"
+  ],
+  "introduce": [
+    "Three.js / React Three Fiber 3D scene for public/3D/car-3d.glb in the hero",
+    "Hallmark full redesign / polish across landing and app screens",
+    "Gate 58, 77 and 26b fixes"
+  ]
+}

@@ -77,7 +77,7 @@ export default async function EstoquePage({ searchParams }: PageProps<"/painel/e
     <div className="grid grid-cols-1 gap-6 lg:gap-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="grid min-w-0 gap-1">
-          <h1 className="font-display text-3xl font-light lg:text-[2.5rem]">Estoque</h1>
+          <h1 className="font-display text-3xl font-semibold lg:text-[2.5rem]">Estoque</h1>
           {loja && <p className="truncate text-ink-3">{loja.nome}</p>}
         </div>
         <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-flow-col">

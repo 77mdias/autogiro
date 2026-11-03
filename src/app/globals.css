@@ -2,7 +2,6 @@
  * nav: kept, three destinations, a bottom tab bar under 60rem and a top bar above · signature: the stock card, photo first, the price in tabular Geologica, status as one pill · states: loading, empty, error, full · vantage: object/steel, day colourway for the app, night for the landing
  * axes: light/grotesk-sans/chromatic-blue · posture: restrained · contrast: pass · v2.0.0 */
 /* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V4 · weakest: P, a stock list reads like any inventory app; the price and the photo count carry each card and green is spent only on the buyer's channel */
-/* Hallmark · waive 23 · on /loja the meter counts the stock photographs (a blue Corolla, a red Onix, hedges) uploaded by the store; the filled green is one pill, the shop's WhatsApp in the header · car photos are the vitrine's content, never tinted */
 /* Hallmark · dropped {`/loja/${loja?.slug}`}, {whatsappUrl(loja.whatsapp, `Olá ${loja.nome}! … · both still exist: Minha loja links the vitrine through the vitrine const, and the shop WhatsApp text dropped the old name Garagem Link after the rename to AutoGiro */
 /* Hallmark · dismissed 41 · the accent token is --color-brand and its ink --color-brand-ink, applied on every filled pill (ui/button default variant) */
 @import "tailwindcss";
@@ -41,8 +40,11 @@
   --radius-xl: var(--radius-card);
 }
 
-/* repetido em .theme-night para os nomes do shadcn resolverem com as cores da noite */
-:root, .theme-night {
+/* repetido em .theme-night e data-mode para os nomes do shadcn resolverem em claro e escuro */
+:root,
+.theme-night,
+html[data-mode="dark"],
+html[data-mode="light"] .theme-night {
   --background: var(--color-paper);
   --foreground: var(--color-ink);
   --card: var(--color-paper-2);
@@ -66,16 +68,15 @@
 
 @layer base {
   * { @apply border-border; }
-  html:has(.theme-night) { background: var(--color-night); }
-  h1, h2, h3 { font-variation-settings: "SHRP" 100; }
-  body { font-weight: 300; }
-  b, strong, th, dt, label, legend { font-weight: 400; }
+  html[data-mode="dark"], html:not([data-mode="light"]):has(.theme-night) { background: var(--color-night); color: var(--color-ink); }
+  body { font-weight: 400; }
+  b, strong, th, dt, label, legend { font-weight: 500; }
 }
 
 @layer components {
   /* marcas de canto do Vantage: moldura só nos cantos */
   .ticks { position: relative; }
   .ticks::before { content: ""; position: absolute; inset: 0; pointer-events: none; border: var(--rule-hair) solid var(--color-rule-2); -webkit-mask: conic-gradient(at var(--tick) var(--tick), transparent 75%, var(--color-ink) 0) 0 0 / calc(100% - var(--tick)) calc(100% - var(--tick)); mask: conic-gradient(at var(--tick) var(--tick), transparent 75%, var(--color-ink) 0) 0 0 / calc(100% - var(--tick)) calc(100% - var(--tick)); }
-  .num { font-variant-numeric: tabular-nums; font-weight: 400; }
+  .num { font-variant-numeric: tabular-nums; font-weight: 500; }
   .num .u { color: var(--color-ink-3); font-size: 0.75em; }
 }

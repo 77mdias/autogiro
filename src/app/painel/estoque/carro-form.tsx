@@ -66,7 +66,7 @@ export function CarroForm({ carro }: { carro?: CarroInicial }) {
 
       <section aria-labelledby="fotos-titulo" className="grid min-w-0 grid-cols-1 content-start gap-3 lg:sticky lg:top-24">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 id="fotos-titulo" className="font-display text-xl font-light">
+          <h2 id="fotos-titulo" className="font-display text-xl font-semibold">
             Fotos
           </h2>
           <p className="num text-sm text-ink-3">{totalFotos} de 15</p>
@@ -106,7 +106,7 @@ export function CarroForm({ carro }: { carro?: CarroInicial }) {
 
       <div className="grid min-w-0 grid-cols-1 content-start gap-8">
         <fieldset className="min-w-0">
-          <legend className="mb-5 font-display text-xl font-light">Identificação e preço</legend>
+          <legend className="mb-5 font-display text-xl font-semibold">Identificação e preço</legend>
           <div className="grid grid-cols-1 gap-5">
           <Field label="Marca" htmlFor="marca">
             <Input id="marca" name="marca" list="marcas" required autoComplete="off" defaultValue={carro?.marca} />
@@ -142,7 +142,7 @@ export function CarroForm({ carro }: { carro?: CarroInicial }) {
         </fieldset>
 
         <fieldset className="min-w-0 border-t border-rule pt-8">
-          <legend className="float-left mb-5 w-full font-display text-xl font-light">Especificações de um toque</legend>
+          <legend className="float-left mb-5 w-full font-display text-xl font-semibold">Especificações de um toque</legend>
           <div className="clear-both grid grid-cols-1 gap-5">
           <PillGroup name="cambio" legend="Câmbio" options={["Manual", "Automático"]} defaultValue={carro?.cambio} />
           <PillGroup

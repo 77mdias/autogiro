@@ -6,8 +6,8 @@ As telas seguem a organização do projeto "AutoGiro PWA Platform" no Stitch (ce
 ## Sistema
 - Gênero: modern-minimal (Hallmark)
 - Formas: telas de app (painel, vitrine, detalhe, simulação); a landing em `/` é um mapa do caminho do cliente
-- Tema: Vantage, com a paleta do logo no lugar do lima; noite na landing, dia no app
-- Eixos: light/grotesk-sans/chromatic-blue no app, dark na landing · postura: contida
+- Tema: Vantage, com a paleta do logo no lugar do lima; suporte completo a modo claro e modo escuro (`switchtheme` via `data-mode="light" | "dark"` persistido em `localStorage`)
+- Eixos: light/grotesk-sans/chromatic-blue no app, dark na landing por padrão (com alternância livre de tema em todas as telas) · postura: contida
 
 ## Tokens
 `src/app/tokens.css` é a fonte da verdade (Tailwind 4, `@theme static`). Os papéis:
@@ -18,10 +18,10 @@ As telas seguem a organização do projeto "AutoGiro PWA Platform" no Stitch (ce
   --color-rule: oklch(90% 0.012 256);  --color-rule-2: oklch(64% 0.02 256);
   --color-brand: oklch(55% 0.2 256);  --color-brand-ink: oklch(99% 0.004 256);  --color-focus: oklch(58% 0.2 256);
   --color-navy: oklch(29.9% 0.083 256);  --color-signal: oklch(52% 0.13 152);  --color-error: oklch(52% 0.19 27);
-  --font-display: Geologica (títulos com "SHRP" 100, peso 300);  --font-body: Geologica 300;
-  --radius-card: 4px;  --radius-pill: 999px;  --rule-hair: 1px;  --shadow-card: none;
+  --font-display: Rethink Sans (peso 600);  --font-body: Plus Jakarta Sans (peso 400/500);  --font-mono: JetBrains Mono;
+  --radius-card: 6px;  --radius-pill: 999px;  --rule-hair: 1px;  --shadow-card: none;
 }
-.theme-night { --color-paper: oklch(14% 0.02 256); --color-brand: oklch(66% 0.19 256); --color-signal: oklch(78% 0.18 150); … }
+.theme-night, html[data-mode="dark"] { --color-paper: oklch(14% 0.02 256); --color-brand: oklch(66% 0.19 256); --color-signal: oklch(78% 0.18 150); … }
 ```
 Escala de espaço, de tipo, easings e durações estão em `tokens.css`. O shadcn lê os mesmos tokens pelos nomes dele (`globals.css`).
 
