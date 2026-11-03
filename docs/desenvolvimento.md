@@ -60,7 +60,7 @@ Instalado em `~/.local/bin/ngrok`, authtoken em `~/.config/ngrok/ngrok.yml`. Dom
 
 ## Migrações
 
-Altere `src/lib/db/schema.ts`, rode `pnpm db:generate` **no host** (só compara o schema com `drizzle/meta`, sem banco nem segredo; precisa de terminal interativo quando pergunta sobre renomear coluna) e depois `pnpm docker:exec pnpm db:migrate`. O watch leva o SQL novo de `drizzle/` para o container. O Supabase de dev já tem todas, até `0003_conta_email`. O banco de produção é outro projeto do Supabase: aplique tudo nele com `CRIPTENV_ENV=production pnpm docker:exec pnpm db:migrate`, com a API key de produção no chaveiro.
+Altere `src/lib/db/schema.ts`, rode `pnpm db:generate` **no host** (só compara o schema com `drizzle/meta`, sem banco nem segredo; precisa de terminal interativo quando pergunta sobre renomear coluna) e depois `pnpm docker:exec pnpm db:migrate`. O watch leva o SQL novo de `drizzle/` para o container. O Supabase de dev já tem todas, até `0003_conta_email`. O banco de produção é outro projeto do Supabase. Para migrá-lo, suba o container de dev apontando para produção (`CRIPTENV_ENV=production pnpm docker:up`, com a API key de produção no chaveiro), rode `pnpm docker:exec pnpm db:migrate` e volte para `development` em seguida. A imagem de produção (`docker:prod`) não tem o `drizzle-kit`, e o `docker:exec` herda o ambiente com que o container subiu.
 
 ## Armadilhas conhecidas
 
