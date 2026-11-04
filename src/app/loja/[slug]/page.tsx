@@ -11,6 +11,7 @@ import { cn, formatBRL } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { CarSpecs } from "@/components/car-specs";
 import { Wordmark } from "@/components/wordmark";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata: Metadata = { title: "Vitrine" };
 
@@ -75,13 +76,13 @@ export default async function VitrinePage({ params, searchParams }: PageProps<"/
         <div className="mx-auto grid w-full grid-cols-1 gap-5 px-4 py-6 sm:grid-cols-[1fr_auto] sm:items-center lg:px-8 lg:py-10">
           <div className="flex min-w-0 items-center gap-4">
             <span
-              className="grid size-14 shrink-0 place-items-center rounded-full bg-navy font-display text-2xl font-light text-navy-ink lg:size-16"
+              className="grid size-14 shrink-0 place-items-center rounded-full bg-navy font-display text-2xl font-semibold text-navy-ink lg:size-16"
               aria-hidden
             >
               {loja.nome.trim()[0]?.toUpperCase()}
             </span>
             <div className="min-w-0">
-              <h1 className="font-display text-2xl leading-tight font-light lg:text-[2.5rem]">{loja.nome}</h1>
+              <h1 className="font-display text-2xl leading-tight font-semibold lg:text-[2.5rem]">{loja.nome}</h1>
               {loja.cidade && (
                 <p className="mt-1 flex items-center gap-1.5 text-ink-3">
                   <MapPin className="size-4 shrink-0" aria-hidden /> {loja.cidade}
@@ -89,16 +90,19 @@ export default async function VitrinePage({ params, searchParams }: PageProps<"/
               )}
             </div>
           </div>
-          {loja.whatsapp && (
-            <a
-              href={whatsappUrl(loja.whatsapp, `Olá ${loja.nome}! Vi seus carros na vitrine.`)}
-              target="_blank"
-              rel="noopener"
-              className={buttonVariants({ variant: "signal", size: "lg", className: "w-full sm:w-auto" })}
-            >
-              <MessageCircle aria-hidden /> Falar no WhatsApp da loja
-            </a>
-          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <ThemeToggle />
+            {loja.whatsapp && (
+              <a
+                href={whatsappUrl(loja.whatsapp, `Olá ${loja.nome}! Vi seus carros na vitrine.`)}
+                target="_blank"
+                rel="noopener"
+                className={buttonVariants({ variant: "signal", size: "lg", className: "w-full sm:w-auto" })}
+              >
+                <MessageCircle aria-hidden /> Falar no WhatsApp da loja
+              </a>
+            )}
+          </div>
         </div>
       </header>
 

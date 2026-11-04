@@ -73,14 +73,14 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-12">
       <header className="grid gap-1 lg:col-span-2">
-        <h1 className="font-display text-3xl font-light lg:text-[2.5rem]">Minha loja</h1>
+        <h1 className="font-display text-3xl font-semibold lg:text-[2.5rem]">Minha loja</h1>
         <p className="text-ink-3">Os dados que o cliente vê na sua vitrine.</p>
       </header>
 
       <div className="grid min-w-0 grid-cols-1 content-start gap-8">
         {plano && (
           <section aria-labelledby="plano-titulo" className="grid grid-cols-1 gap-3 border-b border-rule pb-8">
-            <h2 id="plano-titulo" className="font-display text-xl font-light">
+            <h2 id="plano-titulo" className="font-display text-xl font-semibold">
               {plano.titulo}
             </h2>
             <p role={pausado ? "alert" : undefined} className="max-w-[52ch] text-ink-2">
@@ -95,7 +95,7 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
           </section>
         )}
         <section aria-labelledby="link-titulo" className="ticks grid grid-cols-1 gap-4 p-5 lg:p-6">
-          <h2 id="link-titulo" className="font-display text-xl font-light">
+          <h2 id="link-titulo" className="font-display text-xl font-semibold">
             Link da vitrine
           </h2>
           <p className="num truncate rounded-card bg-paper-2 px-4 py-3 text-ink-2">
@@ -119,14 +119,14 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
           ].map((s, i) => (
             <div key={s.rotulo} className={i === 0 ? "py-5 pr-4" : "border-l border-rule px-4 py-5"}>
               <dt className="text-sm text-ink-3">{s.rotulo}</dt>
-              <dd className="num font-display text-3xl font-extralight">{s.valor}</dd>
+              <dd className="num font-display text-3xl font-semibold">{s.valor}</dd>
             </div>
           ))}
         </dl>
       </div>
 
       <section aria-labelledby="dados-titulo" className="grid min-w-0 grid-cols-1 content-start gap-5">
-        <h2 id="dados-titulo" className="font-display text-xl font-light">
+        <h2 id="dados-titulo" className="font-display text-xl font-semibold">
           Dados comerciais
         </h2>
         <LojaForm action={salvarLoja} inicial={loja} submitLabel="Salvar alterações" />

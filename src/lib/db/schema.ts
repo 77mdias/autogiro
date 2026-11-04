@@ -95,3 +95,28 @@ export const webhookEvents = pgTable(
   },
   (t) => [uniqueIndex("webhook_events_provider_key_uq").on(t.provider, t.eventKey)],
 ).enableRLS();
+
+// Contas de e-mail e senha. O id vira o `sub` do Auth.js e, como no Google, liga a loja por lojas.auth_user_id.
+export const usuarios = pgTable("usuarios", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(), // sempre minúsculo
+  senhaHash: text("senha_hash").notNull(),
+  emailConfirmadoEm: timestamp("email_confirmado_em", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
+export const tokenEmailTipo = pgEnum("token_email_tipo", ["confirmar", "redefinir"]);
+
+// Guarda só o sha256 do token; o token em si vai apenas no link do e-mail.
+export const tokensEmail = pgTable(
+  "tokens_email",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    usuarioId: uuid("usuario_id").notNull().references(() => usuarios.id, { onDelete: "cascade" }),
+    tipo: tokenEmailTipo("tipo").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiraEm: timestamp("expira_em", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("tokens_email_usuario_idx").on(t.usuarioId, t.tipo)],
+).enableRLS();

@@ -81,7 +81,7 @@ export default async function InteressadosPage({ searchParams }: PageProps<"/pai
   return (
     <div className="grid grid-cols-1 gap-6 lg:gap-8">
       <header className="grid gap-1">
-        <h1 className="font-display text-3xl font-light lg:text-[2.5rem]">Interessados</h1>
+        <h1 className="font-display text-3xl font-semibold lg:text-[2.5rem]">Interessados</h1>
         <p className="text-ink-3">
           {total.novo === 0
             ? "Nenhuma simulação esperando resposta."

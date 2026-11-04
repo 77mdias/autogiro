@@ -8,7 +8,7 @@ import { fotoUrl } from "@/lib/r2";
 import { requireLojaId } from "@/lib/session";
 import { cn, formatBRL } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
-import { CopyLinkButton } from "@/components/copy-link-button";
+import { CopyLinkButton, ShareLinkButton } from "@/components/copy-link-button";
 import { CarSpecs } from "@/components/car-specs";
 import { StatusBadge } from "@/components/status-badge";
 
@@ -77,7 +77,7 @@ export default async function EstoquePage({ searchParams }: PageProps<"/painel/e
     <div className="grid grid-cols-1 gap-6 lg:gap-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="grid min-w-0 gap-1">
-          <h1 className="font-display text-3xl font-light lg:text-[2.5rem]">Estoque</h1>
+          <h1 className="font-display text-3xl font-semibold lg:text-[2.5rem]">Estoque</h1>
           {loja && <p className="truncate text-ink-3">{loja.nome}</p>}
         </div>
         <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-flow-col">
@@ -98,7 +98,7 @@ export default async function EstoquePage({ searchParams }: PageProps<"/painel/e
             <span className="block text-lg">
               {novas === 1 ? "Simulação nova esperando resposta" : "Simulações novas esperando resposta"}
             </span>
-            <span className="block text-sm text-navy-ink-2">Quem simulou já mandou a CNH. Responda pelo WhatsApp.</span>
+            <span className="block text-sm text-navy-ink-2">Os dados da simulação estão em Interessados. Responda pelo WhatsApp.</span>
           </span>
           <span className="hidden h-10 items-center rounded-full border border-navy-ink-2 px-4 text-sm group-hover:bg-navy-ink group-hover:text-navy sm:inline-flex">
             Ver interessados
@@ -213,10 +213,19 @@ export default async function EstoquePage({ searchParams }: PageProps<"/painel/e
                       </p>
                     </div>
                     <CarSpecs carro={c} />
-                    <div className="relative z-(--z-raised) mt-auto flex gap-2 border-t border-rule pt-3">
+                    <div className="@container relative z-(--z-raised) mt-auto flex gap-2 border-t border-rule pt-3">
                       <Link href={`/painel/estoque/${c.id}`} className={buttonVariants({ variant: "ghost", size: "sm", className: "-ml-3" })}>
                         <Pencil aria-hidden /> Editar
                       </Link>
+                      {loja && !vendido && (
+                        <ShareLinkButton
+                          path={`/loja/${loja.slug}/carros/${c.id}`}
+                          title={`${c.marca} ${c.modelo}`}
+                          variant="ghost"
+                          size="sm"
+                          labelClassName="@max-[18rem]:sr-only"
+                        />
+                      )}
                       {loja && !vendido && (
                         <a
                           href={`/loja/${loja.slug}/carros/${c.id}`}
@@ -224,7 +233,7 @@ export default async function EstoquePage({ searchParams }: PageProps<"/painel/e
                           rel="noopener"
                           className={buttonVariants({ variant: "ghost", size: "sm", className: "ml-auto" })}
                         >
-                          <ExternalLink aria-hidden /> Ver na vitrine
+                          <ExternalLink aria-hidden /> <span className="@max-sm:sr-only">Ver na vitrine</span>
                         </a>
                       )}
                     </div>

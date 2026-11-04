@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  // Imagem Docker enxuta: .next/standalone traz só o server e as dependências usadas
+  output: "standalone",
   // Túnel do ngrok (webhooks do Asaas em dev); o plano grátis usa estes domínios
   allowedDevOrigins: ["*.ngrok-free.app", "*.ngrok-free.dev", "*.ngrok.app"],
   partialPrefetching: true,

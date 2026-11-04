@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Car, Store, Users } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -24,7 +25,7 @@ export function Nav({ pathname = "" }: { pathname?: string }) {
   return (
     <>
       <header className="sticky top-0 z-(--z-sticky-nav) border-b border-rule bg-paper">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-8 px-4 lg:h-16 lg:px-8">
+        <div className="mx-auto flex h-14 w-full max-w-(--container) items-center gap-6 px-4 lg:h-16 lg:px-(--gutter)">
           <Link href="/" aria-label="AutoGiro, página inicial" className="rounded-card">
             <Wordmark />
           </Link>
@@ -38,7 +39,7 @@ export function Nav({ pathname = "" }: { pathname?: string }) {
                       href={href}
                       aria-current={ativo ? "page" : undefined}
                       className={cn(
-                        "relative flex h-full items-center px-3 text-sm transition-colors duration-(--dur-short) motion-reduce:transition-none",
+                        "relative flex h-full items-center px-3.5 text-sm font-medium transition-colors duration-(--dur-short) motion-reduce:transition-none",
                         "after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-brand after:opacity-0",
                         ativo ? "text-ink after:opacity-100" : "text-ink-3 hover:text-ink",
                       )}
@@ -50,6 +51,9 @@ export function Nav({ pathname = "" }: { pathname?: string }) {
               })}
             </ul>
           </nav>
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 

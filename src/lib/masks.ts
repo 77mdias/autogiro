@@ -19,6 +19,9 @@ export function formatMilhar(value: string) {
 /** Campo em reais inteiros → centavos. "45.000" → 4500000. */
 export const reaisToCentavos = (value: string) => Number(onlyDigits(value) || 0) * 100;
 
+/** Teto de valores em reais (R$ 10 milhões): cabe no `integer` do Postgres em centavos. */
+export const MAX_CENTAVOS = 1_000_000_000;
+
 export function slugify(nome: string) {
   return nome
     .normalize("NFD")

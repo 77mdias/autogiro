@@ -11,7 +11,7 @@ export function BackHeader({ href, title }: { href: string; title: string }) {
       >
         <ArrowLeft className="size-5" aria-hidden />
       </Link>
-      <h1 className="min-w-0 font-display text-2xl font-light lg:text-3xl">{title}</h1>
+      <h1 className="min-w-0 font-display text-2xl font-semibold lg:text-3xl">{title}</h1>
     </header>
   );
 }

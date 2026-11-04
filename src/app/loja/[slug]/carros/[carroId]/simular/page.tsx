@@ -36,10 +36,10 @@ export default async function SimularPage({ params }: PageProps<"/loja/[slug]/ca
               )}
             </div>
             <p className="grid min-w-0">
-              <span className="truncate text-lg">
+              <span className="truncate text-lg font-medium">
                 {carro.marca} {carro.modelo} {carro.ano}
               </span>
-              <span className="num font-display text-2xl font-light">{formatBRL(carro.precoCentavos)}</span>
+              <span className="num font-display text-2xl font-semibold">{formatBRL(carro.precoCentavos)}</span>
               <span className="text-sm text-ink-3">{carro.lojaNome}</span>
             </p>
           </div>

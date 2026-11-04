@@ -22,6 +22,13 @@
       "when": 1793579990851,
       "tag": "0002_plano_asaas",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793622679800,
+      "tag": "0003_conta_email",
+      "breakpoints": true
     }
   ]
 }

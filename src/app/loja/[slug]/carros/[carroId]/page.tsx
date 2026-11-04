@@ -12,6 +12,7 @@ import { formatBRL } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import { Gallery } from "@/components/gallery";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata: Metadata = { title: "Detalhes do carro" };
 
@@ -79,7 +80,7 @@ export default async function CarroPage({ params }: PageProps<"/loja/[slug]/carr
 
   return (
     <div className="min-h-dvh pb-[calc(9rem+env(safe-area-inset-bottom))] lg:pb-16">
-      <header className="mx-auto flex w-full items-center gap-3 px-4 py-3 lg:px-8 lg:py-6">
+      <header className="mx-auto flex w-full items-center justify-between gap-3 px-4 py-3 lg:px-8 lg:py-6">
         <Link
           href={`/loja/${slug}`}
           className="inline-flex h-11 items-center gap-2 rounded-full pr-4 pl-1 text-ink-2 transition-colors duration-(--dur-micro) hover:text-ink motion-reduce:transition-none"
@@ -87,8 +88,9 @@ export default async function CarroPage({ params }: PageProps<"/loja/[slug]/carr
           <span className="grid size-9 place-items-center rounded-full bg-paper-2">
             <ArrowLeft className="size-5" aria-hidden />
           </span>
-          <span className="truncate">{carro.lojaNome}</span>
+          <span className="truncate font-medium">{carro.lojaNome}</span>
         </Link>
+        <ThemeToggle />
       </header>
 
       <main className="mx-auto grid w-full grid-cols-1 gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-12 lg:px-8">
@@ -96,7 +98,7 @@ export default async function CarroPage({ params }: PageProps<"/loja/[slug]/carr
           <Gallery fotos={carro.fotos.map(fotoUrl)} alt={`${titulo} ${carro.ano}`} />
           {carro.descricao && (
             <section aria-labelledby="obs" className="hidden gap-3 lg:grid">
-              <h2 id="obs" className="font-display text-xl font-light">
+              <h2 id="obs" className="font-display text-xl font-semibold">
                 Observações da loja
               </h2>
               <p className="max-w-[65ch] whitespace-pre-line text-ink-2">{carro.descricao}</p>
@@ -107,12 +109,12 @@ export default async function CarroPage({ params }: PageProps<"/loja/[slug]/carr
         <aside className="grid min-w-0 content-start gap-6 px-4 lg:sticky lg:top-8 lg:self-start lg:px-0">
           <div className="grid gap-2">
             {vendido && <StatusBadge status="vendido" className="justify-self-start" />}
-            <h1 className="font-display text-3xl leading-tight font-light lg:text-[2.5rem]">{titulo}</h1>
+            <h1 className="font-display text-3xl leading-tight font-semibold lg:text-[2.5rem]">{titulo}</h1>
             {carro.versao && <p className="text-ink-3">{carro.versao}</p>}
           </div>
           <p className="grid">
             <span className="text-sm text-ink-3">{vendido ? "Último preço" : "Preço"}</span>
-            <span className={vendido ? "num font-display text-4xl font-extralight text-ink-3 line-through" : "num font-display text-4xl font-extralight"}>
+            <span className={vendido ? "num font-display text-4xl font-semibold text-ink-3 line-through" : "num font-display text-4xl font-semibold"}>
               {formatBRL(carro.precoCentavos)}
             </span>
           </p>

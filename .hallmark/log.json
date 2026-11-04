@@ -7,6 +7,36 @@
   "theme": "vantage",
   "axes": "dark/grotesk-sans/chromatic-blue",
   "hero": "Poster",
+  "nav": "slab",
+  "footer": "mast",
+  "imagery": "3D model /3D/car-3d.glb in Three.js + screenshots 3 (capture), sample cars from Wikimedia Commons",
+  "photos": [],
+  "entry": "none",
+  "fingerprint": "Hanging|Asymmetric spans|Hairline|Solid|Margin-aligned|Fade-up stagger",
+  "sections": [
+   "hero",
+   "map",
+   "pinned",
+   "table",
+   "rows",
+   "band",
+   "footer"
+  ],
+  "signature": "the 3D car (/3D/car-3d.glb) rendered in Three.js with a LiDAR scan sweep, the door lit green where a simulation landed",
+  "waived": [
+   "23"
+  ],
+  "prompt": "aprimorar landing page e telas do AutoGiro com Three.js (car-3d.glb) e Hallmark",
+  "date": "2026-11-02"
+ },
+ {
+  "mode": "redesign",
+  "depth": "full",
+  "scope": "site",
+  "shape": "Map / Diagram",
+  "theme": "vantage",
+  "axes": "dark/grotesk-sans/chromatic-blue",
+  "hero": "Poster",
   "nav": "edge-aligned",
   "footer": "letter close",
   "imagery": "screenshots 3 (capture), sample cars from Wikimedia Commons",

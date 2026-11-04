@@ -5,8 +5,14 @@ import { verifyToken } from "@/lib/signature";
 
 // Contrato: https://docs.asaas.com/docs/sobre-os-webhooks — o authToken configurado no webhook chega
 // no header `asaas-access-token`; `id` do evento é estável entre reenvios (entrega "at least once").
-// Configure o webhook com envio sequencial: a loja só é ligada ao cliente quando chega CHECKOUT_PAID.
-type Recurso = { id?: string; customer?: string | null; subscription?: string | null; externalReference?: string | null };
+// O CHECKOUT_PAID chega sem cliente; assinatura e cobranças nascidas do checkout trazem `checkoutSession`.
+type Recurso = {
+  id?: string;
+  customer?: string | null;
+  subscription?: string | null;
+  externalReference?: string | null;
+  checkoutSession?: string | null;
+};
 type AsaasPayload = { id?: string; event?: string; payment?: Recurso; subscription?: Recurso; checkout?: Recurso };
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -21,20 +27,25 @@ const STATUS_POR_PAGAMENTO: Record<string, (typeof lojas.$inferSelect)["planoSta
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // A loja vai no externalReference do checkout; se o Asaas repassar para a assinatura, serve de reserva.
 const porReferencia = (ref?: string | null) => (ref && UUID.test(ref) ? eq(lojas.id, ref) : undefined);
+const porCheckout = (id?: string | null) => (id ? eq(lojas.asaasCheckoutId, id) : undefined);
 
 async function processar(tx: Tx, p: AsaasPayload) {
   const event = p.event!;
 
   if (event === "CHECKOUT_PAID" && p.checkout) {
     const { id, customer, externalReference } = p.checkout;
-    const onde = or(id ? eq(lojas.asaasCheckoutId, id) : undefined, porReferencia(externalReference));
+    const onde = or(porCheckout(id), porReferencia(externalReference));
     if (customer && onde) await tx.update(lojas).set({ asaasCustomerId: customer }).where(and(onde, isNull(lojas.asaasCustomerId)));
     return;
   }
 
   if (event === "SUBSCRIPTION_CREATED" && p.subscription?.id) {
-    const { id, customer, externalReference } = p.subscription;
-    const onde = or(customer ? eq(lojas.asaasCustomerId, customer) : undefined, porReferencia(externalReference));
+    const { id, customer, externalReference, checkoutSession } = p.subscription;
+    const onde = or(
+      customer ? eq(lojas.asaasCustomerId, customer) : undefined,
+      porCheckout(checkoutSession),
+      porReferencia(externalReference),
+    );
     if (onde) {
       await tx
         .update(lojas)
@@ -64,8 +75,9 @@ async function processar(tx: Tx, p: AsaasPayload) {
   if (novoStatus !== "cancelado") {
     const semAssinatura = isNull(lojas.asaasSubscriptionId);
     if (pagamento.customer) conds.push(and(eq(lojas.asaasCustomerId, pagamento.customer), semAssinatura));
-    const ref = porReferencia(pagamento.externalReference);
-    if (ref) conds.push(and(ref, semAssinatura));
+    for (const c of [porCheckout(pagamento.checkoutSession), porReferencia(pagamento.externalReference)]) {
+      if (c) conds.push(and(c, semAssinatura));
+    }
   }
   await tx
     .update(lojas)
