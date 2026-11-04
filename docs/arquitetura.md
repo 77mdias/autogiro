@@ -14,7 +14,7 @@ Cron ───────► POST /api/cron/delete-expired-cnh ──► apaga 
 
 | Rota | Quem acessa | O que faz |
 |---|---|---|
-| `/` | público | Landing para garagistas (tema noturno) |
+| `/` | público | Landing para garagistas |
 | `/login` | público | Entrar com Google ou com e-mail e senha (Auth.js) |
 | `/cadastro` | público | Cria conta com e-mail e senha e manda o e-mail de confirmação |
 | `/esqueci-senha` | público | Manda o link de redefinição (mesma resposta com ou sem conta) |
@@ -53,9 +53,9 @@ src/
     r2.ts                 fotos (bucket público) e CNH (privado, URL assinada de 5 min)
     conta.ts, email.ts, senha.ts   conta de e-mail: tokens, envio pelo Resend, scrypt
     files.ts, resize-image.ts      tipo do arquivo pelos bytes; redução da foto no navegador
-    masks.ts, signature.ts, utils.ts, landing-tier.ts
+    masks.ts, signature.ts, utils.ts
   app/
-    page.tsx + components/landing/        landing 3D
+    page.tsx + components/landing/        landing
     login, cadastro, esqueci-senha, redefinir-senha, onboarding
     painel/{estoque,interessados,loja}    painel da loja; painel/actions.ts tem as server actions
     admin/                                painel do dono do SaaS

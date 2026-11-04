@@ -31,7 +31,7 @@ Branch → PR → CI (GitHub Actions) e prévia da Vercel → merge na `main` �
 | Rodar, testar, migrar | [docs/desenvolvimento.md](docs/desenvolvimento.md), [docs/testes.md](docs/testes.md) |
 | Segredos e produção | [docs/segredos.md](docs/segredos.md), [docs/deploy.md](docs/deploy.md) |
 | Cobrança | [docs/pagamentos-asaas.md](docs/pagamentos-asaas.md) |
-| Visual | [DESIGN.md](DESIGN.md) (sistema travado), [docs/landing-3d.md](docs/landing-3d.md) |
+| Visual | [DESIGN.md](DESIGN.md) (sistema travado) |
 | Por que foi feito assim | [docs/decisoes.md](docs/decisoes.md) |
 
 Índice completo e regras de manutenção: [docs/README.md](docs/README.md). Instruções para agentes de IA: [CLAUDE.md](CLAUDE.md).

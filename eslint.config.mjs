@@ -16,7 +16,6 @@ const eslintConfig = defineConfig([
     ".agents/**",
     ".claude/**",
     ".playwright-mcp/**",
-    "public/3D/draco/**",
   ]),
 ]);
 

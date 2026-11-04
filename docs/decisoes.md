@@ -2,6 +2,13 @@
 
 Mais recentes primeiro. Cada uma: o que foi decidido e por quê.
 
+## 2026-11-04 · Landing simples no lugar do showroom 3D
+O cliente é o garagista, muitas vezes mais velho e pouco acostumado a sites modernos. Uma página que se lê de cima para baixo vende mais que um showroom 3D com scroll.
+- Tema claro do app, texto grande, botões de 56px no toque e o mesmo botão "Testar 7 dias grátis" no topo, no preço e no fim.
+- Seções: como funciona (3 passos com as telas reais), funções, por que usar (antes e depois), preço, perguntas.
+- Movimento só leve: entrada suave do topo e blocos aparecendo ao rolar, desligados com movimento reduzido.
+- Saíram o three.js, o carro em GLB, as fotos do cenário 3D (cerca de 28 MB em `public/`) e o `landing-3d.md`; ficam no histórico do git (`cbd879d`).
+
 ## 2026-11-03 · Produção na Vercel, com migração automática no deploy
 Migrar o banco de produção na mão é passo esquecível. Fluxo igual ao do Criptenv: branch → PR → CI no GitHub Actions → merge na `main` → deploy automático.
 - **Vercel** pelo suporte nativo ao Next 16 e prévia por PR. Variáveis sincronizadas do Criptenv pela integração dele com a Vercel.
