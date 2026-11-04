@@ -1,4 +1,6 @@
-# Product Requirement Document (PRD) - Garagem Link
+# PRD: requisitos de produto
+
+> Documento de origem, escrito antes do código com o nome provisório **Garagem Link** (o produto é o **AutoGiro**). O que já está pronto, o que mudou e por quê: [estado.md](estado.md).
 
 ## 1. Visão Geral do Produto
 

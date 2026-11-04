@@ -9,6 +9,12 @@ Migrar o banco de produção na mão é passo esquecível. Fluxo igual ao do Cri
 - **Nos containers** (dev e teste da imagem) a migração é ao subir (`src/instrumentation.ts`, `MIGRAR_AO_SUBIR=1`): é um processo só.
 - **CI** sem segredos: lint, tipos, testes, build e checagem de migração pendente.
 
+## 2026-11-03 · Painel do administrador por lista de e-mails
+O dono do SaaS precisa ver MRR, lojas por situação e uso, sem criar um sistema de papéis para uma pessoa só.
+- Acesso por `ADMIN_EMAILS` (variável de ambiente); o e-mail da sessão já é verificado (Google ou conta confirmada).
+- Quem não está na lista recebe 404 no `proxy.ts`, sem a casca da rota: não revela que `/admin` existe.
+- Só agregados e dados das lojas; nada de quem simulou (LGPD).
+
 ## 2026-11-03 · App só em container no dev
 Nada de `.env` no disco nem `next dev` no host: `pnpm docker:up` sobe o container com os segredos do Criptenv e hot reload pelo Compose Watch, que copia os arquivos (o container não escreve no host).
 

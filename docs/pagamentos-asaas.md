@@ -11,9 +11,9 @@ R$ 149/mês (`PLANO_VALOR_REAIS`), 7 dias grátis (`TRIAL_DIAS`, gravado em `loj
 Minha loja mostra "Falar com a AutoGiro" (WhatsApp em `AUTOGIRO_WHATSAPP`, só DDD + número, sem `+55`).
 
 1. No painel do Asaas, crie o cliente e uma **assinatura** mensal de R$ 149 com forma de pagamento "Pergunte ao cliente" (Pix, boleto ou cartão), ou um link de pagamento.
-2. Pago: `npm run loja -- liberar <slug> cus_...` (o `cus_` está em Clientes).
+2. Pago: `pnpm docker:exec pnpm loja liberar <slug> cus_...` (o `cus_` está em Clientes).
 3. Com o `cus_` gravado, o webhook assume as cobranças seguintes.
-4. `npm run loja -- listar` lista as lojas; `npm run loja -- pausar <slug>` pausa.
+4. `pnpm docker:exec pnpm loja listar` lista as lojas; `pnpm docker:exec pnpm loja pausar <slug>` pausa.
 
 Sem o `cus_`, a loja fica ativa até ser pausada à mão.
 
@@ -59,6 +59,9 @@ Respostas: 401 sem token válido, 400 JSON inválido ou sem `id`/`event`, 200 `{
 Endpoint só do Sandbox: `POST /sandbox/payment/{id}/confirm` confirma uma cobrança (dispara `PAYMENT_CONFIRMED`/`RECEIVED`). Não há como simular atraso no Sandbox.
 
 ## Para ir para produção
+
+O passo a passo geral (Vercel, Supabase, R2, domínio) está em [deploy.md](deploy.md). Do lado do Asaas:
+
 
 1. Conta Asaas de produção aprovada; chave de produção em `ASAAS_API_KEY`, `ASAAS_API_URL=https://api.asaas.com/v3`.
 2. Webhook de produção com um token novo.

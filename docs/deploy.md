@@ -1,6 +1,6 @@
 # Deploy (Vercel)
 
-Banco no Supabase (um projeto para dev, outro para produção), app na Vercel, segredos no Criptenv.
+Banco no Supabase (um projeto para dev, outro para produção), app na Vercel, segredos no Criptenv. Produção em **https://autogiro.77mdevseven.tech** (subdomínio por enquanto; trocar de domínio é só atualizar as variáveis de URL e os callbacks abaixo).
 
 ## Fluxo
 
@@ -20,15 +20,36 @@ branch ──► PR ──► CI (GitHub Actions) + prévia da Vercel ──► 
 ## Configurar (uma vez)
 
 1. **Supabase de produção**: um projeto novo. O banco começa vazio; o primeiro deploy aplica todas as migrações. Região perto da função da Vercel (o padrão da Vercel é `iad1`, Washington; o Supabase de dev está em `us-east-1`).
-2. **Projeto na Vercel**: importar o repositório do GitHub (framework Next.js). O build vem do `vercel.json`; em Settings → General, Node.js **24.x**. O pnpm é detectado pelo `packageManager`.
-3. **Variáveis**: a fonte é o Criptenv, sincronizado com a Vercel pela integração:
+2. **R2 de produção** (Cloudflare): dois buckets novos na região ENAM, `autogiro-fotos` (público, com domínio personalizado `fotos-autogiro.77mdevseven.tech`; o certificado grátis da Cloudflare cobre só um nível de subdomínio) e `autogiro-cnh` (privado, sem URL pública nem domínio). Um token de API só de produção com **Leitura e gravação de objetos**, restrito a esses dois buckets: `R2_ACCESS_KEY_ID` e `R2_SECRET_ACCESS_KEY`. `R2_PUBLIC_URL` é o domínio das fotos, sem barra no fim. A URL `r2.dev` tem limite de requisições: só para dev.
+3. **Projeto na Vercel**: importar o repositório do GitHub (framework Next.js). O build vem do `vercel.json`; em Settings → General, Node.js **24.x**. O pnpm é detectado pelo `packageManager`.
+4. **Variáveis**: a fonte é o Criptenv, sincronizado com a Vercel pela integração:
    ```bash
    criptenv integrations connect vercel --token <token da Vercel> --project-id <prj_...> --project <ID do Criptenv>
    criptenv integrations sync --provider vercel --env production --direction push
    ```
    Depois, em Settings → Environment Variables, confira que as de `production` ficaram só no alvo **Production** e que **Preview** recebeu as de `development` (banco de dev). Valores que mudam em produção: `APP_BASE_URL` e `AUTH_URL` (domínio final), `DATABASE_URL` (pooler de transação, 6543) e `DATABASE_URL_DIRECT` (session pooler, 5432, usado nas migrações), chaves do Asaas de produção, R2 de produção. `ADMIN_EMAILS` com o seu e-mail; `E2E_*` não vai para produção.
-4. **Proteção da `main`** (GitHub → Settings → Branches): exigir PR e o check **"Lint, tipos, testes, build e migrações"**. Assim só código aprovado pelo CI chega à `main` e, portanto, à produção.
-5. **Serviços que apontam para o domínio**: callback do Google OAuth (`https://<domínio>/api/auth/callback/google`), webhook do Asaas de produção (`/api/webhooks/asaas`) e o Worker do cron (`/api/cron/delete-expired-cnh`, Bearer `CRON_SECRET`).
+
+   **`AUTH_URL` exato**, `https://autogiro.77mdevseven.tech`: com `https://`, sem barra nem caminho no fim, sem aspas, espaço ou comentário. Inválido, o `next-auth` quebra em toda rota `/api/auth/*` com 500 sem corpo e o login para (aconteceu em 2026-11-03). Variável alterada só vale depois de um **Redeploy**.
+5. **Proteção da `main`** (GitHub → Settings → Branches): exigir PR e o check **"Lint, tipos, testes, build e migrações"**. Assim só código aprovado pelo CI chega à `main` e, portanto, à produção.
+6. **Domínio**: em Settings → Domains da Vercel, adicione `autogiro.77mdevseven.tech`; na Cloudflare, o CNAME `autogiro` que a Vercel pedir, **sem proxy** (nuvem cinza).
+7. **Serviços que apontam para o domínio**: callback do Google OAuth (`https://<domínio>/api/auth/callback/google`), webhook do Asaas de produção (`/api/webhooks/asaas`) e o Worker do cron (`/api/cron/delete-expired-cnh`, Bearer `CRON_SECRET`).
+
+## Cron (limpeza das CNHs)
+
+`POST /api/cron/delete-expired-cnh` apaga do R2 as CNHs com mais de 90 dias (exige `Authorization: Bearer <CRON_SECRET>`). Quem chama é um Cloudflare Worker com Cron Trigger diário, com o `CRON_SECRET` de `production` nos secrets do Worker:
+
+```js
+export default {
+  async scheduled(_evento, env) {
+    await fetch("https://autogiro.77mdevseven.tech/api/cron/delete-expired-cnh", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${env.CRON_SECRET}` },
+    });
+  },
+};
+```
+
+Alternativa: Vercel Cron (`vercel.json`). Ela chama com **GET**, então a rota precisaria aceitar GET também.
 
 ## Testar a imagem de produção localmente
 

@@ -1,4 +1,6 @@
-# Briefing de Desenvolvimento: Garagem Link
+# Briefing de desenvolvimento
+
+> Documento de origem, escrito antes do código com o nome provisório **Garagem Link** (o produto é o **AutoGiro**). O que já está pronto, o que mudou e por quê: [estado.md](estado.md).
 
 Documento de passagem do projeto. Reúne tudo o que foi definido até agora e o que falta construir.
 
