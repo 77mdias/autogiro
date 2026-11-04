@@ -19,7 +19,7 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 | Administrador | MRR, lojas por situação do plano, carros e simulações por loja | `/admin` ([arquitetura.md](../arquitetura.md#rotas)) |
 | LGPD | CNH em bucket privado, link de 5 min só para a loja, cron apaga após 90 dias | [arquitetura.md › Arquivos](../arquitetura.md#arquivos-cloudflare-r2) |
 | Plataforma | PWA, multi-tenant por `loja_id`, segredos no Criptenv, dev em Docker com hot reload, CI nos PRs, deploy na Vercel com migração automática | [deploy.md](../deploy.md) |
-| Landing | Showroom 3D em scroll, com contrato de desempenho | [landing-3d.md](../landing-3d.md) |
+| Landing | Página simples para o garagista: como funciona, funções, vantagens, preço e perguntas | [decisoes.md](../decisoes.md) |
 
 ## Diferente da especificação (de propósito)
 

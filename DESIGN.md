@@ -5,9 +5,9 @@ As telas seguem a organização do projeto "AutoGiro PWA Platform" no Stitch (ce
 
 ## Sistema
 - Gênero: modern-minimal (Hallmark)
-- Formas: telas de app (painel, vitrine, detalhe, simulação); a landing em `/` é um mapa do caminho do cliente
+- Formas: telas de app (painel, vitrine, detalhe, simulação); a landing em `/` é uma página simples de venda (como funciona, funções, vantagens, preço, perguntas), com texto grande para o garagista
 - Tema: Vantage, com a paleta do logo no lugar do lima; suporte completo a modo claro e modo escuro (`switchtheme` via `data-mode="light" | "dark"` persistido em `localStorage`)
-- Eixos: light/grotesk-sans/chromatic-blue no app, dark na landing por padrão (com alternância livre de tema em todas as telas) · postura: contida
+- Eixos: light/grotesk-sans/chromatic-blue em todas as telas, landing inclusive (o modo escuro segue a escolha salva pelo usuário) · postura: contida
 
 ## Tokens
 `src/app/tokens.css` é a fonte da verdade (Tailwind 4, `@theme static`). Os papéis:
@@ -32,14 +32,14 @@ Escala de espaço, de tipo, easings e durações estão em `tokens.css`. O shadc
 - Texto secundário em `ink-3` (contraste 5,7:1). Fotos dos carros nunca recebem filtro.
 
 ## Controles
-- Primário: pílula azul, 48px no toque e 40px com mouse (52px máx. na landing)
+- Primário: pílula azul, 48px no toque e 40px com mouse (na landing, `size="lg"`: 56px no toque e 48px com mouse)
 - Secundário: pílula com contorno `rule-2`, mesma altura · Opções (câmbio, filtros): pílulas, marcadas em `ink`
 - Campos: 48px, borda `rule-2`, foco em contorno de 2px, fonte de 16px (o iPhone não dá zoom)
 - Molduras: só os cantos (`.ticks`) em estados vazios, link da vitrine e números medidos
 
 ## Movimento
 - Caráter: calmo. Transições de 120ms a 420ms, só `transform`, `opacity` e cor.
-- Uma revelação por página (o mapa da landing); o carro em pontos gira, pausa no mouse, fora da tela, no botão e com movimento reduzido.
+- Landing: só a entrada suave do topo ao carregar e os blocos aparecendo uma vez ao rolar (`landing.css`); nada se mexe com movimento reduzido.
 
 ## Exports
 `src/app/tokens.css` (Tailwind 4) e o mapeamento para o shadcn em `src/app/globals.css`. Ao criar um tamanho de fonte novo, registre-o em `src/lib/utils.ts` (o `cn` precisa saber que é tamanho, não cor).

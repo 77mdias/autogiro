@@ -41,7 +41,6 @@ Hospedagem de produção: **Vercel** (deploy pela integração com o GitHub, mig
 | `tailwindcss`, `@tailwindcss/turbopack` | 4 | Estilos, com tokens em `tokens.css` |
 | `shadcn`, `@base-ui/react`, `class-variance-authority`, `tw-animate-css` | — | Componentes base (botão, input, diálogo) |
 | `lucide-react` | 1 | Ícones |
-| `three` | 0.187 | Landing 3D (cena em WebGL, carro em GLB com Draco) |
 | `server-only` | — | Impede importar código de servidor no cliente |
 | `typescript`, `eslint`, `eslint-config-next` | 5 / 9 | Tipos e lint |
 

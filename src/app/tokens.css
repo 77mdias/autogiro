@@ -1,7 +1,7 @@
 /* Tokens do AutoGiro: tema Vantage (Hallmark) com a paleta do logo.
  * Dia (padrão): painel, vitrine e simulação, legíveis no pátio sob sol.
- * Noite (.theme-night ou data-mode="dark"): a landing e o modo escuro do app. */
-/* Hallmark · waive 23 · on /loja the meter counts the stock photographs uploaded by the store and on / the Three.js car and LiDAR scan paint --color-point-lo to --color-point-hi on hue 256; the filled accent is one pill per screen · the vitrine photos and the Three.js car are Vantage content, not a field of colour */
+ * Noite (.theme-night ou data-mode="dark"): o modo escuro do app. */
+/* Hallmark · waive 23 · on /loja the meter counts the stock photographs uploaded by the store; the filled accent is one pill per screen · the vitrine photos are Vantage content, not a field of colour */
 @theme static {
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -41,9 +41,6 @@
   --color-error: oklch(52% 0.19 27);
   --color-success: oklch(52% 0.13 152);
   --color-night: oklch(14% 0.02 256);
-  --color-point-lo: oklch(40% 0.06 256);
-  --color-point-mid: oklch(68% 0.07 250);
-  --color-point-hi: oklch(96% 0.02 230);
 
   --font-display: var(--font-rethink), "Rethink Sans", ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-jakarta), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;

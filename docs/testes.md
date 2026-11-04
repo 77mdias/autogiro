@@ -8,7 +8,6 @@
 - `src/lib/senha.test.ts`: hash e conferência da senha, tokens.
 - `src/lib/plano.test.ts`: `planoLiberado()` em cada status e no fim do teste grátis; situação e MRR do painel do administrador.
 - `src/lib/admin.test.ts`: quem é admin pela lista `ADMIN_EMAILS`.
-- `src/lib/landing-tier.test.ts`: escolha do nível de desempenho da landing por aparelho.
 - `src/lib/masks.test.ts`, `src/lib/utils.test.ts`: máscaras e formatação.
 
 Antes de commitar: `pnpm test`, `pnpm typecheck`, `pnpm lint`. O CI roda os mesmos, mais o build e a checagem de migração pendente, em todo PR.

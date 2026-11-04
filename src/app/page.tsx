@@ -1,429 +1,237 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowDown, Calculator, Car, Check, LayoutList, MessageCircle, ShieldCheck, Store, Users } from "lucide-react";
+import { Calculator, Car, Check, MessageCircle, ShieldCheck, Smartphone, Store } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Wordmark } from "@/components/wordmark";
-import { KageScrollStage } from "@/components/landing/kage-scroll-stage";
-import { PinnedRun } from "@/components/landing/pinned-run";
-import { ThreeFeatureCards } from "@/components/landing/three-feature-cards";
-import { KageScrollGallery } from "@/components/landing/kage-scroll-gallery";
 import { Reveal } from "@/components/landing/reveal";
+import { PLANO_VALOR_REAIS, TRIAL_DIAS } from "@/lib/plano";
 import "./landing.css";
 
 export const metadata: Metadata = {
-  title: { absolute: "AutoGiro: o estoque da sua loja numa vitrine com WhatsApp e simulação" },
-  description: "Cadastre os carros pelo celular, mande o link da vitrine e receba simulações de financiamento com CNH.",
+  title: { absolute: "AutoGiro: seus carros na internet, com WhatsApp e simulação de financiamento" },
+  description: "Cadastre os carros pelo celular, mande o link da vitrine e receba pedidos de financiamento com a CNH do cliente.",
 };
 
-// Posições no mapa (5 colunas x 3 linhas no desktop); no celular é uma lista vertical
-const PARADAS = [
-  { icone: Car, titulo: "Você cadastra", texto: "Fotos, preço e km pelo celular, no pátio.", lugar: "lg:col-start-1 lg:row-start-2" },
-  { icone: Store, titulo: "A vitrine vai ao ar", texto: "Um link só, com o estoque inteiro.", lugar: "lg:col-start-2 lg:row-start-2" },
-  { icone: LayoutList, titulo: "O cliente abre o carro", texto: "Galeria, ficha e preço, sem criar conta.", lugar: "lg:col-start-3 lg:row-start-2" },
-  { icone: MessageCircle, titulo: "Chama no WhatsApp", texto: "A mensagem chega com o carro e o link.", lugar: "lg:col-start-4 lg:row-start-1", sinal: true },
-  { icone: Calculator, titulo: "Simula o financiamento", texto: "Entrada, parcelas e CNH, com aceite da LGPD.", lugar: "lg:col-start-4 lg:row-start-3" },
-  { icone: Users, titulo: "Cai em Interessados", texto: "A CNH a um toque e o WhatsApp do cliente.", lugar: "lg:col-start-5 lg:row-start-3" },
+const PRECO = `R$ ${PLANO_VALOR_REAIS}`;
+const CTA = `Testar ${TRIAL_DIAS} dias grátis`;
+
+const PASSOS = [
+  {
+    titulo: "Cadastre seus carros",
+    texto: "Tire as fotos no pátio e preencha preço e quilometragem. Tudo pelo celular.",
+    tela: "/landing/cadastro.png",
+    alt: "Tela de cadastro de carro, com fotos, marca, modelo e preço",
+  },
+  {
+    titulo: "Mande o link da vitrine",
+    texto: "Seu estoque inteiro numa página só. Mande no WhatsApp, no Instagram ou onde quiser.",
+    tela: "/landing/estoque.png",
+    alt: "Tela de estoque, com o botão Copiar link da vitrine",
+  },
+  {
+    titulo: "Receba os interessados",
+    texto: "O cliente chama no seu WhatsApp ou pede a simulação de financiamento com a CNH.",
+    tela: "/landing/interessados.png",
+    alt: "Tela de interessados, com uma simulação, o botão Ver CNH e o botão do WhatsApp",
+  },
 ];
 
-const COMPARATIVO = [
-  [
-    "Envio do estoque",
-    "Mandar 15 fotos soltas no WhatsApp para cada curioso",
-    "1 link único da vitrine com busca por marca, modelo e ano",
-  ],
-  [
-    "Qualificação de ficha",
-    "Cobrar entrada, prazo e foto da CNH no meio da conversa",
-    "O pedido já chega com entrada, parcelas (12x a 60x) e CNH anexada",
-  ],
-  [
-    "Segurança LGPD",
-    "Documentos de clientes salvos na galeria do celular da loja",
-    "Cofre privado com link assinado de 5 minutos e exclusão aos 90 dias",
-  ],
-  [
-    "Custo previsível",
-    "Portais que cobram por pacote de anúncios ou taxa por lead",
-    "R$ 149/mês fixos, carros ilimitados e 7 dias grátis para testar",
-  ],
+const FUNCOES = [
+  { icone: Car, titulo: "Cadastro rápido", texto: "Até 15 fotos por carro, com preço, ano e quilometragem." },
+  { icone: Store, titulo: "Vitrine com link próprio", texto: "O cliente vê todos os seus carros e busca por marca, modelo e ano." },
+  { icone: MessageCircle, titulo: "Contato pelo WhatsApp", texto: "Um botão no anúncio abre a conversa com você, já dizendo qual carro interessou." },
+  { icone: Calculator, titulo: "Simulação de financiamento", texto: "O cliente escolhe a entrada e as parcelas (de 12x a 60x) e manda a CNH." },
+  { icone: ShieldCheck, titulo: "CNH guardada com segurança", texto: "Só a sua loja vê o documento, e ele é apagado sozinho em 90 dias (LGPD)." },
+  { icone: Smartphone, titulo: "Sem instalar nada", texto: "Funciona no navegador do celular e do computador. O cliente não precisa criar conta." },
 ];
 
-const CNH = [
-  ["Envio", "O cliente aceita a LGPD e anexa foto ou PDF", "Na simulação"],
-  ["Guarda", "Arquivo numa pasta sem acesso público", "Até 90 dias"],
-  ["Consulta", "Link assinado, aberto só para a sua loja", "Vale 5 minutos"],
-  ["Exclusão", "Arquivo e registro apagados sozinhos", "Aos 90 dias"],
+const VANTAGENS = [
+  ["Mandar fotos soltas para cada cliente", "Mandar um link só, com o estoque inteiro"],
+  ["Pedir entrada, prazo e CNH no meio da conversa", "Receber o pedido pronto, com a CNH anexada"],
+  ["Guardar documento de cliente na galeria do celular", "Documento guardado com segurança e apagado sozinho"],
+  ["Pagar portal por anúncio ou por contato", `${PRECO} por mês, com carros ilimitados`],
 ];
 
 const PERGUNTAS = [
-  ["Preciso instalar um app?", "Não. O AutoGiro abre no navegador do computador ou celular e pode ser fixado na tela inicial como um aplicativo."],
-  ["O cliente precisa criar conta?", "Não. Vitrine e simulação são abertas; só você entra, com a conta Google ou e-mail da loja."],
-  ["Quantas fotos cabem por carro?", "Até 15 fotos por veículo, redimensionadas automaticamente antes do envio. A primeira vira a capa na vitrine."],
-  ["Marcar como vendido apaga o anúncio?", "Não. O carro continua na vitrine com o selo Vendido para mostrar giro de pátio, sem o botão de simular."],
-  ["Quanto custa depois dos 7 dias grátis?", "Plano único de R$ 149 por mês, sem limite de carros cadastrados nem de simulações recebidas."],
+  ["Preciso instalar um aplicativo?", "Não. O AutoGiro abre no navegador do celular ou do computador. Se quiser, dá para colocar um atalho na tela inicial, como um aplicativo."],
+  ["O cliente precisa criar conta?", "Não. Ele abre o link, vê os carros e pede a simulação. Só você entra no painel, com a conta Google ou o e-mail da loja."],
+  ["Preciso de cartão para testar?", `Não. São ${TRIAL_DIAS} dias grátis sem cartão. Depois, ${PRECO} por mês.`],
+  ["Quantos carros posso cadastrar?", "Quantos quiser. O plano não tem limite de carros nem de simulações."],
+  ["Marcar como vendido apaga o anúncio?", "Não. O carro continua na vitrine com o selo Vendido, mostrando que sua loja vende."],
 ];
+
+function Secao({ id, titulo, children, className }: { id: string; titulo: string; children: React.ReactNode; className?: string }) {
+  return (
+    <section aria-labelledby={id} className={`py-(--section-gap-s) ${className ?? ""}`}>
+      <div className="mx-auto grid w-full max-w-(--container) gap-(--space-xl) px-(--gutter)">
+        <h2 id={id} className="font-semibold">
+          {titulo}
+        </h2>
+        {children}
+      </div>
+    </section>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="theme-night lp-kage relative min-h-dvh text-ink">
-      <KageScrollStage />
-      <a
-        href="#conteudo"
-        className="absolute -top-24 left-4 z-(--z-toast) rounded-full bg-ink px-4 py-2 text-paper focus-visible:top-4"
-      >
-        Pular para o conteúdo
-      </a>
-
-      <header className="sticky top-0 z-(--z-sticky-nav) bg-night/40 backdrop-blur-md">
-        <div className="mx-auto flex h-16 w-full max-w-(--container) items-center justify-between px-(--gutter) lg:h-20">
+    <div className="min-h-dvh text-ink">
+      <header className="border-b border-rule">
+        <div className="mx-auto flex h-18 w-full max-w-(--container) items-center justify-between px-(--gutter)">
           <Link href="/" aria-label="AutoGiro, página inicial" className="rounded-card">
-            <Wordmark tone="night" />
+            <Wordmark className="text-xl" />
           </Link>
-          <div className="flex items-center gap-3 sm:gap-5">
-            <a
-              href="#caminho"
-              className="hidden rounded-card text-sm font-medium text-ink-2 transition-colors duration-(--dur-micro) hover:text-ink md:inline-block"
-            >
-              Como funciona
-            </a>
-            <a
-              href="#vantagens"
-              className="hidden rounded-card text-sm font-medium text-ink-2 transition-colors duration-(--dur-micro) hover:text-ink md:inline-block"
-            >
-              Vantagens 3D
-            </a>
-            <a
-              href="#painel-demo"
-              className="hidden rounded-card text-sm font-medium text-ink-2 transition-colors duration-(--dur-micro) hover:text-ink lg:inline-block"
-            >
-              Painel
-            </a>
-            <Link href="/login" className={buttonVariants({ variant: "outline", className: "h-11 px-5 pointer-fine:h-11" })}>
-              Entrar
-            </Link>
-          </div>
+          <Link href="/login" className={buttonVariants({ variant: "outline" })}>
+            Entrar
+          </Link>
         </div>
       </header>
 
-      <main id="conteudo" className="relative z-10">
-        {/* Primeira tela: o palco 3D fixo (KageScrollStage) é o fundo, com o carro no centro.
-            Texto no topo e números no rodapé (composição do Kage) deixam o meio livre para o carro. */}
-        <section data-cam="0" className="relative min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-5rem)]">
-          <div className="mx-auto flex min-h-[inherit] w-full max-w-(--container) flex-col justify-between gap-10 px-(--gutter) pt-8 pb-10 lg:pt-14 lg:pb-12">
-            <div className="grid content-start gap-6 lg:max-w-[46rem]">
-              <p data-hero-exit="0" className="inline-flex justify-self-start rounded-full border border-rule-2 bg-night/50 px-3.5 py-1 text-xs font-medium text-ink-2 backdrop-blur-sm">
-                Plataforma para lojas de seminovos · 7 dias grátis
-              </p>
-              <h1 data-hero-exit="1" className="text-display font-semibold uppercase">
-                Seu pátio
-                <br />
-                cabe num link.
-              </h1>
-              <p data-hero-exit="2" className="lead max-w-[34ch] text-ink-2">
-                Cadastre pelo celular, mande a vitrine, receba simulações com CNH.
-              </p>
-              <div data-hero-exit="3" className="flex flex-wrap gap-3">
-                <Link href="/login" className={buttonVariants({ className: "pointer-fine:h-12 pointer-fine:px-6" })}>
-                  Criar minha vitrine
-                </Link>
-                <a href="#caminho" className={buttonVariants({ variant: "outline", className: "pointer-fine:h-12 pointer-fine:px-6" })}>
-                  <ArrowDown aria-hidden /> Ver o caminho do cliente
-                </a>
-              </div>
-            </div>
-            <dl
-              aria-hidden="true"
-              data-hero-exit="4"
-              className="grid grid-cols-3 gap-4 border-t border-rule pt-5 sm:max-w-lg"
-            >
-              <div>
-                <dt className="text-xs text-ink-3">Por veículo</dt>
-                <dd className="num font-display text-xl font-semibold text-ink">Até 15 fotos</dd>
-              </div>
-              <div className="border-l border-rule pl-4">
-                <dt className="text-xs text-ink-3">Chave da CNH</dt>
-                <dd className="num font-display text-xl font-semibold text-signal">Vale 5 min</dd>
-              </div>
-              <div className="border-l border-rule pl-4">
-                <dt className="text-xs text-ink-3">Plano fixo</dt>
-                <dd className="num font-display text-xl font-semibold text-ink">R$ 149/mês</dd>
-              </div>
-            </dl>
-          </div>
-        </section>
-
-        <KageScrollGallery />
-
-        {/* Mapa do fluxo do comprador */}
-        <section id="caminho" data-cam="2" aria-labelledby="caminho-titulo" className="py-(--section-gap-l)">
-          <div className="mx-auto grid w-full max-w-(--container) gap-(--space-2xl) px-(--gutter)">
-            <div className="grid gap-4 lg:grid-cols-12 lg:items-end lg:gap-(--gap-columns)">
-              <h2 id="caminho-titulo" className="font-semibold lg:col-span-6">
-                O caminho de um cliente
-              </h2>
-              <p className="lead text-ink-2 lg:col-span-5 lg:col-start-8">
-                Do anúncio até a conversa no seu WhatsApp, sem você digitar nada.
-              </p>
-            </div>
-
-            <div className="relative">
-              <svg
-                aria-hidden="true"
-                className="lp-map absolute inset-0 hidden size-full lg:block"
-                viewBox="0 0 500 300"
-                preserveAspectRatio="none"
-              >
-                <path d="M50 150 H250" />
-                <path d="M250 150 H300 V50 H350" className="is-signal" />
-                <path d="M250 150 H300 V250 H450" />
-              </svg>
-              <Reveal as="ol" className="relative grid gap-3 lg:grid-cols-5 lg:grid-rows-3 lg:gap-x-(--gap-columns) lg:gap-y-10">
-                {PARADAS.map((p, i) => (
-                  <li
-                    key={p.titulo}
-                    data-reveal
-                    style={{ "--i": Math.min(i, 4) } as React.CSSProperties}
-                    className={`ticks grid content-start gap-3 bg-paper-2/70 p-6 backdrop-blur-md lg:min-h-44 ${p.lugar}`}
-                  >
-                    <p.icone className={p.sinal ? "size-5 text-signal" : "size-5 text-brand"} strokeWidth={1.75} aria-hidden />
-                    <h3 className="text-title font-semibold">{p.titulo}</h3>
-                    <p className="text-ink-2">{p.texto}</p>
+      <main>
+        <section className="py-(--section-gap-s)">
+          <div className="mx-auto grid w-full max-w-(--container) gap-6 px-(--gutter)">
+            <p className="lp-in text-lg font-medium text-brand" style={{ "--i": 0 } as React.CSSProperties}>
+              Para lojas de carros seminovos
+            </p>
+            <h1 className="lp-in font-semibold" style={{ "--i": 1 } as React.CSSProperties}>
+              Seus carros na internet, com um link só.
+            </h1>
+            <p className="lp-in lead text-ink-2" style={{ "--i": 2 } as React.CSSProperties}>
+              Cadastre os carros pelo celular, mande o link para os clientes e receba pedidos de financiamento com a CNH.
+            </p>
+            <div className="lp-in grid justify-items-start gap-5 pt-2" style={{ "--i": 3 } as React.CSSProperties}>
+              <Link href="/login" className={buttonVariants({ size: "lg" })}>
+                {CTA}
+              </Link>
+              <ul className="flex flex-wrap gap-x-6 gap-y-2 text-lg text-ink-2">
+                {["Sem cartão", "Carros ilimitados", `Depois, ${PRECO}/mês`].map((item) => (
+                  <li key={item} className="inline-flex items-center gap-2">
+                    <Check className="size-5 text-signal" aria-hidden /> {item}
                   </li>
                 ))}
-              </Reveal>
+              </ul>
             </div>
           </div>
         </section>
 
-        {/* Seção de Cards Visuais Animados em Three.js + Dados & Vantagens */}
-        <section id="vantagens" data-cam="3" aria-labelledby="vantagens-titulo" className="lp-scrim py-(--section-gap-l)">
-          <div className="mx-auto grid w-full max-w-(--container) gap-(--space-2xl) px-(--gutter)">
-            <div className="grid gap-4 lg:grid-cols-12 lg:items-end lg:gap-(--gap-columns)">
-              <div className="grid gap-3 lg:col-span-7">
-                <p className="text-sm font-medium text-brand">Engenharia de pátio · Dados e vantagens</p>
-                <h2 id="vantagens-titulo" className="font-semibold">
-                  Menos conversa perdida, mais ficha pronta para aprovar
-                </h2>
-              </div>
-              <p className="lead text-ink-2 lg:col-span-5">
-                Três motores que tiram o trabalho braçal do vendedor e entregam o comprador qualificado.
-              </p>
-            </div>
+        <Secao id="como-funciona" titulo="Como funciona" className="bg-paper-2">
+          <Reveal as="ol" className="grid gap-(--space-xl) md:grid-cols-3 md:gap-(--gap-columns)">
+            {PASSOS.map((p, i) => (
+              <li key={p.titulo} data-reveal style={{ "--i": i } as React.CSSProperties} className="grid content-start gap-4">
+                <span className="grid size-12 place-items-center rounded-full bg-brand font-display text-xl font-semibold text-brand-ink" aria-hidden>
+                  {i + 1}
+                </span>
+                <h3 className="text-2xl font-semibold">{p.titulo}</h3>
+                <p className="text-lg text-ink-2">{p.texto}</p>
+                <div className="aspect-[3/4] max-w-xs overflow-hidden rounded-2xl border border-rule bg-paper">
+                  <Image src={p.tela} alt={p.alt} width={780} height={1688} sizes="(min-width: 48rem) 20rem, 90vw" className="size-full object-cover object-top" />
+                </div>
+              </li>
+            ))}
+          </Reveal>
+        </Secao>
 
-            <ThreeFeatureCards />
+        <Secao id="funcoes" titulo="O que o AutoGiro faz pela sua loja">
+          <Reveal as="ul" className="grid gap-x-(--gap-columns) gap-y-(--space-xl) sm:grid-cols-2 lg:grid-cols-3">
+            {FUNCOES.map((f, i) => (
+              <li key={f.titulo} data-reveal style={{ "--i": Math.min(i, 4) } as React.CSSProperties} className="grid content-start gap-3">
+                <f.icone className="size-8 text-brand" strokeWidth={1.75} aria-hidden />
+                <h3 className="text-2xl font-semibold">{f.titulo}</h3>
+                <p className="text-lg text-ink-2">{f.texto}</p>
+              </li>
+            ))}
+          </Reveal>
+        </Secao>
 
-            {/* Comparativo direto: antes e depois na rotina da loja */}
-            <div className="pt-6">
-              <table className="w-full border-collapse text-left">
-                <thead className="hidden md:table-header-group">
-                  <tr className="border-b border-rule-2 text-sm text-ink-3">
-                    <th scope="col" className="py-4 pr-6 font-medium">Rotina no pátio</th>
-                    <th scope="col" className="py-4 pr-6 font-medium">No improviso (sem vitrine)</th>
-                    <th scope="col" className="py-4 font-medium text-signal">Com o AutoGiro</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-rule md:divide-y-0">
-                  {COMPARATIVO.map(([etapa, antes, depois]) => (
-                    <tr key={etapa} className="grid gap-2 border-b border-rule py-5 md:table-row md:py-0">
-                      <th scope="row" className="block font-display text-lg font-semibold text-ink md:table-cell md:py-6 md:pr-6 md:align-top">
-                        {etapa}
-                      </th>
-                      <td className="block text-sm text-ink-3 md:table-cell md:py-6 md:pr-6 md:align-top md:text-base">
-                        <span className="mr-1.5 font-medium text-ink-2 md:hidden">Sem vitrine:</span>
-                        {antes}
-                      </td>
-                      <td className="block font-medium text-ink md:table-cell md:py-6 md:align-top">
-                        <span className="inline-flex items-start gap-2">
-                          <Check className="mt-1 size-4 shrink-0 text-signal" aria-hidden />
-                          <span>{depois}</span>
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+        <Secao id="por-que" titulo="Por que usar" className="bg-paper-2">
+          <ul className="grid gap-4">
+            {VANTAGENS.map(([antes, depois]) => (
+              <li key={antes} className="grid gap-2 rounded-card border border-rule bg-paper p-6 md:grid-cols-2 md:gap-(--gap-columns)">
+                <p className="text-lg text-ink-3">
+                  <span className="font-medium text-ink-2">Antes: </span>
+                  {antes}
+                </p>
+                <p className="inline-flex items-start gap-2 text-lg font-medium text-ink">
+                  <Check className="mt-1 size-5 shrink-0 text-signal" aria-hidden />
+                  <span>
+                    <span className="visually-hidden">Com o AutoGiro: </span>
+                    {depois}
+                  </span>
+                </p>
+              </li>
+            ))}
+          </ul>
+        </Secao>
 
-        {/* Seção interativa adaptativa ao dispositivo (Desktop vê Desktop, Mobile vê Mobile) */}
-        <section id="painel-demo" data-cam="4" aria-labelledby="painel-titulo" className="py-(--section-gap-l)">
-          <div className="mx-auto grid w-full max-w-(--container) gap-(--space-2xl) px-(--gutter)">
-            <div className="grid gap-4 lg:grid-cols-12 lg:items-end lg:gap-(--gap-columns)">
-              <div className="grid gap-3 lg:col-span-7">
-                <p className="text-sm font-medium text-brand">Interativo · Adapta ao seu dispositivo</p>
-                <h2 id="painel-titulo" className="font-semibold">
-                  O painel cabe no bolso
-                </h2>
-              </div>
-              <p className="lead text-ink-2 lg:col-span-5">
-                No computador da loja você opera em tela cheia; no celular do pátio, tudo fica ao alcance do polegar. Clique nas abas abaixo para testar.
-              </p>
-            </div>
-            <PinnedRun
-              paineis={[
-                {
-                  titulo: "Cadastro de um toque",
-                  texto: "Fotos da galeria, preço e quilometragem. Câmbio e combustível num toque.",
-                  tela: "/landing/cadastro.png",
-                  alt: "Tela de cadastro de carro, com fotos, marca, modelo e preço",
-                },
-                {
-                  titulo: "O estoque na palma da mão",
-                  texto: "Busque, separe os vendidos e copie o link da vitrine.",
-                  tela: "/landing/estoque.png",
-                  alt: "Tela de estoque, com cartões de carros, preços e filtros",
-                },
-                {
-                  titulo: "Quem simulou, com CNH",
-                  texto: "Entrada, parcelas e o WhatsApp do cliente no mesmo cartão.",
-                  tela: "/landing/interessados.png",
-                  alt: "Tela de interessados, com uma simulação, o botão Ver CNH e o botão do WhatsApp",
-                },
-              ]}
-            />
-          </div>
-        </section>
-
-        {/* Segurança LGPD e ciclo da CNH */}
-        <section id="cnh" aria-labelledby="cnh-titulo" className="lp-scrim py-(--section-gap-l)">
-          <div className="mx-auto grid w-full max-w-(--container) gap-(--space-2xl) px-(--gutter) lg:grid-cols-12 lg:gap-x-(--gap-columns) lg:gap-y-(--space-2xl)">
-            <div className="grid content-start gap-4 lg:col-span-6">
-              <p className="text-sm font-medium text-signal">Conformidade LGPD de ponta a ponta</p>
-              <h2 id="cnh-titulo" className="font-semibold">
-                A CNH do cliente fica trancada
-              </h2>
-              <p className="lead text-ink-2">
-                Nenhum documento fica exposto em link público. O acesso exige sessão ativa da loja e expira em 5 minutos.
-              </p>
-            </div>
-            <figure className="ticks m-0 grid justify-items-start gap-2 bg-paper/70 p-6 backdrop-blur-md lg:col-span-5 lg:col-start-8">
-              <div className="flex items-center gap-2 text-xs font-medium text-signal">
-                <ShieldCheck className="size-4" aria-hidden />
-                <span>Chave assinada temporária</span>
-              </div>
-              <p className="num font-display text-display-s font-semibold">
-                5<span className="u">&nbsp;min</span>
-              </p>
-              <figcaption className="text-sm text-ink-3">é quanto vale o link para ver uma CNH</figcaption>
-            </figure>
-
-            <div className="lg:col-span-12">
-              <table className="w-full border-collapse text-left">
-                <thead className="hidden md:table-header-group">
-                  <tr className="border-b border-rule-2 text-sm text-ink-3">
-                    <th scope="col" className="py-4 pr-6 font-medium">Etapa</th>
-                    <th scope="col" className="py-4 pr-6 font-medium">O que acontece</th>
-                    <th scope="col" className="py-4 font-medium whitespace-nowrap">Quando</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-rule md:divide-y-0">
-                  {CNH.map(([etapa, oque, quando]) => (
-                    <tr key={etapa} className="grid gap-1.5 border-b border-rule py-5 md:table-row md:py-0">
-                      <th scope="row" className="block font-display text-xl font-semibold md:table-cell md:py-7 md:pr-6 md:align-top">{etapa}</th>
-                      <td className="block text-base text-ink-2 md:table-cell md:py-7 md:pr-6 md:align-top md:text-lg">{oque}</td>
-                      <td className="num block text-sm font-medium text-ink-3 md:table-cell md:py-7 md:align-top md:text-lg md:font-normal md:text-ink md:whitespace-nowrap">{quando}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section aria-labelledby="perguntas-titulo" className="py-(--section-gap-l)">
-          <div className="mx-auto grid w-full max-w-(--container) gap-(--space-2xl) px-(--gutter) lg:grid-cols-12 lg:gap-(--gap-columns)">
-            <div className="grid content-start gap-4 lg:col-span-4">
-              <h2 id="perguntas-titulo" className="font-semibold">
-                Perguntas de quem vende carro
-              </h2>
-              <p className="text-ink-2">
-                Tudo incluso no plano único de R$ 149/mês após os 7 dias de teste grátis.
-              </p>
-            </div>
-            <div className="border-t border-rule lg:col-span-7 lg:col-start-6">
-              {PERGUNTAS.map(([pergunta, resposta]) => (
-                <details key={pergunta} className="group border-b border-rule">
-                  <summary className="flex min-h-22 cursor-pointer list-none items-center justify-between gap-4 py-6 text-title font-medium outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus [&::-webkit-details-marker]:hidden">
-                    {pergunta}
-                    <span
-                      aria-hidden="true"
-                      className="grid size-10 shrink-0 place-items-center rounded-full border border-rule-2 text-ink-2 transition-transform duration-(--dur-short) group-open:rotate-45 motion-reduce:transition-none"
-                    >
-                      +
-                    </span>
-                  </summary>
-                  <p className="max-w-[60ch] pb-8 text-ink-2">{resposta}</p>
-                </details>
+        <Secao id="preco" titulo="Quanto custa">
+          <div className="grid max-w-xl gap-6 rounded-card border border-rule-2 p-8">
+            <p className="num font-display text-display-s font-semibold">
+              {PRECO}
+              <span className="text-xl font-medium text-ink-2"> por mês</span>
+            </p>
+            <ul className="grid gap-3 text-lg">
+              {[`${TRIAL_DIAS} dias grátis para testar, sem cartão`, "Carros e simulações sem limite", "Vitrine, WhatsApp e simulação inclusos"].map((item) => (
+                <li key={item} className="inline-flex items-start gap-2">
+                  <Check className="mt-1 size-5 shrink-0 text-signal" aria-hidden /> {item}
+                </li>
               ))}
-            </div>
+            </ul>
+            <Link href="/login" className={buttonVariants({ size: "lg", className: "justify-self-start" })}>
+              {CTA}
+            </Link>
           </div>
-        </section>
+        </Secao>
 
-        {/* Fechamento / CTA */}
-        <section data-cam="5" aria-labelledby="fim-titulo" className="py-(--section-gap-l)">
-          <div className="mx-auto grid w-full max-w-(--container) gap-6 px-(--gutter) lg:grid-cols-12 lg:items-center lg:gap-(--gap-columns)">
-            <div className="grid gap-3 lg:col-span-7">
-              <h2 id="fim-titulo" className="font-semibold">
-                Sua vitrine no ar ainda hoje
-              </h2>
-              <p className="lead text-ink-2">
-                7 dias grátis sem precisar de cartão. Depois, R$ 149/mês com estoque e simulações ilimitados.
-              </p>
-            </div>
-            <div className="grid justify-items-start gap-3 lg:col-span-4 lg:col-start-9 lg:justify-items-end">
-              <Link href="/login" className={buttonVariants({ className: "pointer-fine:h-12 pointer-fine:px-6" })}>
-                Criar minha vitrine
-              </Link>
-              <p className="text-sm text-ink-3">Só o nome da loja e o WhatsApp.</p>
-            </div>
+        <Secao id="perguntas" titulo="Perguntas frequentes" className="bg-paper-2">
+          <div className="max-w-3xl border-t border-rule">
+            {PERGUNTAS.map(([pergunta, resposta]) => (
+              <details key={pergunta} className="group border-b border-rule">
+                <summary className="flex min-h-18 cursor-pointer list-none items-center justify-between gap-4 py-5 text-title font-medium outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus [&::-webkit-details-marker]:hidden">
+                  {pergunta}
+                  <span
+                    aria-hidden="true"
+                    className="grid size-10 shrink-0 place-items-center rounded-full border border-rule-2 text-xl text-ink-2 transition-transform duration-(--dur-short) group-open:rotate-45"
+                  >
+                    +
+                  </span>
+                </summary>
+                <p className="max-w-[60ch] pb-6 text-lg text-ink-2">{resposta}</p>
+              </details>
+            ))}
+          </div>
+        </Secao>
+
+        <section aria-labelledby="fim-titulo" className="py-(--section-gap-s)">
+          <div className="mx-auto grid w-full max-w-(--container) justify-items-start gap-5 px-(--gutter)">
+            <h2 id="fim-titulo" className="font-semibold">
+              Coloque sua loja na internet hoje
+            </h2>
+            <p className="lead text-ink-2">Só precisa do nome da loja e do seu WhatsApp.</p>
+            <Link href="/login" className={buttonVariants({ size: "lg" })}>
+              {CTA}
+            </Link>
           </div>
         </section>
       </main>
 
-      <footer className="relative z-10 border-t border-rule">
-        <div className="mx-auto grid w-full max-w-(--container) gap-10 px-(--gutter) py-(--space-3xl) lg:grid-cols-12 lg:gap-(--gap-columns)">
-          <div className="grid content-start gap-4 lg:col-span-6">
-            <Link href="/" aria-label="AutoGiro, página inicial" className="self-start rounded-card">
-              <Wordmark tone="night" className="text-xl" />
+      <footer className="border-t border-rule">
+        <div className="mx-auto grid w-full max-w-(--container) gap-6 px-(--gutter) py-(--space-2xl)">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <Link href="/" aria-label="AutoGiro, página inicial" className="rounded-card">
+              <Wordmark />
             </Link>
-            <p className="font-display text-2xl font-semibold">Feito para quem vende carro no pátio.</p>
-            <p className="text-ink-3">Equipe AutoGiro, novembro de 2026</p>
+            <Link href="/login" className="text-lg text-ink-2 underline hover:text-ink">
+              Entrar no painel
+            </Link>
           </div>
-          <nav aria-label="Rodapé" className="lg:col-span-3 lg:col-start-8">
-            <ul className="grid gap-3">
-              <li>
-                <Link href="/login" className="text-ink-2 hover:text-ink">
-                  Entrar no painel
-                </Link>
-              </li>
-              <li>
-                <a href="#caminho" className="text-ink-2 hover:text-ink">
-                  Como funciona
-                </a>
-              </li>
-              <li>
-                <a href="#vantagens" className="text-ink-2 hover:text-ink">
-                  Vantagens 3D
-                </a>
-              </li>
-              <li>
-                <a href="#painel-demo" className="text-ink-2 hover:text-ink">
-                  Painel interativo
-                </a>
-              </li>
-            </ul>
-          </nav>
-          <div className="grid gap-4 border-t border-rule pt-6 text-sm text-ink-3 lg:col-span-12">
-            <p data-credits className="max-w-[90ch]">
-              Fotos dos carros de exemplo nas telas:{" "}
-              <a className="underline" href="https://commons.wikimedia.org/wiki/File:Chevrolet_Onix_Mk2_RS_2020_in_Maldonado_-_front.jpg">NaBUru38</a>,{" "}
-              <a className="underline" href="https://commons.wikimedia.org/wiki/File:2021_Toyota_Corolla_LE,_front_right,_07-13-2024.jpg">MercurySable99</a>,{" "}
-              <a className="underline" href="https://commons.wikimedia.org/wiki/File:HB20X_2nd_Generation_Frontal_View_(cropped).jpg">Nave do Conhecimento</a> e{" "}
-              <a className="underline" href="https://commons.wikimedia.org/wiki/File:Volkswagen_T-Cross_1X7A0363.jpg">Alexander Migl</a> (CC BY-SA 4.0, Wikimedia Commons).
-            </p>
-          </div>
+          <p className="text-sm text-ink-3">
+            Fotos dos carros de exemplo nas telas:{" "}
+            <a className="underline" href="https://commons.wikimedia.org/wiki/File:Chevrolet_Onix_Mk2_RS_2020_in_Maldonado_-_front.jpg">NaBUru38</a>,{" "}
+            <a className="underline" href="https://commons.wikimedia.org/wiki/File:2021_Toyota_Corolla_LE,_front_right,_07-13-2024.jpg">MercurySable99</a>,{" "}
+            <a className="underline" href="https://commons.wikimedia.org/wiki/File:HB20X_2nd_Generation_Frontal_View_(cropped).jpg">Nave do Conhecimento</a> e{" "}
+            <a className="underline" href="https://commons.wikimedia.org/wiki/File:Volkswagen_T-Cross_1X7A0363.jpg">Alexander Migl</a> (CC BY-SA 4.0, Wikimedia Commons).
+          </p>
         </div>
       </footer>
     </div>

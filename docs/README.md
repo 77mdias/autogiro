@@ -19,7 +19,6 @@ PWA mobile-first para garagistas: estoque, vitrine pública por loja e simulaç�
 | [arquitetura.md](arquitetura.md) | Rotas, código, dados, autenticação, multi-tenant, plano, arquivos, renderização |
 | [stack.md](stack.md) | Serviços, plataformas e bibliotecas, com o porquê de cada um |
 | [pagamentos-asaas.md](pagamentos-asaas.md) | Plano, fases de venda, checkout, webhook e operação |
-| [landing-3d.md](landing-3d.md) | Contrato de design, movimento e desempenho da landing |
 | [../DESIGN.md](../DESIGN.md) | Sistema visual travado (tokens, cores, controles) |
 
 ## Como trabalhar

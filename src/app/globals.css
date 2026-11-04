@@ -1,5 +1,5 @@
 /* Hallmark · shape: app screen · genre: modern-minimal · theme: Vantage (deal 1/3, seed para-lojas-carros-seminovos-1c94·1083cfa7·2026-11-01·r0) · redesign: full · brand: AutoGiro logo, navy oklch(29.9% 0.083 256) and blue oklch(61% 0.205 256)
- * nav: kept, three destinations, a bottom tab bar under 60rem and a top bar above · signature: the stock card, photo first, the price in tabular Geologica, status as one pill · states: loading, empty, error, full · vantage: object/steel, day colourway for the app, night for the landing
+ * nav: kept, three destinations, a bottom tab bar under 60rem and a top bar above · signature: the stock card, photo first, the price in tabular Geologica, status as one pill · states: loading, empty, error, full · vantage: object/steel, day colourway for the app and the landing
  * axes: light/grotesk-sans/chromatic-blue · posture: restrained · contrast: pass · v2.0.0 */
 /* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V4 · weakest: P, a stock list reads like any inventory app; the price and the photo count carry each card and green is spent only on the buyer's channel */
 /* Hallmark · dropped {`/loja/${loja?.slug}`}, {whatsappUrl(loja.whatsapp, `Olá ${loja.nome}! … · both still exist: Minha loja links the vitrine through the vitrine const, and the shop WhatsApp text dropped the old name Garagem Link after the rename to AutoGiro */

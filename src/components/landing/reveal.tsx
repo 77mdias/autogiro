@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 /** Marca o bloco como visto uma vez; o CSS (landing.css) acende os filhos em sequência. */
-export function Reveal({ as: Tag = "div", className, children }: { as?: "div" | "ol"; className?: string; children: React.ReactNode }) {
+export function Reveal({ as: Tag = "div", className, children }: { as?: "div" | "ol" | "ul"; className?: string; children: React.ReactNode }) {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     const el = ref.current!;
