@@ -4,7 +4,8 @@ Um único app Next.js 16 (App Router) faz tudo: páginas públicas, painel da lo
 
 ```
 Comprador ──► /loja/[slug] (vitrine) ──► /carros/[id] ──► /simular ──► POST /api/simulacoes ──► Postgres + R2 (CNH privada)
-Garagista ──► /login (Google) ──► /onboarding ──► /painel/{estoque,interessados,loja}
+Garagista ──► /login (Google ou e-mail) ──► /onboarding ──► /painel/{estoque,interessados,loja}
+Dono do SaaS ──► /admin (e-mail em ADMIN_EMAILS)
 Asaas ──────► POST /api/webhooks/asaas ──► lojas.plano_status
 Cron ───────► POST /api/cron/delete-expired-cnh ──► apaga CNHs vencidas no R2
 ```
@@ -35,6 +36,36 @@ Cron ───────► POST /api/cron/delete-expired-cnh ──► apaga 
 | `/api/auth/*` | Auth.js | Login e callback do Google |
 
 `src/proxy.ts` (o antigo middleware) é só uma barreira otimista: sem sessão, `/painel`, `/admin` e `/onboarding` vão para `/login`. A checagem de verdade fica em cada página e rota.
+
+## Código
+
+```
+src/
+  proxy.ts                barreira otimista de login (/painel, /admin, /onboarding) e 404 do /admin para quem não é admin
+  instrumentation.ts      migrações ao subir, só nos containers (MIGRAR_AO_SUBIR=1)
+  lib/
+    db/schema.ts          tabelas (ver Dados)          db/migrar.ts   aplica drizzle/ ao subir
+    auth.ts               Auth.js: Google + e-mail; loja_id no token (callback jwt)
+    session.ts            getSession, getLojaId/requireLojaId (única fonte de loja_id), requireAdmin
+    plano.ts              planoLiberado(), situacaoPlano(), resumoAssinaturas()
+    admin.ts              ehAdmin() (ADMIN_EMAILS)
+    asaas.ts              API v3 do Asaas (fetch, sem SDK)
+    r2.ts                 fotos (bucket público) e CNH (privado, URL assinada de 5 min)
+    conta.ts, email.ts, senha.ts   conta de e-mail: tokens, envio pelo Resend, scrypt
+    files.ts, resize-image.ts      tipo do arquivo pelos bytes; redução da foto no navegador
+    masks.ts, signature.ts, utils.ts, landing-tier.ts
+  app/
+    page.tsx + components/landing/        landing 3D
+    login, cadastro, esqueci-senha, redefinir-senha, onboarding
+    painel/{estoque,interessados,loja}    painel da loja; painel/actions.ts tem as server actions
+    admin/                                painel do dono do SaaS
+    loja/[slug]/…                         vitrine, carro, simulação
+    api/                                  simulacoes, simulacoes/[id]/cnh, webhooks/asaas, cron, conta, auth
+scripts/loja.mts          operação manual do plano (fase 1)
+drizzle/                  migrações SQL geradas pelo drizzle-kit
+```
+
+Módulos de `src/lib` com testes (`*.test.ts`) rodam direto no `node --test`: não usam o alias `@/` e importam irmãos com `.ts`.
 
 ## Dados (Supabase Postgres via Drizzle)
 
@@ -99,10 +130,11 @@ Plano pausado: as páginas do painel levam para Minha loja (`requireLojaId` com 
 ## Renderização (Next 16)
 
 - `cacheComponents: true` e `partialPrefetching: true`. Dados de sessão ficam atrás de `connection()` em `getSession()`.
-- Cada aba do painel tem seu `loading.tsx`: em navegação entre abas, o `<Suspense>` do layout não cobre a página.
+- Toda página que lê dados tem o seu `loading.tsx` (painel, vitrine, carro, simulação): na navegação, o `<Suspense>` do layout pai não cobre a página nova e o Next acusa "uncached data".
+- Migrações: nos containers, `src/instrumentation.ts` aplica as pendentes ao subir; na Vercel, o build de produção aplica antes do `next build` ([deploy.md](deploy.md)).
 - Server actions em `src/app/painel/actions.ts`, todas escopadas por `loja_id`.
 - PWA: `public/sw.js`, `public/offline.html`, `manifest.ts`.
 
 ## Design
 
-Sistema travado em `DESIGN.md` (tema Vantage da Hallmark com as cores do logo; Geologica; tokens em `src/app/tokens.css`). Componentes base do shadcn/ui em `src/components/ui`.
+Sistema travado em `DESIGN.md` (tema Vantage da Hallmark com as cores do logo; Rethink Sans nos títulos, Plus Jakarta Sans no texto, JetBrains Mono; tokens em `src/app/tokens.css`). Componentes base do shadcn/ui em `src/components/ui`. A landing segue o contrato de [landing-3d.md](landing-3d.md).

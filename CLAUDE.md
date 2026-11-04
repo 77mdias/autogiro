@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 AutoGiro: mobile-first PWA for used-car dealers ("garagistas"): inventory, public storefront per store, and financing-simulation leads with CNH (driver's license) upload. Stores pay R$ 149/month via Asaas, 7-day free trial. Code, UI copy, and docs are in Portuguese; keep it that way.
 
-Full docs live in `docs/` (architecture, stack, decisions log, Asaas payments, dev setup and known pitfalls, secrets, tests). Read the relevant file before changing payments, auth, or infra. `DESIGN.md` is the locked visual system.
+Full docs live in `docs/`, indexed in `docs/README.md`. Start with `docs/produto/estado.md` (what is done, what differs from the PRD/SRS and why, what is missing); product specs are in `docs/produto/`. Read the relevant file before changing payments, auth, or infra. **Docs change in the same PR as the code**: the "Manter em dia" table in `docs/README.md` says which file each kind of change updates. `DESIGN.md` is the locked visual system.
 
 ## Commands
 

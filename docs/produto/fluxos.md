@@ -1,4 +1,6 @@
-# Mapa de Fluxos da Aplicação: Garagem Link
+# Mapa de fluxos
+
+> Documento de origem, escrito antes do código com o nome provisório **Garagem Link** (o produto é o **AutoGiro**). O que já está pronto, o que mudou e por quê: [estado.md](estado.md).
 
 Este documento descreve as trilhas de navegação do usuário através de notações textuais baseadas na lógica de estados e interações de telas.
 

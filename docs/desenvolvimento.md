@@ -72,6 +72,7 @@ Altere `src/lib/db/schema.ts` e rode `pnpm db:generate` **no host** (só compara
 
 - **Chave do Asaas começa com `$`.** No Criptenv guarde o valor real, sem barra: `criptenv set 'ASAAS_API_KEY=$aact_...'` (aspas simples, para o shell não expandir o `$`).
 - **`pnpm docker:exec` fora de um terminal** (agente, script): use `docker compose -f compose.dev.yaml exec -T app entrypoint.sh <comando>`; sem `-T` o Compose pede um TTY.
+- **Login quebrado com 500 sem corpo em `/api/auth/*`.** O `AUTH_URL` não é uma URL válida (falta `https://`, tem aspas, espaço ou comentário colado). O `next-auth` faz `new URL(AUTH_URL)` sem tratar o erro. Vale para qualquer ambiente; na Vercel, corrija e faça Redeploy.
 - **`redirect_uri_mismatch` no Google pelo ngrok.** Faltou `AUTH_URL` com o domínio do ngrok.
 - **Erro "uncached data during prerendering or a navigation".** A página do painel precisa do seu próprio `loading.tsx`.
 - **`AUTOGIRO_WHATSAPP`** sem `+55`: o app acrescenta o 55.

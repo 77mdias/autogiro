@@ -41,19 +41,18 @@ Requer criptenv **0.2.3+** (a 0.2.2 repassava a senha do cofre para o app e não
    criptenv env create development -p <ID>
    criptenv env create production -p <ID>
    ```
-3. **Levar as variáveis** de `development` (os nomes estão em `.env.example`). Com `criptenv set` uma a uma, ou importando o `.env.local` atual:
+3. **Cadastrar as variáveis** de cada ambiente (nomes e explicação em `.env.example`), uma a uma, com aspas simples para o shell não mexer no valor:
    ```bash
-   criptenv push .env.local -e development -p <ID>
-   criptenv diff .env.local -e development -p <ID>   # confere
+   criptenv set 'APP_BASE_URL=https://autogiro.77mdevseven.tech' -e production -p <ID>
+   criptenv list -e production -p <ID>   # confere os nomes (nunca mostra valores)
    ```
-   Atenção à `ASAAS_API_KEY`: no `.env.local` ela está escrita como `\$aact_...` por causa do Next. No Criptenv o valor tem que ser o real, **sem a barra**: confira com `criptenv get ASAAS_API_KEY -e development -p <ID>` e, se preciso, `criptenv set 'ASAAS_API_KEY=$aact_...' -e development -p <ID>` (aspas simples, para o shell não expandir o `$`).
+   Guarde o valor puro: sem aspas, sem comentário, sem espaço no fim. A `ASAAS_API_KEY` começa com `$` e vai como está (`'ASAAS_API_KEY=$aact_...'`). O `.env.local` antigo foi migrado com `criptenv push` e apagado com `shred` em 2026-11-03, depois de um `criptenv diff` sem nenhum valor só local.
 4. **Criar uma API key só de leitura por ambiente**, de preferência pela CLI, que já mostra o nome exato do ambiente: `criptenv api-keys create -p <ID> --name docker-dev --env development`. No painel, o campo de ambiente é texto livre: tem de ser o nome **exato** (`development`, minúsculo, sem espaço), senão a chave autentica mas não enxerga nenhum ambiente. Escopo `read:secrets`, `environment_scope` = `development` (outra para `production`).
 5. **Guardar as duas credenciais no chaveiro do sistema** (GNOME Keyring, via `secret-tool`), não em arquivo:
    ```bash
    secret-tool store --label "criptenv autogiro api key" service criptenv project autogiro item api-key
    secret-tool store --label "criptenv autogiro vault"   service criptenv project autogiro item vault-password
    ```
-6. **Apagar o `.env.local`** quando tudo estiver rodando pelo Criptenv: `shred -u .env.local`. Feito em 2026-11-03, depois de um `criptenv diff` sem nenhum valor só local.
 
 ## Usar
 

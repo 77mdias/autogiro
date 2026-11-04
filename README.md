@@ -1,95 +1,37 @@
 # AutoGiro
 
-PWA mobile-first para garagistas: estoque, vitrine pública e simulações de financiamento.
+PWA mobile-first para garagistas: estoque pelo celular, vitrine pública por loja e simulações de financiamento com CNH. A loja paga R$ 149/mês pelo Asaas, com 7 dias grátis.
 
-Next.js 16 (App Router, `proxy.ts`, Cache Components) · TypeScript · Tailwind v4 · shadcn/ui · Drizzle + Supabase Postgres · Auth.js (Google) · Cloudflare R2.
+No ar em **https://autogiro.77mdevseven.tech** (Vercel). O que está pronto e o que falta: [docs/produto/estado.md](docs/produto/estado.md).
 
-Documentação completa em [`docs/`](docs/README.md): arquitetura, stack, decisões, pagamentos, desenvolvimento e testes.
+Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind v4 + shadcn/ui · Drizzle + Supabase Postgres · Auth.js (Google e e-mail) · Cloudflare R2 · Asaas · Resend · segredos no Criptenv.
 
-## Setup
+## Rodar
+
+O app só roda em container, com os segredos do Criptenv; não há `.env` no disco.
 
 ```bash
-pnpm install                         # só para editor, testes e typecheck no host
-pnpm docker:up                       # app em http://localhost:3000, com hot reload e os segredos do Criptenv
-pnpm docker:exec pnpm db:migrate     # aplica drizzle/*.sql no Supabase (session pooler, porta 5432)
-pnpm test                            # testes (não precisam de segredo)
+pnpm install          # no host: editor, testes, lint e tipos (nada disso precisa de segredo)
+pnpm docker:up        # http://localhost:3000 com hot reload; aplica as migrações ao subir
+pnpm test && pnpm typecheck && pnpm lint
 ```
 
-Nada de `.env` no disco: os segredos vêm do Criptenv ([docs/segredos.md](docs/segredos.md)) e o app só roda em container. Alterou `src/lib/db/schema.ts`? `pnpm db:generate` (no host, sem segredo) e depois `pnpm docker:exec pnpm db:migrate`.
+Primeira vez: configure o Criptenv e o chaveiro ([docs/segredos.md](docs/segredos.md)). Conta de teste para o navegador: `E2E_EMAIL` / `E2E_SENHA` no `.env.example`.
 
-## Estrutura
+## Trabalhar
 
-```
-src/
-  proxy.ts                       barreira de login em /painel e /onboarding
-  lib/
-    db/schema.ts                 lojas, carros, simulacoes_financiamento, webhook_events
-    auth.ts                      Auth.js (Google, sessão JWT); loja_id no token (callback jwt)
-    session.ts                   getLojaId / requireLojaId — única fonte de loja_id
-    r2.ts                        bucket público (fotos) e privado (CNH, URL assinada 5 min)
-    signature.ts                 token e Bearer em tempo constante (node:crypto)
-    plano.ts                     R$ 149/mês, 7 dias grátis; planoLiberado() decide painel e vitrine
-    asaas.ts                     API v3: Checkout de cartão (assinatura mensal) e fatura vencida
-  app/
-    loja/[slug]/                          vitrine pública (vendidos com sobreposição)
-    loja/[slug]/carros/[carroId]/         detalhe + barra fixa WhatsApp / Simular
-    loja/[slug]/carros/[carroId]/simular  formulário de simulação (LGPD + CNH)
-    onboarding/                           criação da loja no primeiro login
-    painel/estoque                        dashboard: carros, copiar link, novas simulações
-    painel/estoque/{novo,[id]}            cadastro/edição de carro
-    painel/interessados                   leads: Ver CNH, WhatsApp, Excluir
-    painel/loja                           nome + WhatsApp da loja
-    painel/actions.ts                     server actions (todas escopadas por loja_id)
-    api/simulacoes                        POST público (lead + CNH)
-    api/simulacoes/[id]/cnh               GET dono da loja → redirect p/ URL assinada (5 min)
-    api/webhooks/asaas                    webhook Asaas (asaas-access-token + idempotência pelo id do evento)
-    api/cron/delete-expired-cnh           limpeza LGPD (Bearer CRON_SECRET)
-  components/                             bottom-nav, masked-input, pill-group, loja-form…
-```
+Branch → PR → CI (GitHub Actions) e prévia da Vercel → merge na `main` → produção. A `main` é protegida: só entra por PR com o CI verde. Mudou o schema? `pnpm db:generate` e commite `drizzle/`; a migração se aplica sozinha no container e no deploy.
 
-## Design
+## Documentação
 
-O sistema está em `DESIGN.md` (tema Vantage da Hallmark com as cores do logo). Tokens em `src/app/tokens.css`, ligados ao shadcn em `src/app/globals.css`. As telas seguem a organização do projeto "AutoGiro PWA Platform" no Stitch.
+| Para | Leia |
+|---|---|
+| Saber o que existe e o que falta | [docs/produto/estado.md](docs/produto/estado.md) |
+| Entender como o app funciona | [docs/arquitetura.md](docs/arquitetura.md), [docs/stack.md](docs/stack.md) |
+| Rodar, testar, migrar | [docs/desenvolvimento.md](docs/desenvolvimento.md), [docs/testes.md](docs/testes.md) |
+| Segredos e produção | [docs/segredos.md](docs/segredos.md), [docs/deploy.md](docs/deploy.md) |
+| Cobrança | [docs/pagamentos-asaas.md](docs/pagamentos-asaas.md) |
+| Visual | [DESIGN.md](DESIGN.md) (sistema travado), [docs/landing-3d.md](docs/landing-3d.md) |
+| Por que foi feito assim | [docs/decisoes.md](docs/decisoes.md) |
 
-- Landing (`/`): versão noturna (`.theme-night`), carro em nuvem de pontos em `src/components/landing/point-car.tsx`, capturas do painel em `public/landing/` (refaça ao mudar as telas).
-- Verificação de design: `node ~/.claude/skills/hallmark/scripts/sloplint.mjs src/app src/components --scope app`.
-- Ao usar um tamanho novo da escala, registre-o em `src/lib/utils.ts` (senão o `cn` o confunde com cor).
-
-## Plano e pagamento (Asaas)
-
-R$ 149/mês, 7 dias grátis sem cartão (`lojas.trial_ate`). Plano pausado: o painel leva para Minha loja, a vitrine sai do ar e novas simulações são recusadas.
-
-**Fase 1, venda assistida (primeiros 5 a 10 garagistas).** `ASAAS_CHECKOUT` vazio: Minha loja mostra "Falar com a AutoGiro" (`AUTOGIRO_WHATSAPP`).
-1. No painel do Asaas, crie a cobrança da loja: link de pagamento ou assinatura mensal com forma de pagamento "Pergunte ao cliente" (Pix, boleto ou cartão).
-2. Pago, libere: `npm run loja -- liberar <slug> cus_...` (o `cus_` está em Clientes no Asaas). Sem o `cus_`, a loja fica ativa até você pausar.
-3. Com o `cus_` gravado, o webhook assume: cada cobrança que o Asaas gera no mês ativa (paga) ou pausa (vencida) a loja sozinho.
-4. `npm run loja -- listar` mostra todas; `npm run loja -- pausar <slug>` pausa.
-
-**Fase 2, autoatendimento.** `ASAAS_CHECKOUT=on`: "Assinar com cartão" abre o Checkout do Asaas; a primeira cobrança cai no fim do teste e o webhook liga a loja pelo `checkoutSession` da assinatura.
-
-**Webhook** (Integrações › Webhooks no Asaas): URL `https://<domínio>/api/webhooks/asaas`, token = `ASAAS_WEBHOOK_TOKEN`, envio **sequencial**, eventos `CHECKOUT_PAID`, `SUBSCRIPTION_*` e `PAYMENT_*`. Só cobranças de assinatura mudam o plano; cobrança avulsa não.
-
-**Em desenvolvimento,** `npm run dev` e, noutro terminal, `npm run tunnel -- --url=<seu-dominio>.ngrok-free.app`: o domínio fixo do ngrok vira a URL do webhook no Sandbox e o `APP_BASE_URL`.
-
-## Regras de isolamento (multi-tenant)
-
-- Toda tabela de dados da loja tem `loja_id` (FK `lojas.id`, `on delete cascade`).
-- Em código autenticado, `loja_id` vem **só** de `getLojaId()`/`requireLojaId()` e entra em todo `where`.
-- Em rotas públicas, `loja_id` é derivado do recurso (ex.: do carro), nunca do cliente.
-- RLS ligado em todas as tabelas sem policies: a API REST do Supabase (anon key) não lê nada; o app usa a role do servidor via Drizzle.
-
-## Integrações externas
-
-- **Auth.js (Google)**: crie um ID do cliente OAuth (Aplicativo da Web) no Google Cloud com o redirecionamento `<APP_BASE_URL>/api/auth/callback/google` e preencha `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET`/`AUTH_SECRET`. A loja é ligada ao usuário por `lojas.auth_user_id = sub` do Google.
-- **R2**: dois buckets. `R2_PUBLIC_BUCKET` com domínio público; `R2_PRIVATE_BUCKET` **sem** acesso público.
-- **Cron (Cloudflare Worker)**:
-  ```js
-  export default {
-    async scheduled(_e, env) {
-      await fetch("https://<app>/api/cron/delete-expired-cnh", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${env.CRON_SECRET}` },
-      });
-    },
-  };
-  ```
+Índice completo e regras de manutenção: [docs/README.md](docs/README.md). Instruções para agentes de IA: [CLAUDE.md](CLAUDE.md).

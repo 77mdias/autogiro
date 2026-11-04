@@ -1,4 +1,6 @@
-# Software Requirement Specification (SRS) - Garagem Link
+# SRS: requisitos de software
+
+> Documento de origem, escrito antes do código com o nome provisório **Garagem Link** (o produto é o **AutoGiro**). O que já está pronto, o que mudou e por quê: [estado.md](estado.md).
 
 ## 1. Introdução
 
