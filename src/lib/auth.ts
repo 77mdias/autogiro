@@ -2,15 +2,19 @@ import "server-only";
 import NextAuth, { CredentialsSignin, type DefaultSession } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { lojas, usuarios } from "@/lib/db/schema";
+import { membros, usuarios } from "@/lib/db/schema";
 import { conferirSenha } from "@/lib/senha";
 
 declare module "next-auth" {
   interface Session {
-    user: { loja_id: string | null } & DefaultSession["user"];
+    user: {
+      loja_id: string | null;
+      membro_id: string | null;
+      papel: "gestor" | "vendedor" | null;
+    } & DefaultSession["user"];
   }
 }
 
@@ -42,22 +46,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   callbacks: {
-    // A fonte da verdade é lojas.auth_user_id = sub (id do Google ou de usuarios). Enquanto o usuário
-    // não tem loja, consulta a cada request; assim o onboarding vale sem refazer login.
+    // A fonte da verdade é membros.auth_user_id = sub (id do Google ou de usuarios). Consulta a cada
+    // request: o onboarding vale sem refazer login, e vendedor desativado ou com papel trocado muda na hora.
     async jwt({ token }) {
-      if (!token.loja_id && token.sub) {
-        const [loja] = await db
-          .select({ id: lojas.id })
-          .from(lojas)
-          .where(eq(lojas.authUserId, token.sub))
+      if (token.sub) {
+        const [m] = await db
+          .select({ id: membros.id, lojaId: membros.lojaId, papel: membros.papel })
+          .from(membros)
+          .where(and(eq(membros.authUserId, token.sub), eq(membros.ativo, true)))
           .limit(1);
-        token.loja_id = loja?.id ?? null;
+        token.loja_id = m?.lojaId ?? null;
+        token.membro_id = m?.id ?? null;
+        token.papel = m?.papel ?? null;
       }
       return token;
     },
     session({ session, token }) {
       session.user.id = token.sub!;
       session.user.loja_id = (token.loja_id as string | null | undefined) ?? null;
+      session.user.membro_id = (token.membro_id as string | null | undefined) ?? null;
+      session.user.papel = (token.papel as "gestor" | "vendedor" | null | undefined) ?? null;
       return session;
     },
   },
