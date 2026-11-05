@@ -46,6 +46,10 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 - [ ] Fluxo completo no ar: cadastro, onboarding, foto no R2 de produção, simulação com CNH, Ver CNH.
 - [ ] Webhook do Asaas de produção e primeira cobrança real.
 
+**Próximas telas** ([plano](telas-equipe.md))
+- [x] Passo 1: tabela `membros`, papel gestor/vendedor na sessão, travas de gestor nas actions.
+- [ ] Passos 2 a 6: carros e leads por dono, aprovação de edição, convite de vendedores, vendas e comissões, preço por faixa.
+
 **Melhorias conhecidas**
 - [ ] `favicon.ico` responde 404 (o ícone do app existe em `src/app/icon.png`).
 - [ ] Fotos em WebP (REQ-004).

@@ -3,7 +3,7 @@ import { count, eq } from "drizzle-orm";
 import { Eye, MessageCircle } from "lucide-react";
 import { db } from "@/lib/db";
 import { carros, lojas, simulacoesFinanciamento as sim } from "@/lib/db/schema";
-import { requireLojaId } from "@/lib/session";
+import { getSession, requireLojaId } from "@/lib/session";
 import { buttonVariants } from "@/components/ui/button";
 import { CopyLinkButton, ShareLinkButton } from "@/components/copy-link-button";
 import { LojaForm } from "@/components/loja-form";
@@ -46,6 +46,8 @@ function situacao(plano: PlanoLoja, voltouDoCheckout: boolean) {
 export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel/loja">) {
   const lojaId = await requireLojaId("/painel/loja", { exigePlano: false });
   const { assinatura } = await searchParams;
+  // Vendedor vê a situação e o link, mas dados e assinatura ficam com o gestor (as actions também checam).
+  const gestor = (await getSession())?.user.papel === "gestor";
   const [[loja], porStatus, [{ leads }]] = await Promise.all([
     db
       .select({
@@ -85,7 +87,9 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
             <p role={pausado ? "alert" : undefined} className="max-w-[52ch] text-ink-2">
               {plano.texto}
             </p>
-            {plano.botao &&
+            {!gestor && pausado && <p className="text-ink-2">Fale com o gestor da loja para regularizar.</p>}
+            {gestor &&
+              plano.botao &&
               (autoatendimento() ? (
                 <AssinarForm rotulo={plano.botao} destaque={pausado} />
               ) : (
@@ -128,7 +132,11 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
         <h2 id="dados-titulo" className="font-display text-xl font-semibold">
           Dados comerciais
         </h2>
-        <LojaForm action={salvarLoja} inicial={loja} submitLabel="Salvar alterações" />
+        {gestor ? (
+          <LojaForm action={salvarLoja} inicial={loja} submitLabel="Salvar alterações" />
+        ) : (
+          <p className="text-ink-2">Só o gestor altera os dados da loja.</p>
+        )}
       </section>
     </div>
   );

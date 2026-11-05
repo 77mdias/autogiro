@@ -4,6 +4,7 @@ import {
   uuid,
   text,
   integer,
+  boolean,
   timestamp,
   jsonb,
   index,
@@ -16,6 +17,7 @@ import { sql } from "drizzle-orm";
 
 export const planoStatus = pgEnum("plano_status", ["trial", "ativo", "inadimplente", "cancelado"]);
 export const carroStatus = pgEnum("carro_status", ["disponivel", "vendido"]);
+export const papelMembro = pgEnum("papel_membro", ["gestor", "vendedor"]);
 export const simulacaoStatus = pgEnum("simulacao_status", ["novo", "em_contato", "aprovado", "recusado"]);
 
 export const lojas = pgTable("lojas", {
@@ -33,6 +35,22 @@ export const lojas = pgTable("lojas", {
   trialAte: timestamp("trial_ate", { withTimezone: true }).notNull().default(sql`now() + interval '7 days'`),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }).enableRLS();
+
+// Quem entra no painel de cada loja. O dono (lojas.auth_user_id) é o gestor; vendedores entram por convite.
+// auth_user_id único: uma conta pertence a uma loja só. Desativar tira o acesso na hora (lib/auth consulta a cada request).
+export const membros = pgTable(
+  "membros",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    lojaId: uuid("loja_id").notNull().references(() => lojas.id, { onDelete: "cascade" }),
+    authUserId: text("auth_user_id").notNull().unique(),
+    papel: papelMembro("papel").notNull(),
+    nome: text("nome"),
+    ativo: boolean("ativo").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("membros_loja_id_idx").on(t.lojaId)],
+).enableRLS();
 
 export const carros = pgTable(
   "carros",

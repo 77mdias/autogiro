@@ -24,6 +24,12 @@ export async function getLojaId(): Promise<string | null> {
   return session?.user.loja_id ?? null;
 }
 
+/** Para actions só do gestor (dados da loja, assinatura, editar e excluir carro): null para os demais. */
+export async function getLojaIdDoGestor(): Promise<string | null> {
+  const session = await getSession();
+  return session?.user.papel === "gestor" ? session.user.loja_id : null;
+}
+
 export async function lojaLiberada(lojaId: string) {
   const [loja] = await db
     .select({ planoStatus: lojas.planoStatus, trialAte: lojas.trialAte, asaasSubscriptionId: lojas.asaasSubscriptionId })
@@ -35,12 +41,13 @@ export async function lojaLiberada(lojaId: string) {
 
 /**
  * Para páginas: sem sessão → login; logado sem loja → onboarding; plano vencido → Minha loja,
- * onde fica a assinatura (essa página passa `exigePlano: false`).
+ * onde fica a assinatura (essa página passa `exigePlano: false`). `soGestor`: vendedor volta ao estoque.
  */
-export async function requireLojaId(returnTo = "/painel", { exigePlano = true } = {}): Promise<string> {
+export async function requireLojaId(returnTo = "/painel", { exigePlano = true, soGestor = false } = {}): Promise<string> {
   const session = await getSession();
   if (!session) redirect(`/login?callbackUrl=${encodeURIComponent(returnTo)}`);
   if (!session.user.loja_id) redirect("/onboarding");
+  if (soGestor && session.user.papel !== "gestor") redirect("/painel/estoque");
   if (exigePlano && !(await lojaLiberada(session.user.loja_id))) redirect("/painel/loja");
   return session.user.loja_id;
 }

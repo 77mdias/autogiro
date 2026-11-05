@@ -6,12 +6,12 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { carros, lojas, simulacoesFinanciamento as sim } from "@/lib/db/schema";
+import { carros, lojas, membros, simulacoesFinanciamento as sim } from "@/lib/db/schema";
 import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
 import { AsaasError, criarCheckoutAssinatura, faturaVencida } from "@/lib/asaas";
 import { MAX_CENTAVOS, onlyDigits, reaisToCentavos, slugify } from "@/lib/masks";
 import { deleteCnhs, deleteFotos, uploadFoto } from "@/lib/r2";
-import { getLojaId, lojaLiberada } from "@/lib/session";
+import { getLojaId, getLojaIdDoGestor, lojaLiberada } from "@/lib/session";
 
 // Server actions são endpoints públicos: toda action revalida a sessão e escopa por loja_id.
 
@@ -50,6 +50,8 @@ export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormS
   const lojaId = await getLojaId();
   if (!lojaId) return { error: "Sessão expirada. Entre novamente." };
   if (!(await lojaLiberada(lojaId))) return { error: "Plano pausado. Regularize a assinatura em Minha loja." };
+  // shortcut: vendedor só cadastra; a edição dele vira pedido de aprovação do gestor (docs/produto/telas-equipe.md)
+  if (fd.get("id") && !(await getLojaIdDoGestor())) return { error: "Só o gestor pode editar carros." };
 
   const parsed = carroSchema.safeParse({
     marca: str(fd, "marca"),
@@ -124,7 +126,7 @@ export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormS
 
 /** Exclui o carro e as fotos. As simulações ficam (carro_id vira null) para a loja ainda responder. */
 export async function excluirCarro(id: string): Promise<FormState> {
-  const lojaId = await getLojaId();
+  const lojaId = await getLojaIdDoGestor();
   if (!lojaId || !uuid.safeParse(id).success) return { error: "Carro não encontrado" };
 
   const [apagado] = await db
@@ -152,8 +154,8 @@ const lojaCampos = (fd: FormData) => ({
 });
 
 export async function salvarLoja(_prev: FormState, fd: FormData): Promise<FormState> {
-  const lojaId = await getLojaId();
-  if (!lojaId) return { error: "Sessão expirada. Entre novamente." };
+  const lojaId = await getLojaIdDoGestor();
+  if (!lojaId) return { error: "Só o gestor altera os dados da loja." };
   const parsed = lojaSchema.safeParse(lojaCampos(fd));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
@@ -172,11 +174,15 @@ export async function criarLoja(_prev: FormState, fd: FormData): Promise<FormSta
 
   // Sufixo aleatório evita colisão de slug; o slug não muda ao renomear (link da vitrine estável).
   const slug = `${slugify(parsed.data.nome) || "loja"}-${crypto.randomUUID().slice(0, 4)}`;
-  // Conflito = duplo envio; a loja já criada vale. O jwt callback (lib/auth) põe o loja_id na sessão.
-  await db
-    .insert(lojas)
-    .values({ ...parsed.data, slug, authUserId: session.user.id! })
-    .onConflictDoNothing({ target: lojas.authUserId });
+  // Conflito = duplo envio; a loja já criada vale. O jwt callback (lib/auth) acha o gestor e põe o loja_id na sessão.
+  await db.transaction(async (tx) => {
+    const [loja] = await tx
+      .insert(lojas)
+      .values({ ...parsed.data, slug, authUserId: session.user.id! })
+      .onConflictDoNothing({ target: lojas.authUserId })
+      .returning({ id: lojas.id });
+    if (loja) await tx.insert(membros).values({ lojaId: loja.id, authUserId: session.user.id!, papel: "gestor" });
+  });
 
   redirect("/painel/estoque");
 }
@@ -186,8 +192,8 @@ export async function criarLoja(_prev: FormState, fd: FormData): Promise<FormSta
  * A primeira cobrança cai no fim do teste grátis (ou hoje, se já acabou). Quem decide o plano é o webhook.
  */
 export async function assinar(): Promise<FormState> {
-  const lojaId = await getLojaId();
-  if (!lojaId) return { error: "Sessão expirada. Entre novamente." };
+  const lojaId = await getLojaIdDoGestor();
+  if (!lojaId) return { error: "Só o gestor cuida da assinatura." };
   const [loja] = await db.select().from(lojas).where(eq(lojas.id, lojaId)).limit(1);
   if (!loja) return { error: "Loja não encontrada" };
   if (loja.planoStatus === "ativo") return {};
