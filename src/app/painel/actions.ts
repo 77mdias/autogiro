@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { carros, lojas, simulacoesFinanciamento as sim } from "@/lib/db/schema";
 import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
@@ -246,4 +246,8 @@ export async function marcarContato(id: string) {
     .set({ status: "em_contato" })
     .where(and(eq(sim.id, id), eq(sim.lojaId, lojaId), eq(sim.status, "novo")));
   revalidatePath("/painel", "layout");
+}
+
+export async function sair() {
+  await signOut({ redirectTo: "/" });
 }

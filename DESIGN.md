@@ -37,6 +37,11 @@ Escala de espaço, de tipo, easings e durações estão em `tokens.css`. O shadc
 - Campos: 48px, borda `rule-2`, foco em contorno de 2px, fonte de 16px (o iPhone não dá zoom)
 - Molduras: só os cantos (`.ticks`) em estados vazios, link da vitrine e números medidos
 
+## Navegação do painel
+- Desktop: barra lateral de 16rem (loja, itens, tema, Sair). Item ativo em `paper-2` com filete azul e ícone azul.
+- Celular: gaveta pela esquerda, aberta pelo botão de menu (56px, contorno `rule-2`) no canto inferior esquerdo; no direito, cadastrar carro (56px, azul). Fica fora da tela de cadastro.
+- Contador de novas: pílula `navy` no item Interessados e ponto `navy` no botão de menu.
+
 ## Movimento
 - Caráter: calmo. Transições de 120ms a 420ms, só `transform`, `opacity` e cor.
 - Landing: só a entrada suave do topo ao carregar e os blocos aparecendo uma vez ao rolar (`landing.css`); nada se mexe com movimento reduzido.

@@ -64,7 +64,7 @@ export function CarroForm({ carro }: { carro?: CarroInicial }) {
     <form onSubmit={onSubmit} className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12">
       {carro && <input type="hidden" name="id" value={carro.id} />}
 
-      <section aria-labelledby="fotos-titulo" className="grid min-w-0 grid-cols-1 content-start gap-3 lg:sticky lg:top-24">
+      <section aria-labelledby="fotos-titulo" className="grid min-w-0 grid-cols-1 content-start gap-3 lg:sticky lg:top-10">
         <div className="flex items-baseline justify-between gap-3">
           <h2 id="fotos-titulo" className="font-display text-xl font-semibold">
             Fotos
