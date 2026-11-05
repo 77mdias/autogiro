@@ -2,6 +2,13 @@
 
 Mais recentes primeiro. Cada uma: o que foi decidido e por quê.
 
+## 2026-11-05 · Barra lateral no lugar das abas de baixo
+O painel vai ganhar telas (equipe, vendas) e três abas embaixo não comportam mais itens.
+- **Desktop**: barra lateral fixa à esquerda com a loja, os itens, o tema e Sair.
+- **Celular**: a mesma lista numa gaveta (`Dialog` do Base UI: foco preso, Esc, fecha ao navegar). Dois botões redondos embaixo, no alcance do polegar: menu à esquerda, cadastrar carro (azul, ação principal) à direita.
+- O contador de simulações novas vai no item Interessados (marinho) e como ponto no botão de menu.
+- Descartada: manter a barra de abas e pôr um "Mais" com o resto; esconde justamente as telas novas.
+
 ## 2026-11-04 · Landing simples no lugar do showroom 3D
 O cliente é o garagista, muitas vezes mais velho e pouco acostumado a sites modernos. Uma página que se lê de cima para baixo vende mais que um showroom 3D com scroll.
 - Tema claro do app, texto grande, botões de 56px no toque e o mesmo botão "Testar 7 dias grátis" no topo, no preço e no fim.

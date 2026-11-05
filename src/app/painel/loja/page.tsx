@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { count, eq } from "drizzle-orm";
-import { Eye, LogOut, MessageCircle } from "lucide-react";
+import { Eye, MessageCircle } from "lucide-react";
 import { db } from "@/lib/db";
 import { carros, lojas, simulacoesFinanciamento as sim } from "@/lib/db/schema";
 import { requireLojaId } from "@/lib/session";
-import { signOut } from "@/lib/auth";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { CopyLinkButton, ShareLinkButton } from "@/components/copy-link-button";
 import { LojaForm } from "@/components/loja-form";
 import { PLANO_VALOR_REAIS, planoLiberado, type PlanoLoja } from "@/lib/plano";
@@ -130,17 +129,6 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
           Dados comerciais
         </h2>
         <LojaForm action={salvarLoja} inicial={loja} submitLabel="Salvar alterações" />
-        <form
-          className="border-t border-rule pt-5"
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/" });
-          }}
-        >
-          <Button type="submit" variant="ghost" className="-ml-4 text-ink-3">
-            <LogOut aria-hidden /> Sair da conta
-          </Button>
-        </form>
       </section>
     </div>
   );

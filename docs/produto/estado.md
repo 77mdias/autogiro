@@ -2,7 +2,7 @@
 
 O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md), [SRS](srs.md), [fluxos](fluxos.md), [briefing](briefing.md)) e o que falta. **Atualize este arquivo a cada entrega.**
 
-Última revisão: 2026-11-03. No ar em `https://autogiro.77mdevseven.tech` (Vercel).
+Última revisão: 2026-11-05. No ar em `https://autogiro.77mdevseven.tech` (Vercel).
 
 ## Pronto
 
@@ -14,6 +14,7 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 | Vitrine | Lista da loja com filtro (disponíveis, vendidos) e busca; vendidos aparecem marcados | `/loja/[slug]` |
 | Carro | Galeria, ficha, WhatsApp com mensagem pronta e link do carro, Simular | `/loja/[slug]/carros/[id]` |
 | Simulação | Nome, WhatsApp, entrada, valor a financiar, 24 a 60x, CNH opcional (foto ou PDF), aceite LGPD obrigatório | `/simular`, `POST /api/simulacoes` |
+| Navegação | Barra lateral no desktop; no celular, gaveta com botões de menu e cadastrar carro embaixo | [decisoes.md](../decisoes.md) |
 | Interessados | Lista das simulações, Ver CNH (link assinado de 5 min), chamar no WhatsApp, descartar | `/painel/interessados` |
 | Plano | R$ 149/mês, 7 dias grátis sem cartão; venda assistida (fase 1) e checkout de cartão (fase 2); bloqueio por atraso via webhook | [pagamentos-asaas.md](../pagamentos-asaas.md) |
 | Administrador | MRR, lojas por situação do plano, carros e simulações por loja | `/admin` ([arquitetura.md](../arquitetura.md#rotas)) |
