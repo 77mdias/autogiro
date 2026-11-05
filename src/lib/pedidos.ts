@@ -15,8 +15,8 @@ export type CamposCarro = {
   status: "disponivel" | "vendido";
 };
 
-/** O que o vendedor pediu: os campos completos do carro e as fotos a pôr e a tirar. */
-export type MudancasCarro = CamposCarro & { fotosNovas: string[]; fotosRemover: string[] };
+/** O que o vendedor pediu: os campos completos do carro, as fotos a pôr e a tirar e, se marcou vendido, a venda. */
+export type MudancasCarro = CamposCarro & { fotosNovas: string[]; fotosRemover: string[]; venda?: { valorCentavos: number } };
 
 const ROTULOS: Record<keyof CamposCarro, string> = {
   marca: "Marca",

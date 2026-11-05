@@ -57,6 +57,13 @@
       "when": 1793889447328,
       "tag": "0007_convites",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793891309184,
+      "tag": "0008_vendas",
+      "breakpoints": true
     }
   ]
 }

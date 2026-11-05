@@ -146,6 +146,25 @@ export const pedidosEdicao = pgTable(
   ],
 ).enableRLS();
 
+// Venda de um carro: quem vendeu, por quanto e a comissão (só o gestor vê; null = ainda não definida).
+// `carro` guarda o nome do carro para a venda continuar legível se ele sair do estoque.
+export const vendas = pgTable(
+  "vendas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    lojaId: uuid("loja_id").notNull().references(() => lojas.id, { onDelete: "cascade" }),
+    carroId: uuid("carro_id")
+      .unique()
+      .references(() => carros.id, { onDelete: "set null" }),
+    carro: text("carro").notNull(),
+    membroId: uuid("membro_id").references(() => membros.id, { onDelete: "set null" }),
+    valorCentavos: integer("valor_centavos").notNull(),
+    comissaoCentavos: integer("comissao_centavos"),
+    vendidaEm: timestamp("vendida_em", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("vendas_loja_vendida_idx").on(t.lojaId, t.vendidaEm)],
+).enableRLS();
+
 export const webhookEvents = pgTable(
   "webhook_events",
   {

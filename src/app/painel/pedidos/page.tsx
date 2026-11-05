@@ -128,6 +128,12 @@ export default async function PedidosPage() {
                           </dd>
                         </div>
                       ))}
+                      {p.mudancas?.venda && (
+                        <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-3">
+                          <dt className="text-sm text-ink-3">Valor da venda</dt>
+                          <dd className="num">{formatBRL(p.mudancas.venda.valorCentavos)}</dd>
+                        </div>
+                      )}
                       {fotosFora > 0 && (
                         <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-3">
                           <dt className="text-sm text-ink-3">Fotos removidas</dt>
@@ -145,7 +151,7 @@ export default async function PedidosPage() {
                           </dd>
                         </div>
                       )}
-                      {mudou.length === 0 && fotosFora === 0 && fotosNovas.length === 0 && (
+                      {mudou.length === 0 && fotosFora === 0 && fotosNovas.length === 0 && !p.mudancas?.venda && (
                         <p className="text-sm text-ink-3">Nenhuma diferença em relação ao carro de agora.</p>
                       )}
                     </dl>

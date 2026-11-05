@@ -29,9 +29,23 @@ export type CarroInicial = {
 const MARCAS = ["Chevrolet", "Fiat", "Volkswagen", "Toyota", "Hyundai", "Honda", "Renault", "Jeep", "Ford", "Nissan", "Peugeot", "Citroën", "BYD", "Mitsubishi", "Kia"];
 const CORES = ["Branco", "Preto", "Prata", "Cinza", "Vermelho", "Azul", "Marrom", "Bege", "Verde"];
 
-/** `paraAprovacao`: vendedor editando; o envio vira pedido para o gestor. */
-export function CarroForm({ carro, paraAprovacao = false }: { carro?: CarroInicial; paraAprovacao?: boolean }) {
+/**
+ * `paraAprovacao`: vendedor editando; o envio vira pedido para o gestor.
+ * `equipe`: para o gestor escolher quem vendeu (o primeiro é ele mesmo).
+ */
+export function CarroForm({
+  carro,
+  paraAprovacao = false,
+  equipe,
+}: {
+  carro?: CarroInicial;
+  paraAprovacao?: boolean;
+  equipe?: { id: string; nome: string }[];
+}) {
   const [state, formAction, pending] = useActionState(salvarCarro, undefined);
+  // Marcar vendido um carro disponível pede os dados da venda
+  const [vendido, setVendido] = useState(carro?.status === "vendido");
+  const pedeVenda = carro?.status === "disponivel" && vendido;
   const [novas, setNovas] = useState<{ file: File; preview: string }[]>([]);
   const [removidas, setRemovidas] = useState<Set<string>>(new Set());
   const [processando, setProcessando] = useState(false);
@@ -62,7 +76,13 @@ export function CarroForm({ carro, paraAprovacao = false }: { carro?: CarroInici
   const totalFotos = existentes.length + novas.length;
 
   return (
-    <form onSubmit={onSubmit} className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12">
+    <form
+      onSubmit={onSubmit}
+      onChange={(e) => {
+        const alvo = e.target;
+        if (alvo instanceof HTMLInputElement && alvo.name === "status") setVendido(alvo.value === "vendido");
+      }}
+      className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12">
       {carro && <input type="hidden" name="id" value={carro.id} />}
 
       <section aria-labelledby="fotos-titulo" className="grid min-w-0 grid-cols-1 content-start gap-3 lg:sticky lg:top-10">
@@ -166,6 +186,40 @@ export function CarroForm({ carro, paraAprovacao = false }: { carro?: CarroInici
               options={[{ value: "disponivel", label: "Disponível" }, { value: "vendido", label: "Vendido" }]}
               defaultValue={carro.status}
             />
+          )}
+          {pedeVenda && (
+            <div className="grid grid-cols-1 gap-5 rounded-card bg-paper-2 p-4">
+              <Field
+                label="Valor da venda"
+                htmlFor="valorVenda"
+                hint={paraAprovacao ? "Por quanto você fechou. Vai junto no pedido para o gestor." : "Por quanto o carro foi vendido."}
+              >
+                <MaskedInput
+                  id="valorVenda"
+                  name="valorVenda"
+                  mask="milhar"
+                  prefix="R$"
+                  required
+                  defaultValue={String(Math.round(carro.precoCentavos / 100))}
+                />
+              </Field>
+              {equipe && equipe.length > 1 && (
+                <Field label="Quem vendeu" htmlFor="vendidoPor">
+                  <select
+                    id="vendidoPor"
+                    name="vendidoPor"
+                    defaultValue={equipe[0].id}
+                    className="h-12 w-full rounded-full border border-rule-2 bg-paper px-4 text-md outline-2 outline-offset-[-3px] outline-transparent focus-visible:outline-focus pointer-fine:h-10"
+                  >
+                    {equipe.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.nome}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+            </div>
           )}
           </div>
         </fieldset>
