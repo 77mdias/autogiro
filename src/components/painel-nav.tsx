@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Dialog } from "@base-ui/react/dialog";
-import { Car, ClipboardCheck, ExternalLink, LogOut, Menu, Plus, Store, UserCog, Users, X, type LucideIcon } from "lucide-react";
+import { Car, ClipboardCheck, ExternalLink, HandCoins, LogOut, Menu, Plus, Store, UserCog, Users, X, type LucideIcon } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { sair } from "@/app/painel/actions";
@@ -113,6 +113,9 @@ function Conteudo({ pathname, loja, novas, pedidos, gestor, aoNavegar }: Require
           <Item href="/painel/pedidos" icon={ClipboardCheck} ativo={pathname.startsWith("/painel/pedidos")} onClick={aoNavegar}>
             Pedidos
             <Contador n={pedidos} rotulo="para aprovar" />
+          </Item>
+          <Item href="/painel/vendas" icon={HandCoins} ativo={pathname.startsWith("/painel/vendas")} onClick={aoNavegar}>
+            {gestor ? "Vendas e comissões" : "Minhas vendas"}
           </Item>
           {gestor && (
             <Item href="/painel/vendedores" icon={UserCog} ativo={pathname.startsWith("/painel/vendedores")} onClick={aoNavegar}>

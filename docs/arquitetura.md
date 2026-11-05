@@ -25,6 +25,7 @@ Cron ───────► POST /api/cron/delete-expired-cnh ──► apaga 
 | `/painel/estoque`, `/novo`, `/[id]` | membro | Lista, cadastro e edição de carros (fotos no R2); a edição do vendedor vira pedido |
 | `/painel/interessados` | membro | Leads: o vendedor vê os dele, o gestor vê todos e distribui os dele; CNH, WhatsApp, status e excluir só para o responsável |
 | `/painel/pedidos` | membro | Gestor aprova ou recusa edições e exclusões pedidas por vendedores; vendedor acompanha os dele |
+| `/painel/vendas?mes=AAAA-MM` | membro | Gestor: vendas do mês, totais, resumo por vendedor e comissão editável em R$ com a %. Vendedor: só as vendas dele, sem comissão |
 | `/painel/vendedores` | gestor | Equipe: gerar link de convite, desativar e reativar vendedores, cancelar convites (até 20, contando convites em aberto) |
 | `/convite/[token]` | quem tem o link | Mostra a loja; logado sem loja aceita e vira vendedor; sem sessão vai para `/login` e volta |
 | `/painel/loja` | membro | Plano, link da vitrine, números; dados da loja e assinatura só para o gestor |
@@ -82,6 +83,7 @@ Esquema em `src/lib/db/schema.ts`, migrações SQL em `drizzle/`.
 - **usuarios**: contas de e-mail e senha. `email` (único, minúsculo), `senha_hash` (`scrypt:<salt>:<hash>`), `email_confirmado_em`.
 - **tokens_email**: links dos e-mails. `usuario_id`, `tipo` (`confirmar | redefinir`), `token_hash` (sha256; o token só existe no link), `expira_em`.
 - **pedidos_edicao**: `loja_id`, `carro_id` (set null se o carro sair), `membro_id` (quem pediu), `tipo` (`editar | excluir`), `mudancas` (jsonb com os campos do carro, `fotosNovas` e `fotosRemover`), `status` (`pendente | aprovado | recusado`), `decidido_por`, `decidido_em`. Um pendente por carro (índice único parcial).
+- **vendas**: `loja_id`, `carro_id` (único; set null se o carro sair), `carro` (nome guardado), `membro_id` (quem vendeu), `valor_centavos`, `comissao_centavos` (null = não definida), `vendida_em`.
 - **webhook_events**: `provider`, `event_key` (único por provider), `event_type`, `payload`, `processed_at`. Serve de idempotência e de histórico.
 
 Valores em dinheiro são inteiros em centavos. RLS ligado em todas as tabelas sem policies: a API REST do Supabase não lê nada; o app usa a role do servidor.
@@ -115,6 +117,7 @@ Cada link novo apaga os anteriores do mesmo tipo, e só sai um e-mail por minuto
 - Em rotas públicas, `loja_id` é derivado do recurso (o carro).
 - Papel: só o gestor edita ou exclui carro, altera os dados da loja e assina (`getLojaIdDoGestor()` nas actions; `requireLojaId(..., { soGestor: true })` nas páginas). O vendedor cadastra carro direto; editar e excluir viram pedido em `pedidos_edicao`. As fotos novas do pedido já sobem para o R2 e só entram no carro na aprovação (`aprovarPedido` marca o pedido e aplica no carro na mesma transação); recusar apaga essas fotos. As regras puras (diferenças, fotos finais, limite de 15) estão em `src/lib/pedidos.ts`, com testes.
 - Leads: `POST /api/simulacoes` grava como responsável quem cadastrou o carro (se ativo) ou o gestor. Só o responsável vê a CNH, chama, descarta e marca contato; o vendedor vê só a carteira dele; o gestor vê todos e passa os dele para um vendedor (`distribuirLead`). Os contadores de "novas" contam só os leads de quem está logado.
+- Vendas: marcar vendido um carro disponível pede o valor (e, para o gestor, quem vendeu); a venda nasce na mesma transação que muda o carro, ou na aprovação do pedido do vendedor (vendedor = quem pediu). Voltar para disponível apaga a venda. A comissão só é lida na consulta do gestor; a do vendedor nem seleciona a coluna. Mês, % e resumo em `src/lib/vendas.ts`, com testes (mês no horário de Brasília).
 - Equipe: `aceitarConvite` gasta o convite e cria o membro vendedor na mesma transação; conta que já é de outra loja é recusada e o convite não é gasto. `desativarVendedor` devolve ao gestor, na mesma transação, os carros e os leads do vendedor. O limite (`MAX_VENDEDORES` em `src/lib/plano.ts`) conta vendedores ativos mais convites válidos.
 - Toda tabela de dados da loja tem `loja_id` com `on delete cascade`.
 

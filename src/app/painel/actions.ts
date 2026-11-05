@@ -1,12 +1,12 @@
 "use server";
 
-import { and, count, eq, gt } from "drizzle-orm";
+import { and, count, eq, gt, gte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { carros, convites, lojas, membros, pedidosEdicao, simulacoesFinanciamento as sim } from "@/lib/db/schema";
+import { carros, convites, lojas, membros, pedidosEdicao, simulacoesFinanciamento as sim, vendas } from "@/lib/db/schema";
 import { fotosAprovadas, MAX_FOTOS, type MudancasCarro } from "@/lib/pedidos";
 import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
 import { AsaasError, criarCheckoutAssinatura, faturaVencida } from "@/lib/asaas";
@@ -76,14 +76,31 @@ export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormS
   if (pedido && (await pedidoPendente(editId, lojaId))) return { error: PEDIDO_PENDENTE };
 
   let fotosAtuais: string[] = [];
+  let statusAtual: "disponivel" | "vendido" = "disponivel";
   if (editId) {
     const [atual] = await db
-      .select({ fotos: carros.fotos })
+      .select({ fotos: carros.fotos, status: carros.status })
       .from(carros)
       .where(and(eq(carros.id, editId), eq(carros.lojaId, lojaId)))
       .limit(1);
     if (!atual) return { error: "Carro não encontrado" };
     fotosAtuais = atual.fotos;
+    statusAtual = atual.status;
+  }
+
+  // Virou vendido: a venda precisa do valor. O gestor também diz quem vendeu (padrão: ele mesmo);
+  // no pedido do vendedor, quem vendeu é quem pediu.
+  let venda: Venda | undefined;
+  if (editId && parsed.data.status === "vendido" && statusAtual !== "vendido") {
+    const valorCentavos = reaisToCentavos(str(fd, "valorVenda") ?? "");
+    if (valorCentavos <= 0 || valorCentavos > MAX_CENTAVOS) return { error: "Informe por quanto o carro foi vendido." };
+    let membroId = membro.membroId;
+    const escolhido = str(fd, "vendidoPor");
+    if (!pedido && escolhido && escolhido !== membroId) {
+      if (!uuid.safeParse(escolhido).success || !(await membroAtivo(escolhido, lojaId))) return { error: "Escolha quem vendeu" };
+      membroId = escolhido;
+    }
+    venda = { valorCentavos, membroId };
   }
   // Só remove chaves que já pertencem a este carro
   const remover = new Set(fd.getAll("removerFotos").filter((k) => fotosAtuais.includes(k as string)) as string[]);
@@ -122,6 +139,7 @@ export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormS
         descricao: resto.descricao ?? null,
         fotosNovas: enviadas,
         fotosRemover: [...remover],
+        ...(venda && { venda: { valorCentavos: venda.valorCentavos } }),
       };
       const [criado] = await db
         .insert(pedidosEdicao)
@@ -133,7 +151,10 @@ export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormS
         return { error: PEDIDO_PENDENTE };
       }
     } else if (editId) {
-      await db.update(carros).set(valores).where(and(eq(carros.id, editId), eq(carros.lojaId, lojaId)));
+      await db.transaction(async (tx) => {
+        await tx.update(carros).set(valores).where(and(eq(carros.id, editId), eq(carros.lojaId, lojaId)));
+        await ajustarVenda(tx, { lojaId, carroId: editId, antes: statusAtual, depois: resto.status, carro: nomeCarro(resto), venda });
+      });
     } else {
       await db.insert(carros).values({ ...valores, id: carroId, lojaId, cadastradoPor: membro.membroId });
     }
@@ -149,6 +170,34 @@ export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormS
 }
 
 const PEDIDO_PENDENTE = "Este carro já tem um pedido esperando o gestor.";
+
+type Venda = { valorCentavos: number; membroId: string };
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+const nomeCarro = (c: { marca: string; modelo: string; ano: number }) => `${c.marca} ${c.modelo} ${c.ano}`;
+
+async function membroAtivo(id: string, lojaId: string) {
+  const [m] = await db
+    .select({ id: membros.id })
+    .from(membros)
+    .where(and(eq(membros.id, id), eq(membros.lojaId, lojaId), eq(membros.ativo, true)))
+    .limit(1);
+  return !!m;
+}
+
+/** A venda acompanha a situação do carro: virou vendido → registra; voltou a disponível → desfaz. */
+async function ajustarVenda(
+  tx: Tx,
+  a: { lojaId: string; carroId: string; antes: string; depois: string; carro: string; venda?: Venda },
+) {
+  if (a.depois === "vendido" && a.antes !== "vendido" && a.venda) {
+    await tx
+      .insert(vendas)
+      .values({ lojaId: a.lojaId, carroId: a.carroId, carro: a.carro, ...a.venda })
+      .onConflictDoNothing();
+  } else if (a.depois === "disponivel" && a.antes === "vendido") {
+    await tx.delete(vendas).where(and(eq(vendas.carroId, a.carroId), eq(vendas.lojaId, a.lojaId)));
+  }
+}
 
 async function pedidoPendente(carroId: string, lojaId: string) {
   const [p] = await db
@@ -336,7 +385,7 @@ export async function aprovarPedido(id: string): Promise<FormState> {
 
   const [carro] = p.carroId
     ? await db
-        .select({ fotos: carros.fotos })
+        .select({ fotos: carros.fotos, status: carros.status })
         .from(carros)
         .where(and(eq(carros.id, p.carroId), eq(carros.lojaId, gestor.lojaId)))
         .limit(1)
@@ -361,9 +410,17 @@ export async function aprovarPedido(id: string): Promise<FormState> {
     if (!marcado) return false;
     const doCarro = and(eq(carros.id, p.carroId!), eq(carros.lojaId, gestor.lojaId));
     if (fotos) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- separa as fotos dos campos do carro
-      const { fotosNovas, fotosRemover, ...campos } = p.mudancas!;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- separa fotos e venda dos campos do carro
+      const { fotosNovas, fotosRemover, venda, ...campos } = p.mudancas!;
       await tx.update(carros).set({ ...campos, fotos }).where(doCarro);
+      await ajustarVenda(tx, {
+        lojaId: gestor.lojaId,
+        carroId: p.carroId!,
+        antes: carro.status,
+        depois: campos.status,
+        carro: nomeCarro(campos),
+        venda: venda && { valorCentavos: venda.valorCentavos, membroId: p.membroId },
+      });
     } else {
       await tx.delete(carros).where(doCarro);
     }
@@ -517,4 +574,27 @@ export async function aceitarConvite(token: string): Promise<FormState> {
   }
   // O jwt (lib/auth) acha o membro na próxima requisição: o painel já abre com a loja.
   redirect("/painel/estoque");
+}
+
+/** Só o gestor define a comissão, em reais; vazio volta a "não definida". Não passa do valor da venda. */
+export async function salvarComissao(_prev: FormState, fd: FormData): Promise<FormState> {
+  const gestor = await getMembro();
+  const id = String(fd.get("id"));
+  if (gestor?.papel !== "gestor" || !uuid.safeParse(id).success) return { error: "Venda não encontrada" };
+  const texto = str(fd, "comissao");
+  const comissaoCentavos = texto ? reaisToCentavos(texto) : null;
+  const [v] = await db
+    .update(vendas)
+    .set({ comissaoCentavos })
+    .where(
+      and(
+        eq(vendas.id, id),
+        eq(vendas.lojaId, gestor.lojaId),
+        comissaoCentavos == null ? undefined : gte(vendas.valorCentavos, comissaoCentavos),
+      ),
+    )
+    .returning({ id: vendas.id });
+  if (!v) return { error: "A comissão não pode passar do valor da venda." };
+  revalidatePath("/painel/vendas");
+  return {};
 }
