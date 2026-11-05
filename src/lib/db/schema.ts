@@ -11,6 +11,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import type { MudancasCarro } from "../pedidos";
 
 // Todas as tabelas com .enableRLS() sem policies: bloqueia o acesso via API REST do
 // Supabase (anon/authenticated). O app acessa só pelo Drizzle com a role do servidor.
@@ -18,6 +19,8 @@ import { sql } from "drizzle-orm";
 export const planoStatus = pgEnum("plano_status", ["trial", "ativo", "inadimplente", "cancelado"]);
 export const carroStatus = pgEnum("carro_status", ["disponivel", "vendido"]);
 export const papelMembro = pgEnum("papel_membro", ["gestor", "vendedor"]);
+export const pedidoTipo = pgEnum("pedido_tipo", ["editar", "excluir"]);
+export const pedidoStatus = pgEnum("pedido_status", ["pendente", "aprovado", "recusado"]);
 export const simulacaoStatus = pgEnum("simulacao_status", ["novo", "em_contato", "aprovado", "recusado"]);
 
 export const lojas = pgTable("lojas", {
@@ -103,6 +106,28 @@ export const simulacoesFinanciamento = pgTable(
     index("simulacoes_loja_id_idx").on(t.lojaId, t.createdAt),
     index("simulacoes_responsavel_idx").on(t.responsavelId, t.status),
     index("simulacoes_cnh_uploaded_at_idx").on(t.cnhUploadedAt),
+  ],
+).enableRLS();
+
+// Edição ou exclusão de carro pedida por vendedor; só muda o carro quando o gestor aprova.
+// Um pedido pendente por carro. As fotos novas já estão no R2 e só entram no carro na aprovação.
+export const pedidosEdicao = pgTable(
+  "pedidos_edicao",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    lojaId: uuid("loja_id").notNull().references(() => lojas.id, { onDelete: "cascade" }),
+    carroId: uuid("carro_id").references(() => carros.id, { onDelete: "set null" }),
+    membroId: uuid("membro_id").notNull().references(() => membros.id, { onDelete: "cascade" }),
+    tipo: pedidoTipo("tipo").notNull(),
+    mudancas: jsonb("mudancas").$type<MudancasCarro>(),
+    status: pedidoStatus("status").notNull().default("pendente"),
+    decididoPor: uuid("decidido_por").references(() => membros.id, { onDelete: "set null" }),
+    decididoEm: timestamp("decidido_em", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("pedidos_loja_status_idx").on(t.lojaId, t.status, t.createdAt),
+    uniqueIndex("pedidos_um_pendente_por_carro_uq").on(t.carroId).where(sql`${t.status} = 'pendente'`),
   ],
 ).enableRLS();
 

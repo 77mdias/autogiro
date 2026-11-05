@@ -6,7 +6,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { carros, lojas, membros, simulacoesFinanciamento as sim } from "@/lib/db/schema";
+import { carros, lojas, membros, pedidosEdicao, simulacoesFinanciamento as sim } from "@/lib/db/schema";
+import { fotosAprovadas, MAX_FOTOS, type MudancasCarro } from "@/lib/pedidos";
 import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
 import { AsaasError, criarCheckoutAssinatura, faturaVencida } from "@/lib/asaas";
 import { MAX_CENTAVOS, onlyDigits, reaisToCentavos, slugify } from "@/lib/masks";
@@ -17,7 +18,6 @@ import { getLojaIdDoGestor, getMembro, lojaLiberada } from "@/lib/session";
 
 export type FormState = { error?: string } | undefined;
 
-const MAX_FOTOS = 15;
 const uuid = z.uuid();
 const anoAtual = new Date().getFullYear();
 
@@ -51,8 +51,6 @@ export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormS
   if (!membro) return { error: "Sessão expirada. Entre novamente." };
   const { lojaId } = membro;
   if (!(await lojaLiberada(lojaId))) return { error: "Plano pausado. Regularize a assinatura em Minha loja." };
-  // shortcut: vendedor só cadastra; a edição dele vira pedido de aprovação do gestor (docs/produto/telas-equipe.md)
-  if (fd.get("id") && membro.papel !== "gestor") return { error: "Só o gestor pode editar carros." };
 
   const parsed = carroSchema.safeParse({
     marca: str(fd, "marca"),
@@ -71,6 +69,9 @@ export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormS
   const editId = str(fd, "id");
   if (editId && !uuid.safeParse(editId).success) return { error: "Carro não encontrado" };
   const carroId = editId ?? crypto.randomUUID();
+  // Vendedor só cadastra direto; a edição dele vira pedido para o gestor aprovar
+  const pedido = !!editId && membro.papel !== "gestor";
+  if (pedido && (await pedidoPendente(editId, lojaId))) return { error: PEDIDO_PENDENTE };
 
   let fotosAtuais: string[] = [];
   if (editId) {
@@ -109,7 +110,27 @@ export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormS
 
     const { preco, ...resto } = parsed.data;
     const valores = { ...resto, precoCentavos: preco, fotos: [...mantidas, ...enviadas] };
-    if (editId) {
+    if (pedido) {
+      const mudancas: MudancasCarro = {
+        ...resto,
+        precoCentavos: preco,
+        cambio: resto.cambio ?? null,
+        combustivel: resto.combustivel ?? null,
+        cor: resto.cor ?? null,
+        descricao: resto.descricao ?? null,
+        fotosNovas: enviadas,
+        fotosRemover: [...remover],
+      };
+      const [criado] = await db
+        .insert(pedidosEdicao)
+        .values({ lojaId, carroId, membroId: membro.membroId, tipo: "editar", mudancas })
+        .onConflictDoNothing()
+        .returning({ id: pedidosEdicao.id });
+      if (!criado) {
+        await deleteFotos(enviadas).catch(() => {});
+        return { error: PEDIDO_PENDENTE };
+      }
+    } else if (editId) {
       await db.update(carros).set(valores).where(and(eq(carros.id, editId), eq(carros.lojaId, lojaId)));
     } else {
       await db.insert(carros).values({ ...valores, id: carroId, lojaId, cadastradoPor: membro.membroId });
@@ -120,15 +141,40 @@ export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormS
     return { error: "Não deu para salvar o carro agora. Tente de novo em alguns segundos." };
   }
 
-  if (remover.size) await deleteFotos([...remover]).catch(() => {}); // órfã no bucket público não é crítica
+  if (remover.size && !pedido) await deleteFotos([...remover]).catch(() => {}); // órfã no bucket público não é crítica
   revalidatePath("/painel", "layout");
-  redirect("/painel/estoque");
+  redirect(pedido ? "/painel/pedidos" : "/painel/estoque");
+}
+
+const PEDIDO_PENDENTE = "Este carro já tem um pedido esperando o gestor.";
+
+async function pedidoPendente(carroId: string, lojaId: string) {
+  const [p] = await db
+    .select({ id: pedidosEdicao.id })
+    .from(pedidosEdicao)
+    .where(and(eq(pedidosEdicao.carroId, carroId), eq(pedidosEdicao.lojaId, lojaId), eq(pedidosEdicao.status, "pendente")))
+    .limit(1);
+  return !!p;
 }
 
 /** Exclui o carro e as fotos. As simulações ficam (carro_id vira null) para a loja ainda responder. */
 export async function excluirCarro(id: string): Promise<FormState> {
-  const lojaId = await getLojaIdDoGestor();
-  if (!lojaId || !uuid.safeParse(id).success) return { error: "Carro não encontrado" };
+  const membro = await getMembro();
+  if (!membro || !uuid.safeParse(id).success) return { error: "Carro não encontrado" };
+  const { lojaId } = membro;
+
+  if (membro.papel !== "gestor") {
+    const [carro] = await db.select({ id: carros.id }).from(carros).where(and(eq(carros.id, id), eq(carros.lojaId, lojaId))).limit(1);
+    if (!carro) return { error: "Carro não encontrado" };
+    const [criado] = await db
+      .insert(pedidosEdicao)
+      .values({ lojaId, carroId: id, membroId: membro.membroId, tipo: "excluir" })
+      .onConflictDoNothing()
+      .returning({ id: pedidosEdicao.id });
+    if (!criado) return { error: PEDIDO_PENDENTE };
+    revalidatePath("/painel", "layout");
+    redirect("/painel/pedidos");
+  }
 
   const [apagado] = await db
     .delete(carros)
@@ -273,4 +319,73 @@ export async function distribuirLead(fd: FormData) {
 
 export async function sair() {
   await signOut({ redirectTo: "/" });
+}
+
+/** Gestor aprova: aplica a edição (ou exclui o carro) e marca o pedido, tudo numa transação. */
+export async function aprovarPedido(id: string): Promise<FormState> {
+  const gestor = await getMembro();
+  if (gestor?.papel !== "gestor" || !uuid.safeParse(id).success) return { error: "Pedido não encontrado" };
+  const [p] = await db
+    .select()
+    .from(pedidosEdicao)
+    .where(and(eq(pedidosEdicao.id, id), eq(pedidosEdicao.lojaId, gestor.lojaId), eq(pedidosEdicao.status, "pendente")))
+    .limit(1);
+  if (!p) return { error: "Este pedido já foi decidido." };
+
+  const [carro] = p.carroId
+    ? await db
+        .select({ fotos: carros.fotos })
+        .from(carros)
+        .where(and(eq(carros.id, p.carroId), eq(carros.lojaId, gestor.lojaId)))
+        .limit(1)
+    : [];
+  if (!carro) {
+    await recusarPedido(id);
+    return { error: "O carro não está mais no estoque; o pedido foi recusado." };
+  }
+
+  let fotos: string[] | null = null;
+  if (p.tipo === "editar") {
+    fotos = fotosAprovadas(carro.fotos, p.mudancas!);
+    if (!fotos) return { error: `Com este pedido o carro passaria de ${MAX_FOTOS} fotos. Recuse e peça um novo.` };
+  }
+
+  const aplicado = await db.transaction(async (tx) => {
+    const [marcado] = await tx
+      .update(pedidosEdicao)
+      .set({ status: "aprovado", decididoPor: gestor.membroId, decididoEm: new Date() })
+      .where(and(eq(pedidosEdicao.id, id), eq(pedidosEdicao.status, "pendente")))
+      .returning({ id: pedidosEdicao.id });
+    if (!marcado) return false;
+    const doCarro = and(eq(carros.id, p.carroId!), eq(carros.lojaId, gestor.lojaId));
+    if (fotos) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- separa as fotos dos campos do carro
+      const { fotosNovas, fotosRemover, ...campos } = p.mudancas!;
+      await tx.update(carros).set({ ...campos, fotos }).where(doCarro);
+    } else {
+      await tx.delete(carros).where(doCarro);
+    }
+    return true;
+  });
+  if (!aplicado) return { error: "Este pedido já foi decidido." };
+
+  const sairam = carro.fotos.filter((k) => !fotos?.includes(k));
+  if (sairam.length) await deleteFotos(sairam).catch(() => {}); // órfã no bucket público não é crítica
+  revalidatePath("/painel", "layout");
+  return {};
+}
+
+/** Gestor recusa: o carro fica como está e as fotos que o vendedor subiu saem do R2. */
+export async function recusarPedido(id: string): Promise<FormState> {
+  const gestor = await getMembro();
+  if (gestor?.papel !== "gestor" || !uuid.safeParse(id).success) return { error: "Pedido não encontrado" };
+  const [p] = await db
+    .update(pedidosEdicao)
+    .set({ status: "recusado", decididoPor: gestor.membroId, decididoEm: new Date() })
+    .where(and(eq(pedidosEdicao.id, id), eq(pedidosEdicao.lojaId, gestor.lojaId), eq(pedidosEdicao.status, "pendente")))
+    .returning({ mudancas: pedidosEdicao.mudancas });
+  if (!p) return { error: "Este pedido já foi decidido." };
+  if (p.mudancas?.fotosNovas.length) await deleteFotos(p.mudancas.fotosNovas).catch(() => {});
+  revalidatePath("/painel", "layout");
+  return {};
 }

@@ -43,6 +43,13 @@
       "when": 1793887388269,
       "tag": "0005_donos",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793888864658,
+      "tag": "0006_pedidos",
+      "breakpoints": true
     }
   ]
 }

@@ -4,14 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Dialog } from "@base-ui/react/dialog";
-import { Car, ExternalLink, LogOut, Menu, Plus, Store, Users, X, type LucideIcon } from "lucide-react";
+import { Car, ClipboardCheck, ExternalLink, LogOut, Menu, Plus, Store, Users, X, type LucideIcon } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { sair } from "@/app/painel/actions";
 import { cn } from "@/lib/utils";
 
 export type NavLoja = { nome: string; slug: string };
-type NavProps = { pathname?: string; loja?: NavLoja; novas?: number };
+type NavProps = { pathname?: string; loja?: NavLoja; novas?: number; pedidos?: number };
 
 const NOVO_CARRO = "/painel/estoque/novo";
 
@@ -24,13 +24,13 @@ export function NavAtual(props: Omit<NavProps, "pathname">) {
  * botão de menu no canto inferior esquerdo; no direito, cadastrar carro (alcance do polegar).
  * Sem pathname = fallback de Suspense, nenhum item ativo.
  */
-export function Nav({ pathname = "", loja, novas = 0 }: NavProps) {
+export function Nav({ pathname = "", loja, novas = 0, pedidos = 0 }: NavProps) {
   const [aberta, setAberta] = useState(false);
 
   return (
     <>
       <aside className="sticky top-0 hidden h-dvh flex-col border-r border-rule bg-paper lg:flex">
-        <Conteudo pathname={pathname} loja={loja} novas={novas} />
+        <Conteudo pathname={pathname} loja={loja} novas={novas} pedidos={pedidos} />
       </aside>
 
       <header className="sticky top-0 z-(--z-sticky-nav) border-b border-rule bg-paper lg:hidden">
@@ -44,14 +44,14 @@ export function Nav({ pathname = "", loja, novas = 0 }: NavProps) {
 
       <Dialog.Root open={aberta} onOpenChange={setAberta}>
         <Dialog.Trigger
-          aria-label={novas > 0 ? `Abrir menu, ${novas} ${novas === 1 ? "simulação nova" : "simulações novas"}` : "Abrir menu"}
+          aria-label={["Abrir menu", novas > 0 && `${novas} ${novas === 1 ? "simulação nova" : "simulações novas"}`, pedidos > 0 && `${pedidos} ${pedidos === 1 ? "pedido" : "pedidos"} para aprovar`].filter(Boolean).join(", ")}
           className={cn(
             fab,
             "left-4 border border-rule-2 bg-paper text-ink hover:border-ink",
           )}
         >
           <Menu className="size-6" aria-hidden />
-          {novas > 0 && <span className="absolute top-2 right-2 size-3 rounded-full border-2 border-paper bg-navy" aria-hidden />}
+          {novas + pedidos > 0 && <span className="absolute top-2 right-2 size-3 rounded-full border-2 border-paper bg-navy" aria-hidden />}
         </Dialog.Trigger>
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-(--z-modal) bg-ink/40 transition-opacity duration-(--dur-short) data-ending-style:opacity-0 data-starting-style:opacity-0 motion-reduce:transition-none lg:hidden" />
@@ -63,7 +63,7 @@ export function Nav({ pathname = "", loja, novas = 0 }: NavProps) {
             >
               <X className="size-5" aria-hidden />
             </Dialog.Close>
-            <Conteudo pathname={pathname} loja={loja} novas={novas} aoNavegar={() => setAberta(false)} />
+            <Conteudo pathname={pathname} loja={loja} novas={novas} pedidos={pedidos} aoNavegar={() => setAberta(false)} />
           </Dialog.Popup>
         </Dialog.Portal>
       </Dialog.Root>
@@ -81,7 +81,17 @@ export function Nav({ pathname = "", loja, novas = 0 }: NavProps) {
 const fab =
   "fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] z-(--z-sticky-nav) grid size-14 place-items-center rounded-full transition-[background-color,border-color,transform] duration-(--dur-micro) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus active:translate-y-px motion-reduce:transition-none lg:hidden";
 
-function Conteudo({ pathname, loja, novas, aoNavegar }: Required<Omit<NavProps, "loja">> & { loja?: NavLoja; aoNavegar?: () => void }) {
+function Contador({ n, rotulo }: { n: number; rotulo: string }) {
+  if (n <= 0) return null;
+  return (
+    <span className="num ml-auto inline-grid h-6 min-w-6 place-items-center rounded-full bg-navy px-1.5 text-xs text-navy-ink">
+      {n}
+      <span className="sr-only"> {rotulo}</span>
+    </span>
+  );
+}
+
+function Conteudo({ pathname, loja, novas, pedidos, aoNavegar }: Required<Omit<NavProps, "loja">> & { loja?: NavLoja; aoNavegar?: () => void }) {
   return (
     <>
       <div className="grid gap-1 border-b border-rule px-5 pt-5 pb-4 lg:pt-6">
@@ -98,12 +108,11 @@ function Conteudo({ pathname, loja, novas, aoNavegar }: Required<Omit<NavProps, 
           </Item>
           <Item href="/painel/interessados" icon={Users} ativo={pathname.startsWith("/painel/interessados")} onClick={aoNavegar}>
             Interessados
-            {novas > 0 && (
-              <span className="num ml-auto inline-grid h-6 min-w-6 place-items-center rounded-full bg-navy px-1.5 text-xs text-navy-ink">
-                {novas}
-                <span className="sr-only"> {novas === 1 ? "nova" : "novas"}</span>
-              </span>
-            )}
+            <Contador n={novas} rotulo={novas === 1 ? "nova" : "novas"} />
+          </Item>
+          <Item href="/painel/pedidos" icon={ClipboardCheck} ativo={pathname.startsWith("/painel/pedidos")} onClick={aoNavegar}>
+            Pedidos
+            <Contador n={pedidos} rotulo="para aprovar" />
           </Item>
           {loja && (
             <li>
