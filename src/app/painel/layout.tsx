@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { and, count, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { lojas, simulacoesFinanciamento as sim } from "@/lib/db/schema";
+import { lojas, pedidosEdicao, simulacoesFinanciamento as sim } from "@/lib/db/schema";
 import { getMembro } from "@/lib/session";
 import { Nav, NavAtual } from "@/components/painel-nav";
 
@@ -24,13 +24,20 @@ export default function PainelLayout({ children }: LayoutProps<"/painel">) {
 async function NavDaLoja() {
   const membro = await getMembro();
   if (!membro) return <NavAtual />;
-  const [[loja], [{ novas }]] = await Promise.all([
+  const [[loja], [{ novas }], [{ pedidos }]] = await Promise.all([
     db.select({ nome: lojas.nome, slug: lojas.slug }).from(lojas).where(eq(lojas.id, membro.lojaId)).limit(1),
     // Só os leads novos de quem está logado: é a fila que ele tem de responder
     db
       .select({ novas: count() })
       .from(sim)
       .where(and(eq(sim.lojaId, membro.lojaId), eq(sim.responsavelId, membro.membroId), eq(sim.status, "novo"))),
+    // Pedidos de edição esperando o gestor; para o vendedor não há o que decidir
+    membro.papel === "gestor"
+      ? db
+          .select({ pedidos: count() })
+          .from(pedidosEdicao)
+          .where(and(eq(pedidosEdicao.lojaId, membro.lojaId), eq(pedidosEdicao.status, "pendente")))
+      : [{ pedidos: 0 }],
   ]);
-  return <NavAtual loja={loja} novas={novas} />;
+  return <NavAtual loja={loja} novas={novas} pedidos={pedidos} />;
 }

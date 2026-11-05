@@ -40,7 +40,7 @@ Escala de espaço, de tipo, easings e durações estão em `tokens.css`. O shadc
 ## Navegação do painel
 - Desktop: barra lateral de 16rem (loja, itens, tema, Sair). Item ativo em `paper-2` com filete azul e ícone azul.
 - Celular: gaveta pela esquerda, aberta pelo botão de menu (56px, contorno `rule-2`) no canto inferior esquerdo; no direito, cadastrar carro (56px, azul). Fica fora da tela de cadastro.
-- Contador de novas: pílula `navy` no item Interessados e ponto `navy` no botão de menu.
+- Contadores (simulações novas, pedidos para aprovar): pílula `navy` no item do menu e ponto `navy` no botão de menu.
 
 ## Movimento
 - Caráter: calmo. Transições de 120ms a 420ms, só `transform`, `opacity` e cor.

@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { excluirCarro } from "../../actions";
 
-export function ExcluirCarro({ id, nome }: { id: string; nome: string }) {
+export function ExcluirCarro({ id, nome, paraAprovacao = false }: { id: string; nome: string; paraAprovacao?: boolean }) {
   const [pending, startTransition] = useTransition();
   const [erro, setErro] = useState<string>();
 
@@ -24,11 +24,13 @@ export function ExcluirCarro({ id, nome }: { id: string; nome: string }) {
     <div className="grid justify-items-start gap-2 border-t border-rule pt-6">
       <AlertDialog>
         <AlertDialogTrigger render={<Button variant="ghost" className="-ml-3 text-error" />}>
-          <Trash2 aria-hidden /> Excluir carro
+          <Trash2 aria-hidden /> {paraAprovacao ? "Pedir exclusão" : "Excluir carro"}
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir o {nome}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {paraAprovacao ? `Pedir ao gestor para excluir o ${nome}?` : `Excluir o ${nome}?`}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               O carro e as fotos saem do estoque e da vitrine de vez. As simulações recebidas continuam em Interessados.
               Se ele só foi vendido, marque como vendido.
@@ -46,7 +48,7 @@ export function ExcluirCarro({ id, nome }: { id: string; nome: string }) {
                 })
               }
             >
-              {pending ? "Excluindo…" : "Excluir"}
+              {pending ? "Enviando…" : paraAprovacao ? "Pedir exclusão" : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

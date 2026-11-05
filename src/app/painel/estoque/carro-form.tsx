@@ -29,7 +29,8 @@ export type CarroInicial = {
 const MARCAS = ["Chevrolet", "Fiat", "Volkswagen", "Toyota", "Hyundai", "Honda", "Renault", "Jeep", "Ford", "Nissan", "Peugeot", "Citroën", "BYD", "Mitsubishi", "Kia"];
 const CORES = ["Branco", "Preto", "Prata", "Cinza", "Vermelho", "Azul", "Marrom", "Bege", "Verde"];
 
-export function CarroForm({ carro }: { carro?: CarroInicial }) {
+/** `paraAprovacao`: vendedor editando; o envio vira pedido para o gestor. */
+export function CarroForm({ carro, paraAprovacao = false }: { carro?: CarroInicial; paraAprovacao?: boolean }) {
   const [state, formAction, pending] = useActionState(salvarCarro, undefined);
   const [novas, setNovas] = useState<{ file: File; preview: string }[]>([]);
   const [removidas, setRemovidas] = useState<Set<string>>(new Set());
@@ -172,7 +173,7 @@ export function CarroForm({ carro }: { carro?: CarroInicial }) {
         <div className="grid grid-cols-1 gap-3 border-t border-rule pt-6">
           <FormError message={state?.error} />
           <Button type="submit" size="lg" disabled={pending || processando} aria-busy={pending || undefined} className="w-full sm:w-auto sm:justify-self-start">
-            {pending ? "Salvando…" : carro ? "Salvar alterações" : "Cadastrar carro"}
+            {pending ? "Salvando…" : paraAprovacao ? "Enviar para o gestor aprovar" : carro ? "Salvar alterações" : "Cadastrar carro"}
           </Button>
         </div>
       </div>

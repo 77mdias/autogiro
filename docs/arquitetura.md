@@ -22,15 +22,16 @@ Cron ───────► POST /api/cron/delete-expired-cnh ──► apaga 
 | `GET /api/conta/confirmar?token=` | quem tem o link | Confirma o e-mail e leva para `/login?aviso=confirmado` |
 | `/onboarding` | logado sem loja | Cria a loja (nome, WhatsApp); slug gerado do nome |
 | `/painel` | logado | Redireciona para `/painel/estoque` |
-| `/painel/estoque`, `/novo`, `/[id]` | dono | Lista, cadastro e edição de carros (fotos no R2) |
-| `/painel/interessados` | dono | Leads das simulações: ver CNH, WhatsApp, mudar status, excluir |
-| `/painel/loja` | dono | Plano (assinar/pagar), link da vitrine, números, dados da loja, sair |
+| `/painel/estoque`, `/novo`, `/[id]` | membro | Lista, cadastro e edição de carros (fotos no R2); a edição do vendedor vira pedido |
+| `/painel/interessados` | membro | Leads: o vendedor vê os dele, o gestor vê todos e distribui os dele; CNH, WhatsApp, status e excluir só para o responsável |
+| `/painel/pedidos` | membro | Gestor aprova ou recusa edições e exclusões pedidas por vendedores; vendedor acompanha os dele |
+| `/painel/loja` | membro | Plano, link da vitrine, números; dados da loja e assinatura só para o gestor |
 | `/admin` | e-mail em `ADMIN_EMAILS` | Dono do SaaS: MRR, lojas por situação do plano, carros e simulações por loja. Outros logados recebem 404 |
 | `/loja/[slug]` | público | Vitrine; fora do ar se o plano estiver pausado (`layout.tsx`) |
 | `/loja/[slug]/carros/[carroId]` | público | Detalhe do carro, WhatsApp e Simular |
 | `/loja/[slug]/carros/[carroId]/simular` | público | Formulário de simulação (LGPD + CNH opcional) |
 | `POST /api/simulacoes` | público | Grava o lead; `loja_id` sai do carro, nunca do cliente |
-| `GET /api/simulacoes/[id]/cnh` | dono | Redireciona para URL assinada da CNH (5 min); 402 se plano pausado |
+| `GET /api/simulacoes/[id]/cnh` | responsável pelo lead | Redireciona para URL assinada da CNH (5 min); 402 se plano pausado |
 | `POST /api/webhooks/asaas` | Asaas | Atualiza o plano (ver [pagamentos-asaas.md](pagamentos-asaas.md)) |
 | `POST /api/cron/delete-expired-cnh` | cron | Apaga CNHs com mais de 90 dias (Bearer `CRON_SECRET`) |
 | `/api/auth/*` | Auth.js | Login e callback do Google |
@@ -77,6 +78,7 @@ Esquema em `src/lib/db/schema.ts`, migrações SQL em `drizzle/`.
 - **simulacoes_financiamento**: `loja_id`, `carro_id` (set null se o carro sair), nome, telefone, entrada e valor a financiar em centavos, parcelas, `consentimento_lgpd_em`, `cnh_key`, `cnh_uploaded_at`, `status` (`novo | em_contato | aprovado | recusado`), `responsavel_id` (membro dono do lead).
 - **usuarios**: contas de e-mail e senha. `email` (único, minúsculo), `senha_hash` (`scrypt:<salt>:<hash>`), `email_confirmado_em`.
 - **tokens_email**: links dos e-mails. `usuario_id`, `tipo` (`confirmar | redefinir`), `token_hash` (sha256; o token só existe no link), `expira_em`.
+- **pedidos_edicao**: `loja_id`, `carro_id` (set null se o carro sair), `membro_id` (quem pediu), `tipo` (`editar | excluir`), `mudancas` (jsonb com os campos do carro, `fotosNovas` e `fotosRemover`), `status` (`pendente | aprovado | recusado`), `decidido_por`, `decidido_em`. Um pendente por carro (índice único parcial).
 - **webhook_events**: `provider`, `event_key` (único por provider), `event_type`, `payload`, `processed_at`. Serve de idempotência e de histórico.
 
 Valores em dinheiro são inteiros em centavos. RLS ligado em todas as tabelas sem policies: a API REST do Supabase não lê nada; o app usa a role do servidor.
@@ -108,7 +110,7 @@ Cada link novo apaga os anteriores do mesmo tipo, e só sai um e-mail por minuto
 
 - Em código autenticado, `loja_id` vem **só** de `getLojaId()`/`requireLojaId()` (`src/lib/session.ts`) e entra em todo `where`. Nunca de query string, body ou params.
 - Em rotas públicas, `loja_id` é derivado do recurso (o carro).
-- Papel: só o gestor edita ou exclui carro, altera os dados da loja e assina (`getLojaIdDoGestor()` nas actions; `requireLojaId(..., { soGestor: true })` nas páginas). O vendedor cadastra carro; a edição dele vai virar pedido de aprovação ([plano](produto/telas-equipe.md)).
+- Papel: só o gestor edita ou exclui carro, altera os dados da loja e assina (`getLojaIdDoGestor()` nas actions; `requireLojaId(..., { soGestor: true })` nas páginas). O vendedor cadastra carro direto; editar e excluir viram pedido em `pedidos_edicao`. As fotos novas do pedido já sobem para o R2 e só entram no carro na aprovação (`aprovarPedido` marca o pedido e aplica no carro na mesma transação); recusar apaga essas fotos. As regras puras (diferenças, fotos finais, limite de 15) estão em `src/lib/pedidos.ts`, com testes.
 - Leads: `POST /api/simulacoes` grava como responsável quem cadastrou o carro (se ativo) ou o gestor. Só o responsável vê a CNH, chama, descarta e marca contato; o vendedor vê só a carteira dele; o gestor vê todos e passa os dele para um vendedor (`distribuirLead`). Os contadores de "novas" contam só os leads de quem está logado.
 - Toda tabela de dados da loja tem `loja_id` com `on delete cascade`.
 
