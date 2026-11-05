@@ -33,6 +33,7 @@ export default function OnboardingPage() {
           <div className="grid grid-cols-1 gap-2 border-b border-rule pb-6">
             <h1 className="font-display text-3xl font-semibold">Vamos criar sua loja</h1>
             <p className="text-ink-2">7 dias grátis, sem cartão. O link da vitrine sai na hora.</p>
+            <p className="text-sm text-ink-3">Vai trabalhar na loja de outra pessoa? Não crie uma loja: abra o link de convite que o gestor mandou.</p>
           </div>
           <Suspense>
             <Onboarding />

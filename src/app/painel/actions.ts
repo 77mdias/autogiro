@@ -1,18 +1,20 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, count, eq, gt } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { carros, lojas, membros, pedidosEdicao, simulacoesFinanciamento as sim } from "@/lib/db/schema";
+import { carros, convites, lojas, membros, pedidosEdicao, simulacoesFinanciamento as sim } from "@/lib/db/schema";
 import { fotosAprovadas, MAX_FOTOS, type MudancasCarro } from "@/lib/pedidos";
 import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
 import { AsaasError, criarCheckoutAssinatura, faturaVencida } from "@/lib/asaas";
 import { MAX_CENTAVOS, onlyDigits, reaisToCentavos, slugify } from "@/lib/masks";
 import { deleteCnhs, deleteFotos, uploadFoto } from "@/lib/r2";
-import { getLojaIdDoGestor, getMembro, lojaLiberada } from "@/lib/session";
+import { getLojaIdDoGestor, getMembro, getSession, lojaLiberada } from "@/lib/session";
+import { MAX_VENDEDORES } from "@/lib/plano";
+import { hashToken, novoToken } from "@/lib/senha";
 
 // Server actions são endpoints públicos: toda action revalida a sessão e escopa por loja_id.
 
@@ -388,4 +390,131 @@ export async function recusarPedido(id: string): Promise<FormState> {
   if (p.mudancas?.fotosNovas.length) await deleteFotos(p.mudancas.fotosNovas).catch(() => {});
   revalidatePath("/painel", "layout");
   return {};
+}
+
+// ── Equipe ──────────────────────────────────────────────────────────────────
+
+const PRAZO_CONVITE = 7 * 24 * 60 * 60_000;
+const LOJA_CHEIA = `A loja já tem ${MAX_VENDEDORES} vendedores (contando convites em aberto). Fale com a AutoGiro para passar disso.`;
+
+/** Vagas ocupadas: vendedores ativos mais convites ainda válidos. */
+async function vagasUsadas(lojaId: string) {
+  const [[{ ativos }], [{ abertos }]] = await Promise.all([
+    db
+      .select({ ativos: count() })
+      .from(membros)
+      .where(and(eq(membros.lojaId, lojaId), eq(membros.papel, "vendedor"), eq(membros.ativo, true))),
+    db
+      .select({ abertos: count() })
+      .from(convites)
+      .where(and(eq(convites.lojaId, lojaId), gt(convites.expiraEm, new Date()))),
+  ]);
+  return ativos + abertos;
+}
+
+export type ConviteState = { error?: string; link?: string } | undefined;
+
+/** Gera um link de convite de uso único. O token só aparece nesta resposta; o banco guarda o hash. */
+export async function convidarVendedor(_prev: ConviteState, fd: FormData): Promise<ConviteState> {
+  const gestor = await getMembro();
+  if (gestor?.papel !== "gestor") return { error: "Só o gestor convida vendedores." };
+  const nome = z.string().trim().min(2, "Informe o nome do vendedor").max(60).safeParse(fd.get("nome") ?? "");
+  if (!nome.success) return { error: nome.error.issues[0].message };
+  if ((await vagasUsadas(gestor.lojaId)) >= MAX_VENDEDORES) return { error: LOJA_CHEIA };
+
+  const { token, tokenHash } = novoToken();
+  await db.insert(convites).values({
+    lojaId: gestor.lojaId,
+    nome: nome.data,
+    tokenHash,
+    expiraEm: new Date(Date.now() + PRAZO_CONVITE),
+    criadoPor: gestor.membroId,
+  });
+  revalidatePath("/painel/vendedores");
+  return { link: `/convite/${token}` };
+}
+
+export async function cancelarConvite(id: string) {
+  const gestor = await getMembro();
+  if (gestor?.papel !== "gestor" || !uuid.safeParse(id).success) return;
+  await db.delete(convites).where(and(eq(convites.id, id), eq(convites.lojaId, gestor.lojaId)));
+  revalidatePath("/painel/vendedores");
+}
+
+/** Desativa e devolve ao gestor os carros e clientes do vendedor (senão ninguém poderia agir sobre eles). */
+export async function desativarVendedor(id: string): Promise<FormState> {
+  const gestor = await getMembro();
+  if (gestor?.papel !== "gestor" || !uuid.safeParse(id).success) return { error: "Vendedor não encontrado" };
+  const feito = await db.transaction(async (tx) => {
+    const [v] = await tx
+      .update(membros)
+      .set({ ativo: false })
+      .where(and(eq(membros.id, id), eq(membros.lojaId, gestor.lojaId), eq(membros.papel, "vendedor")))
+      .returning({ id: membros.id });
+    if (!v) return false;
+    await tx
+      .update(carros)
+      .set({ cadastradoPor: gestor.membroId })
+      .where(and(eq(carros.lojaId, gestor.lojaId), eq(carros.cadastradoPor, v.id)));
+    await tx
+      .update(sim)
+      .set({ responsavelId: gestor.membroId })
+      .where(and(eq(sim.lojaId, gestor.lojaId), eq(sim.responsavelId, v.id)));
+    return true;
+  });
+  if (!feito) return { error: "Vendedor não encontrado" };
+  revalidatePath("/painel", "layout");
+  return {};
+}
+
+export async function reativarVendedor(id: string): Promise<FormState> {
+  const gestor = await getMembro();
+  if (gestor?.papel !== "gestor" || !uuid.safeParse(id).success) return { error: "Vendedor não encontrado" };
+  if ((await vagasUsadas(gestor.lojaId)) >= MAX_VENDEDORES) return { error: LOJA_CHEIA };
+  const [v] = await db
+    .update(membros)
+    .set({ ativo: true })
+    .where(and(eq(membros.id, id), eq(membros.lojaId, gestor.lojaId), eq(membros.papel, "vendedor")))
+    .returning({ id: membros.id });
+  if (!v) return { error: "Vendedor não encontrado" };
+  revalidatePath("/painel", "layout");
+  return {};
+}
+
+class ConviteRecusado extends Error {}
+
+/**
+ * Quem abriu o link entra na equipe como vendedor. O convite é gasto na mesma transação; se a conta
+ * já é de outra loja, nada muda (uma conta, uma loja). Conta desativada nesta loja volta a ficar ativa.
+ */
+export async function aceitarConvite(token: string): Promise<FormState> {
+  const session = await getSession();
+  if (!session?.user.id) redirect(`/login?callbackUrl=${encodeURIComponent(`/convite/${token}`)}`);
+  if (session.user.loja_id) return { error: "Esta conta já faz parte de uma loja. Entre com outra conta para aceitar." };
+  const authUserId = session.user.id;
+
+  try {
+    await db.transaction(async (tx) => {
+      const [c] = await tx
+        .delete(convites)
+        .where(and(eq(convites.tokenHash, hashToken(token)), gt(convites.expiraEm, new Date())))
+        .returning({ lojaId: convites.lojaId, nome: convites.nome });
+      if (!c) throw new ConviteRecusado("Este convite já foi usado ou venceu. Peça um novo ao gestor.");
+      const [m] = await tx
+        .insert(membros)
+        .values({ lojaId: c.lojaId, authUserId, papel: "vendedor", nome: c.nome })
+        .onConflictDoUpdate({
+          target: membros.authUserId,
+          set: { ativo: true, nome: c.nome },
+          setWhere: and(eq(membros.lojaId, c.lojaId), eq(membros.papel, "vendedor")),
+        })
+        .returning({ id: membros.id });
+      if (!m) throw new ConviteRecusado("Esta conta já faz parte de outra loja. Entre com outra conta para aceitar.");
+    });
+  } catch (err) {
+    if (err instanceof ConviteRecusado) return { error: err.message };
+    throw err;
+  }
+  // O jwt (lib/auth) acha o membro na próxima requisição: o painel já abre com a loja.
+  redirect("/painel/estoque");
 }

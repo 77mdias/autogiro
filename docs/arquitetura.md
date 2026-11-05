@@ -25,6 +25,8 @@ Cron ───────► POST /api/cron/delete-expired-cnh ──► apaga 
 | `/painel/estoque`, `/novo`, `/[id]` | membro | Lista, cadastro e edição de carros (fotos no R2); a edição do vendedor vira pedido |
 | `/painel/interessados` | membro | Leads: o vendedor vê os dele, o gestor vê todos e distribui os dele; CNH, WhatsApp, status e excluir só para o responsável |
 | `/painel/pedidos` | membro | Gestor aprova ou recusa edições e exclusões pedidas por vendedores; vendedor acompanha os dele |
+| `/painel/vendedores` | gestor | Equipe: gerar link de convite, desativar e reativar vendedores, cancelar convites (até 20, contando convites em aberto) |
+| `/convite/[token]` | quem tem o link | Mostra a loja; logado sem loja aceita e vira vendedor; sem sessão vai para `/login` e volta |
 | `/painel/loja` | membro | Plano, link da vitrine, números; dados da loja e assinatura só para o gestor |
 | `/admin` | e-mail em `ADMIN_EMAILS` | Dono do SaaS: MRR, lojas por situação do plano, carros e simulações por loja. Outros logados recebem 404 |
 | `/loja/[slug]` | público | Vitrine; fora do ar se o plano estiver pausado (`layout.tsx`) |
@@ -74,6 +76,7 @@ Esquema em `src/lib/db/schema.ts`, migrações SQL em `drizzle/`.
 
 - **lojas**: `auth_user_id` (o `sub` do Google, único), `nome`, `slug` (único), `whatsapp`, `cidade`, `plano_status` (`trial | ativo | inadimplente | cancelado`), `trial_ate` (padrão `now() + 7 dias`), `asaas_customer_id` (único), `asaas_checkout_id`, `asaas_subscription_id` (único).
 - **membros**: quem entra no painel. `loja_id`, `auth_user_id` (o `sub`, único: uma conta, uma loja), `papel` (`gestor | vendedor`), `nome`, `ativo`. O dono que criou a loja é o gestor.
+- **convites**: `loja_id`, `nome` (do vendedor), `token_hash` (sha256; o token só existe no link), `expira_em` (7 dias), `criado_por`. Apagado ao ser aceito.
 - **carros**: `loja_id`, marca, modelo, versão, ano, km, `preco_centavos`, cor, câmbio, combustível, descrição, `fotos` (jsonb com as chaves no R2), `status` (`disponivel | vendido`), `cadastrado_por` (membro que cadastrou).
 - **simulacoes_financiamento**: `loja_id`, `carro_id` (set null se o carro sair), nome, telefone, entrada e valor a financiar em centavos, parcelas, `consentimento_lgpd_em`, `cnh_key`, `cnh_uploaded_at`, `status` (`novo | em_contato | aprovado | recusado`), `responsavel_id` (membro dono do lead).
 - **usuarios**: contas de e-mail e senha. `email` (único, minúsculo), `senha_hash` (`scrypt:<salt>:<hash>`), `email_confirmado_em`.
@@ -112,6 +115,7 @@ Cada link novo apaga os anteriores do mesmo tipo, e só sai um e-mail por minuto
 - Em rotas públicas, `loja_id` é derivado do recurso (o carro).
 - Papel: só o gestor edita ou exclui carro, altera os dados da loja e assina (`getLojaIdDoGestor()` nas actions; `requireLojaId(..., { soGestor: true })` nas páginas). O vendedor cadastra carro direto; editar e excluir viram pedido em `pedidos_edicao`. As fotos novas do pedido já sobem para o R2 e só entram no carro na aprovação (`aprovarPedido` marca o pedido e aplica no carro na mesma transação); recusar apaga essas fotos. As regras puras (diferenças, fotos finais, limite de 15) estão em `src/lib/pedidos.ts`, com testes.
 - Leads: `POST /api/simulacoes` grava como responsável quem cadastrou o carro (se ativo) ou o gestor. Só o responsável vê a CNH, chama, descarta e marca contato; o vendedor vê só a carteira dele; o gestor vê todos e passa os dele para um vendedor (`distribuirLead`). Os contadores de "novas" contam só os leads de quem está logado.
+- Equipe: `aceitarConvite` gasta o convite e cria o membro vendedor na mesma transação; conta que já é de outra loja é recusada e o convite não é gasto. `desativarVendedor` devolve ao gestor, na mesma transação, os carros e os leads do vendedor. O limite (`MAX_VENDEDORES` em `src/lib/plano.ts`) conta vendedores ativos mais convites válidos.
 - Toda tabela de dados da loja tem `loja_id` com `on delete cascade`.
 
 ## Plano

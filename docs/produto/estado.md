@@ -50,7 +50,8 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 - [x] Passo 1: tabela `membros`, papel gestor/vendedor na sessão, travas de gestor nas actions.
 - [x] Passo 2: carro e lead com dono; carteira do vendedor; gestor distribui os dele.
 - [x] Passo 3: edição e exclusão do vendedor viram pedido; gestor aprova ou recusa em Pedidos.
-- [ ] Passos 4 a 6: convite de vendedores, vendas e comissões, preço por faixa.
+- [x] Passo 4: tela Vendedores, convite por link, desativar devolve carros e clientes ao gestor, limite de 20.
+- [ ] Passos 5 e 6: vendas e comissões, preço por faixa.
 
 **Melhorias conhecidas**
 - [ ] `favicon.ico` responde 404 (o ícone do app existe em `src/app/icon.png`).

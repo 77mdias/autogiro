@@ -39,5 +39,5 @@ async function NavDaLoja() {
           .where(and(eq(pedidosEdicao.lojaId, membro.lojaId), eq(pedidosEdicao.status, "pendente")))
       : [{ pedidos: 0 }],
   ]);
-  return <NavAtual loja={loja} novas={novas} pedidos={pedidos} />;
+  return <NavAtual loja={loja} novas={novas} pedidos={pedidos} gestor={membro.papel === "gestor"} />;
 }
