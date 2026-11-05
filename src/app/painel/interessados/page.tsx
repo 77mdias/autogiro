@@ -3,11 +3,13 @@ import Link from "next/link";
 import { and, count, desc, eq, type SQL } from "drizzle-orm";
 import { Car, Users } from "lucide-react";
 import { db } from "@/lib/db";
-import { carros, simulacoesFinanciamento as sim } from "@/lib/db/schema";
+import { carros, membros, simulacoesFinanciamento as sim } from "@/lib/db/schema";
 import { formatPhone, whatsappUrl } from "@/lib/masks";
 import { fotoUrl } from "@/lib/r2";
-import { requireLojaId } from "@/lib/session";
+import { requireMembro } from "@/lib/session";
 import { cn, formatBRL } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
+import { distribuirLead } from "../actions";
 import { LeadActions } from "./lead-actions";
 
 export const metadata: Metadata = { title: "Interessados" };
@@ -39,16 +41,28 @@ const iniciais = (nome: string) =>
     .map((p) => p[0]!.toUpperCase())
     .join("");
 
+const nomeMembro = (nome: string | null, papel: string | null) => nome ?? (papel === "gestor" ? "Gestor" : "Vendedor");
+
 export default async function InteressadosPage({ searchParams }: PageProps<"/painel/interessados">) {
-  const lojaId = await requireLojaId("/painel/interessados");
+  const { lojaId, membroId, papel } = await requireMembro("/painel/interessados");
+  const gestor = papel === "gestor";
   const sp = await searchParams;
   const filtro: Filtro = sp.status === "novo" || sp.status === "em_contato" ? sp.status : "todos";
 
-  const onde: SQL[] = [eq(sim.lojaId, lojaId)];
+  // Vendedor vê a própria carteira; o gestor vê a loja toda (age só nos dele)
+  const escopo = gestor ? eq(sim.lojaId, lojaId) : and(eq(sim.lojaId, lojaId), eq(sim.responsavelId, membroId))!;
+  const onde: SQL[] = [escopo];
   if (filtro !== "todos") onde.push(eq(sim.status, filtro));
 
-  const [porStatus, leads] = await Promise.all([
-    db.select({ status: sim.status, n: count() }).from(sim).where(eq(sim.lojaId, lojaId)).groupBy(sim.status),
+  const [porStatus, vendedores, leads] = await Promise.all([
+    db.select({ status: sim.status, n: count() }).from(sim).where(escopo).groupBy(sim.status),
+    gestor
+      ? db
+          .select({ id: membros.id, nome: membros.nome })
+          .from(membros)
+          .where(and(eq(membros.lojaId, lojaId), eq(membros.papel, "vendedor"), eq(membros.ativo, true)))
+          .orderBy(membros.nome)
+      : [],
     db
       .select({
         id: sim.id,
@@ -65,9 +79,13 @@ export default async function InteressadosPage({ searchParams }: PageProps<"/pai
         ano: carros.ano,
         precoCentavos: carros.precoCentavos,
         fotos: carros.fotos,
+        responsavelId: sim.responsavelId,
+        responsavelNome: membros.nome,
+        responsavelPapel: membros.papel,
       })
       .from(sim)
       .leftJoin(carros, eq(carros.id, sim.carroId))
+      .leftJoin(membros, eq(membros.id, sim.responsavelId))
       .where(and(...onde))
       .orderBy(desc(sim.createdAt)),
   ]);
@@ -132,6 +150,7 @@ export default async function InteressadosPage({ searchParams }: PageProps<"/pai
         <ul className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-x-12 lg:gap-y-10">
           {leads.map((l) => {
             const carro = l.modelo ? `${l.marca} ${l.modelo} ${l.ano}` : null;
+            const meu = l.responsavelId === membroId;
             return (
               <li key={l.id}>
                 <article className="grid h-full grid-cols-1 content-start gap-4 border-t border-rule-2 pt-5">
@@ -189,15 +208,50 @@ export default async function InteressadosPage({ searchParams }: PageProps<"/pai
                     </div>
                   </dl>
 
-                  <LeadActions
-                    id={l.id}
-                    nome={l.nome}
-                    temCnh={!!l.cnhKey}
-                    whatsappHref={whatsappUrl(
-                      l.telefone,
-                      `Olá ${l.nome.split(" ")[0]}! Recebemos sua simulação de financiamento${carro ? ` do ${carro}` : ""}.`,
-                    )}
-                  />
+                  {meu ? (
+                    <>
+                      <LeadActions
+                        id={l.id}
+                        nome={l.nome}
+                        temCnh={!!l.cnhKey}
+                        whatsappHref={whatsappUrl(
+                          l.telefone,
+                          `Olá ${l.nome.split(" ")[0]}! Recebemos sua simulação de financiamento${carro ? ` do ${carro}` : ""}.`,
+                        )}
+                      />
+                      {vendedores.length > 0 && (
+                        <form action={distribuirLead} className="flex gap-2 border-t border-rule pt-3">
+                          <input type="hidden" name="id" value={l.id} />
+                          <label htmlFor={`para-${l.id}`} className="sr-only">
+                            Passar {l.nome} para o vendedor
+                          </label>
+                          <select
+                            id={`para-${l.id}`}
+                            name="para"
+                            required
+                            defaultValue=""
+                            className="h-12 min-w-0 flex-1 rounded-full border border-rule-2 bg-paper px-4 text-md outline-2 outline-offset-[-3px] outline-transparent focus-visible:outline-focus pointer-fine:h-10"
+                          >
+                            <option value="" disabled>
+                              Passar para…
+                            </option>
+                            {vendedores.map((v) => (
+                              <option key={v.id} value={v.id}>
+                                {nomeMembro(v.nome, "vendedor")}
+                              </option>
+                            ))}
+                          </select>
+                          <button type="submit" className={buttonVariants({ variant: "outline" })}>
+                            Passar
+                          </button>
+                        </form>
+                      )}
+                    </>
+                  ) : (
+                    <p className="mt-auto flex h-12 items-center gap-2 rounded-full border border-dashed border-rule-2 px-5 text-sm text-ink-3 pointer-fine:h-10">
+                      <Users className="size-5" aria-hidden /> Cliente de {nomeMembro(l.responsavelNome, l.responsavelPapel)}
+                    </p>
+                  )}
                 </article>
               </li>
             );

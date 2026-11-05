@@ -70,6 +70,8 @@ export const carros = pgTable(
     // Chaves de objeto no bucket público do R2
     fotos: jsonb("fotos").$type<string[]>().notNull().default([]),
     status: carroStatus("status").notNull().default("disponivel"),
+    // Quem cadastrou; as simulações deste carro vão para ele (docs/produto/telas-equipe.md)
+    cadastradoPor: uuid("cadastrado_por").references(() => membros.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   },
@@ -93,10 +95,13 @@ export const simulacoesFinanciamento = pgTable(
     cnhKey: text("cnh_key"),
     cnhUploadedAt: timestamp("cnh_uploaded_at", { withTimezone: true }),
     status: simulacaoStatus("status").notNull().default("novo"),
+    // Dono do lead: quem cadastrou o carro, ou o gestor (que pode distribuir os dele)
+    responsavelId: uuid("responsavel_id").references(() => membros.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index("simulacoes_loja_id_idx").on(t.lojaId, t.createdAt),
+    index("simulacoes_responsavel_idx").on(t.responsavelId, t.status),
     index("simulacoes_cnh_uploaded_at_idx").on(t.cnhUploadedAt),
   ],
 ).enableRLS();

@@ -11,7 +11,7 @@ import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
 import { AsaasError, criarCheckoutAssinatura, faturaVencida } from "@/lib/asaas";
 import { MAX_CENTAVOS, onlyDigits, reaisToCentavos, slugify } from "@/lib/masks";
 import { deleteCnhs, deleteFotos, uploadFoto } from "@/lib/r2";
-import { getLojaId, getLojaIdDoGestor, lojaLiberada } from "@/lib/session";
+import { getLojaIdDoGestor, getMembro, lojaLiberada } from "@/lib/session";
 
 // Server actions são endpoints públicos: toda action revalida a sessão e escopa por loja_id.
 
@@ -47,11 +47,12 @@ const str = (fd: FormData, k: string) => {
 };
 
 export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormState> {
-  const lojaId = await getLojaId();
-  if (!lojaId) return { error: "Sessão expirada. Entre novamente." };
+  const membro = await getMembro();
+  if (!membro) return { error: "Sessão expirada. Entre novamente." };
+  const { lojaId } = membro;
   if (!(await lojaLiberada(lojaId))) return { error: "Plano pausado. Regularize a assinatura em Minha loja." };
   // shortcut: vendedor só cadastra; a edição dele vira pedido de aprovação do gestor (docs/produto/telas-equipe.md)
-  if (fd.get("id") && !(await getLojaIdDoGestor())) return { error: "Só o gestor pode editar carros." };
+  if (fd.get("id") && membro.papel !== "gestor") return { error: "Só o gestor pode editar carros." };
 
   const parsed = carroSchema.safeParse({
     marca: str(fd, "marca"),
@@ -111,7 +112,7 @@ export async function salvarCarro(_prev: FormState, fd: FormData): Promise<FormS
     if (editId) {
       await db.update(carros).set(valores).where(and(eq(carros.id, editId), eq(carros.lojaId, lojaId)));
     } else {
-      await db.insert(carros).values({ ...valores, id: carroId, lojaId });
+      await db.insert(carros).values({ ...valores, id: carroId, lojaId, cadastradoPor: membro.membroId });
     }
   } catch (err) {
     if (enviadas.length) await deleteFotos(enviadas).catch(() => {});
@@ -223,34 +224,50 @@ export async function assinar(): Promise<FormState> {
   redirect(destino);
 }
 
-export async function excluirSimulacao(id: string): Promise<FormState> {
-  const lojaId = await getLojaId();
-  if (!lojaId || !uuid.safeParse(id).success) return { error: "Não encontrado" };
+// Leads: só o responsável age (WhatsApp, CNH, descartar). O gestor lê os dos vendedores, mas não mexe.
+const doResponsavel = (id: string, m: { lojaId: string; membroId: string }) =>
+  and(eq(sim.id, id), eq(sim.lojaId, m.lojaId), eq(sim.responsavelId, m.membroId));
 
-  const [row] = await db
-    .select({ cnhKey: sim.cnhKey })
-    .from(sim)
-    .where(and(eq(sim.id, id), eq(sim.lojaId, lojaId)))
-    .limit(1);
+export async function excluirSimulacao(id: string): Promise<FormState> {
+  const membro = await getMembro();
+  if (!membro || !uuid.safeParse(id).success) return { error: "Não encontrado" };
+
+  const [row] = await db.select({ cnhKey: sim.cnhKey }).from(sim).where(doResponsavel(id, membro)).limit(1);
   if (!row) return { error: "Não encontrado" };
 
   // Apaga a CNH antes da linha: se o R2 falhar, o registro continua e o cron ainda acha o arquivo.
   if (row.cnhKey && !(await deleteCnhs([row.cnhKey])).includes(row.cnhKey)) {
     return { error: "Não foi possível excluir a CNH. Tente novamente." };
   }
-  await db.delete(sim).where(and(eq(sim.id, id), eq(sim.lojaId, lojaId)));
+  await db.delete(sim).where(doResponsavel(id, membro));
   revalidatePath("/painel", "layout");
   return {};
 }
 
 /** Tira o lead do contador de "novas" quando o garagista age sobre ele. */
 export async function marcarContato(id: string) {
-  const lojaId = await getLojaId();
-  if (!lojaId || !uuid.safeParse(id).success) return;
+  const membro = await getMembro();
+  if (!membro || !uuid.safeParse(id).success) return;
   await db
     .update(sim)
     .set({ status: "em_contato" })
-    .where(and(eq(sim.id, id), eq(sim.lojaId, lojaId), eq(sim.status, "novo")));
+    .where(and(doResponsavel(id, membro), eq(sim.status, "novo")));
+  revalidatePath("/painel", "layout");
+}
+
+/** O gestor passa um lead dele para um vendedor ativo da mesma loja. Depois disso, o lead é do vendedor. */
+export async function distribuirLead(fd: FormData) {
+  const membro = await getMembro();
+  const id = String(fd.get("id"));
+  const para = String(fd.get("para"));
+  if (membro?.papel !== "gestor" || !uuid.safeParse(id).success || !uuid.safeParse(para).success) return;
+  const [vendedor] = await db
+    .select({ id: membros.id })
+    .from(membros)
+    .where(and(eq(membros.id, para), eq(membros.lojaId, membro.lojaId), eq(membros.papel, "vendedor"), eq(membros.ativo, true)))
+    .limit(1);
+  if (!vendedor) return;
+  await db.update(sim).set({ responsavelId: vendedor.id }).where(doResponsavel(id, membro));
   revalidatePath("/painel", "layout");
 }
 

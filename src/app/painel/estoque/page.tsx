@@ -5,7 +5,7 @@ import { Car, ExternalLink, Images, Pencil, Plus, Search } from "lucide-react";
 import { db } from "@/lib/db";
 import { carros, lojas, simulacoesFinanciamento as sim } from "@/lib/db/schema";
 import { fotoUrl } from "@/lib/r2";
-import { requireLojaId } from "@/lib/session";
+import { requireMembro } from "@/lib/session";
 import { cn, formatBRL } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { CopyLinkButton, ShareLinkButton } from "@/components/copy-link-button";
@@ -31,7 +31,7 @@ const href = (status: Filtro, q: string) => {
 };
 
 export default async function EstoquePage({ searchParams }: PageProps<"/painel/estoque">) {
-  const lojaId = await requireLojaId("/painel/estoque");
+  const { lojaId, membroId } = await requireMembro("/painel/estoque");
   const sp = await searchParams;
   const status: Filtro = sp.status === "disponivel" || sp.status === "vendido" ? sp.status : "todos";
   const q = typeof sp.q === "string" ? sp.q.trim().slice(0, 60) : "";
@@ -46,7 +46,10 @@ export default async function EstoquePage({ searchParams }: PageProps<"/painel/e
 
   const [[loja], [{ novas }], porStatus, lista] = await Promise.all([
     db.select({ slug: lojas.slug, nome: lojas.nome }).from(lojas).where(eq(lojas.id, lojaId)).limit(1),
-    db.select({ novas: count() }).from(sim).where(and(eq(sim.lojaId, lojaId), eq(sim.status, "novo"))),
+    db
+      .select({ novas: count() })
+      .from(sim)
+      .where(and(eq(sim.lojaId, lojaId), eq(sim.responsavelId, membroId), eq(sim.status, "novo"))),
     db.select({ status: carros.status, n: count() }).from(carros).where(eq(carros.lojaId, lojaId)).groupBy(carros.status),
     db
       .select({

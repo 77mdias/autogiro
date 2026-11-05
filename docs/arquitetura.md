@@ -73,8 +73,8 @@ Esquema em `src/lib/db/schema.ts`, migrações SQL em `drizzle/`.
 
 - **lojas**: `auth_user_id` (o `sub` do Google, único), `nome`, `slug` (único), `whatsapp`, `cidade`, `plano_status` (`trial | ativo | inadimplente | cancelado`), `trial_ate` (padrão `now() + 7 dias`), `asaas_customer_id` (único), `asaas_checkout_id`, `asaas_subscription_id` (único).
 - **membros**: quem entra no painel. `loja_id`, `auth_user_id` (o `sub`, único: uma conta, uma loja), `papel` (`gestor | vendedor`), `nome`, `ativo`. O dono que criou a loja é o gestor.
-- **carros**: `loja_id`, marca, modelo, versão, ano, km, `preco_centavos`, cor, câmbio, combustível, descrição, `fotos` (jsonb com as chaves no R2), `status` (`disponivel | vendido`).
-- **simulacoes_financiamento**: `loja_id`, `carro_id` (set null se o carro sair), nome, telefone, entrada e valor a financiar em centavos, parcelas, `consentimento_lgpd_em`, `cnh_key`, `cnh_uploaded_at`, `status` (`novo | em_contato | aprovado | recusado`).
+- **carros**: `loja_id`, marca, modelo, versão, ano, km, `preco_centavos`, cor, câmbio, combustível, descrição, `fotos` (jsonb com as chaves no R2), `status` (`disponivel | vendido`), `cadastrado_por` (membro que cadastrou).
+- **simulacoes_financiamento**: `loja_id`, `carro_id` (set null se o carro sair), nome, telefone, entrada e valor a financiar em centavos, parcelas, `consentimento_lgpd_em`, `cnh_key`, `cnh_uploaded_at`, `status` (`novo | em_contato | aprovado | recusado`), `responsavel_id` (membro dono do lead).
 - **usuarios**: contas de e-mail e senha. `email` (único, minúsculo), `senha_hash` (`scrypt:<salt>:<hash>`), `email_confirmado_em`.
 - **tokens_email**: links dos e-mails. `usuario_id`, `tipo` (`confirmar | redefinir`), `token_hash` (sha256; o token só existe no link), `expira_em`.
 - **webhook_events**: `provider`, `event_key` (único por provider), `event_type`, `payload`, `processed_at`. Serve de idempotência e de histórico.
@@ -109,6 +109,7 @@ Cada link novo apaga os anteriores do mesmo tipo, e só sai um e-mail por minuto
 - Em código autenticado, `loja_id` vem **só** de `getLojaId()`/`requireLojaId()` (`src/lib/session.ts`) e entra em todo `where`. Nunca de query string, body ou params.
 - Em rotas públicas, `loja_id` é derivado do recurso (o carro).
 - Papel: só o gestor edita ou exclui carro, altera os dados da loja e assina (`getLojaIdDoGestor()` nas actions; `requireLojaId(..., { soGestor: true })` nas páginas). O vendedor cadastra carro; a edição dele vai virar pedido de aprovação ([plano](produto/telas-equipe.md)).
+- Leads: `POST /api/simulacoes` grava como responsável quem cadastrou o carro (se ativo) ou o gestor. Só o responsável vê a CNH, chama, descarta e marca contato; o vendedor vê só a carteira dele; o gestor vê todos e passa os dele para um vendedor (`distribuirLead`). Os contadores de "novas" contam só os leads de quem está logado.
 - Toda tabela de dados da loja tem `loja_id` com `on delete cascade`.
 
 ## Plano
