@@ -29,6 +29,13 @@
       "when": 1793622679800,
       "tag": "0003_conta_email",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793882741262,
+      "tag": "0004_membros",
+      "breakpoints": true
     }
   ]
 }

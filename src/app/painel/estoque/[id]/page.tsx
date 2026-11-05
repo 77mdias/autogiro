@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Editar carro" };
 
 export default async function EditarCarroPage({ params }: PageProps<"/painel/estoque/[id]">) {
   const { id } = await params;
-  const lojaId = await requireLojaId(`/painel/estoque/${id}`);
+  const lojaId = await requireLojaId(`/painel/estoque/${id}`, { soGestor: true });
   if (!z.uuid().safeParse(id).success) notFound();
 
   const [carro] = await db
