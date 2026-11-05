@@ -4,14 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Dialog } from "@base-ui/react/dialog";
-import { Car, ClipboardCheck, ExternalLink, LogOut, Menu, Plus, Store, Users, X, type LucideIcon } from "lucide-react";
+import { Car, ClipboardCheck, ExternalLink, LogOut, Menu, Plus, Store, UserCog, Users, X, type LucideIcon } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { sair } from "@/app/painel/actions";
 import { cn } from "@/lib/utils";
 
 export type NavLoja = { nome: string; slug: string };
-type NavProps = { pathname?: string; loja?: NavLoja; novas?: number; pedidos?: number };
+type NavProps = { pathname?: string; loja?: NavLoja; novas?: number; pedidos?: number; gestor?: boolean };
 
 const NOVO_CARRO = "/painel/estoque/novo";
 
@@ -24,13 +24,13 @@ export function NavAtual(props: Omit<NavProps, "pathname">) {
  * botão de menu no canto inferior esquerdo; no direito, cadastrar carro (alcance do polegar).
  * Sem pathname = fallback de Suspense, nenhum item ativo.
  */
-export function Nav({ pathname = "", loja, novas = 0, pedidos = 0 }: NavProps) {
+export function Nav({ pathname = "", loja, novas = 0, pedidos = 0, gestor = false }: NavProps) {
   const [aberta, setAberta] = useState(false);
 
   return (
     <>
       <aside className="sticky top-0 hidden h-dvh flex-col border-r border-rule bg-paper lg:flex">
-        <Conteudo pathname={pathname} loja={loja} novas={novas} pedidos={pedidos} />
+        <Conteudo pathname={pathname} loja={loja} novas={novas} pedidos={pedidos} gestor={gestor} />
       </aside>
 
       <header className="sticky top-0 z-(--z-sticky-nav) border-b border-rule bg-paper lg:hidden">
@@ -63,7 +63,7 @@ export function Nav({ pathname = "", loja, novas = 0, pedidos = 0 }: NavProps) {
             >
               <X className="size-5" aria-hidden />
             </Dialog.Close>
-            <Conteudo pathname={pathname} loja={loja} novas={novas} pedidos={pedidos} aoNavegar={() => setAberta(false)} />
+            <Conteudo pathname={pathname} loja={loja} novas={novas} pedidos={pedidos} gestor={gestor} aoNavegar={() => setAberta(false)} />
           </Dialog.Popup>
         </Dialog.Portal>
       </Dialog.Root>
@@ -91,7 +91,7 @@ function Contador({ n, rotulo }: { n: number; rotulo: string }) {
   );
 }
 
-function Conteudo({ pathname, loja, novas, pedidos, aoNavegar }: Required<Omit<NavProps, "loja">> & { loja?: NavLoja; aoNavegar?: () => void }) {
+function Conteudo({ pathname, loja, novas, pedidos, gestor, aoNavegar }: Required<Omit<NavProps, "loja">> & { loja?: NavLoja; aoNavegar?: () => void }) {
   return (
     <>
       <div className="grid gap-1 border-b border-rule px-5 pt-5 pb-4 lg:pt-6">
@@ -114,6 +114,11 @@ function Conteudo({ pathname, loja, novas, pedidos, aoNavegar }: Required<Omit<N
             Pedidos
             <Contador n={pedidos} rotulo="para aprovar" />
           </Item>
+          {gestor && (
+            <Item href="/painel/vendedores" icon={UserCog} ativo={pathname.startsWith("/painel/vendedores")} onClick={aoNavegar}>
+              Vendedores
+            </Item>
+          )}
           {loja && (
             <li>
               <a

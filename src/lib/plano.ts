@@ -2,6 +2,8 @@
 
 export const PLANO_VALOR_REAIS = 149;
 export const TRIAL_DIAS = 7;
+/** Vendedores ativos mais convites em aberto, por loja. Acima disso, fala com a AutoGiro. */
+export const MAX_VENDEDORES = 20;
 
 export type PlanoLoja = {
   planoStatus: "trial" | "ativo" | "inadimplente" | "cancelado";

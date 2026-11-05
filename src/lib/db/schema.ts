@@ -55,6 +55,21 @@ export const membros = pgTable(
   (t) => [index("membros_loja_id_idx").on(t.lojaId)],
 ).enableRLS();
 
+// Link de convite para vendedor. Guarda só o sha256 do token (o token vai no link); apagado ao ser usado.
+export const convites = pgTable(
+  "convites",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    lojaId: uuid("loja_id").notNull().references(() => lojas.id, { onDelete: "cascade" }),
+    nome: text("nome").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiraEm: timestamp("expira_em", { withTimezone: true }).notNull(),
+    criadoPor: uuid("criado_por").references(() => membros.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("convites_loja_id_idx").on(t.lojaId)],
+).enableRLS();
+
 export const carros = pgTable(
   "carros",
   {
