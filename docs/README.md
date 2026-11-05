@@ -10,6 +10,7 @@ PWA mobile-first para garagistas: estoque, vitrine pública por loja e simulaç�
 | [produto/prd.md](produto/prd.md) | Requisitos de produto (personas, funcionalidades, não funcionais) |
 | [produto/srs.md](produto/srs.md) | Requisitos de software (multi-tenant, cobrança, modelo de dados, LGPD) |
 | [produto/fluxos.md](produto/fluxos.md) | Mapa dos fluxos do garagista, do comprador, da simulação e da cobrança |
+| [produto/telas-equipe.md](produto/telas-equipe.md) | Plano das telas da equipe (vendedores, clientes, vendas e comissões) |
 | [produto/briefing.md](produto/briefing.md) | Briefing original de passagem do projeto |
 
 ## Como funciona
