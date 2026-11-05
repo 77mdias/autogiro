@@ -9,11 +9,11 @@ import { db } from "@/lib/db";
 import { carros, convites, lojas, membros, pedidosEdicao, simulacoesFinanciamento as sim, vendas } from "@/lib/db/schema";
 import { fotosAprovadas, MAX_FOTOS, type MudancasCarro } from "@/lib/pedidos";
 import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
-import { AsaasError, criarCheckoutAssinatura, faturaVencida } from "@/lib/asaas";
+import { AsaasError, criarCheckoutAssinatura, faturaVencida, mudarValorAssinatura } from "@/lib/asaas";
 import { MAX_CENTAVOS, onlyDigits, reaisToCentavos, slugify } from "@/lib/masks";
 import { deleteCnhs, deleteFotos, uploadFoto } from "@/lib/r2";
 import { getLojaIdDoGestor, getMembro, getSession, lojaLiberada } from "@/lib/session";
-import { MAX_VENDEDORES } from "@/lib/plano";
+import { MAX_VENDEDORES, valorPlano } from "@/lib/plano";
 import { hashToken, novoToken } from "@/lib/senha";
 
 // Server actions são endpoints públicos: toda action revalida a sessão e escopa por loja_id.
@@ -307,6 +307,7 @@ export async function assinar(): Promise<FormState> {
       const hoje = new Date();
       const checkout = await criarCheckoutAssinatura({
         lojaId,
+        valorReais: valorPlano(await vendedoresAtivos(lojaId)),
         primeiraCobranca: loja.trialAte > hoje ? loja.trialAte : hoje,
         voltarPara: `${process.env.APP_BASE_URL}/painel/loja`,
       });
@@ -454,19 +455,47 @@ export async function recusarPedido(id: string): Promise<FormState> {
 const PRAZO_CONVITE = 7 * 24 * 60 * 60_000;
 const LOJA_CHEIA = `A loja já tem ${MAX_VENDEDORES} vendedores (contando convites em aberto). Fale com a AutoGiro para passar disso.`;
 
+/** Vendedores ativos: é o que define a faixa da mensalidade (convite em aberto não paga). */
+async function vendedoresAtivos(lojaId: string) {
+  const [{ ativos }] = await db
+    .select({ ativos: count() })
+    .from(membros)
+    .where(and(eq(membros.lojaId, lojaId), eq(membros.papel, "vendedor"), eq(membros.ativo, true)));
+  return ativos;
+}
+
 /** Vagas ocupadas: vendedores ativos mais convites ainda válidos. */
 async function vagasUsadas(lojaId: string) {
-  const [[{ ativos }], [{ abertos }]] = await Promise.all([
-    db
-      .select({ ativos: count() })
-      .from(membros)
-      .where(and(eq(membros.lojaId, lojaId), eq(membros.papel, "vendedor"), eq(membros.ativo, true))),
+  const [ativos, [{ abertos }]] = await Promise.all([
+    vendedoresAtivos(lojaId),
     db
       .select({ abertos: count() })
       .from(convites)
       .where(and(eq(convites.lojaId, lojaId), gt(convites.expiraEm, new Date()))),
   ]);
   return ativos + abertos;
+}
+
+/**
+ * Mudou a equipe: se a faixa mudou, a assinatura no Asaas passa ao novo valor a partir da próxima cobrança.
+ * Falha no Asaas não desfaz a mudança na equipe: a coluna segue com o valor antigo, Minha loja mostra a
+ * diferença e `pnpm loja mensalidades aplicar` acerta depois.
+ */
+async function ajustarMensalidade(lojaId: string) {
+  const [loja] = await db
+    .select({ sub: lojas.asaasSubscriptionId, atual: lojas.mensalidadeCentavos })
+    .from(lojas)
+    .where(eq(lojas.id, lojaId))
+    .limit(1);
+  if (!loja?.sub) return;
+  const reais = valorPlano(await vendedoresAtivos(lojaId));
+  if (loja.atual === reais * 100) return;
+  try {
+    await mudarValorAssinatura(loja.sub, reais);
+    await db.update(lojas).set({ mensalidadeCentavos: reais * 100 }).where(eq(lojas.id, lojaId));
+  } catch (err) {
+    console.error("Mensalidade não atualizada no Asaas", { lojaId, reais, err });
+  }
 }
 
 export type ConviteState = { error?: string; link?: string } | undefined;
@@ -520,6 +549,7 @@ export async function desativarVendedor(id: string): Promise<FormState> {
     return true;
   });
   if (!feito) return { error: "Vendedor não encontrado" };
+  await ajustarMensalidade(gestor.lojaId);
   revalidatePath("/painel", "layout");
   return {};
 }
@@ -534,6 +564,7 @@ export async function reativarVendedor(id: string): Promise<FormState> {
     .where(and(eq(membros.id, id), eq(membros.lojaId, gestor.lojaId), eq(membros.papel, "vendedor")))
     .returning({ id: membros.id });
   if (!v) return { error: "Vendedor não encontrado" };
+  await ajustarMensalidade(gestor.lojaId);
   revalidatePath("/painel", "layout");
   return {};
 }
@@ -550,8 +581,9 @@ export async function aceitarConvite(token: string): Promise<FormState> {
   if (session.user.loja_id) return { error: "Esta conta já faz parte de uma loja. Entre com outra conta para aceitar." };
   const authUserId = session.user.id;
 
+  let lojaId: string;
   try {
-    await db.transaction(async (tx) => {
+    lojaId = await db.transaction(async (tx) => {
       const [c] = await tx
         .delete(convites)
         .where(and(eq(convites.tokenHash, hashToken(token)), gt(convites.expiraEm, new Date())))
@@ -567,11 +599,13 @@ export async function aceitarConvite(token: string): Promise<FormState> {
         })
         .returning({ id: membros.id });
       if (!m) throw new ConviteRecusado("Esta conta já faz parte de outra loja. Entre com outra conta para aceitar.");
+      return c.lojaId;
     });
   } catch (err) {
     if (err instanceof ConviteRecusado) return { error: err.message };
     throw err;
   }
+  await ajustarMensalidade(lojaId);
   // O jwt (lib/auth) acha o membro na próxima requisição: o painel já abre com a loja.
   redirect("/painel/estoque");
 }

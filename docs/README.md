@@ -1,6 +1,6 @@
 # Documentação do AutoGiro
 
-PWA mobile-first para garagistas: estoque, vitrine pública por loja e simulações de financiamento com CNH. A loja paga R$ 149/mês pelo Asaas, com 7 dias grátis.
+PWA mobile-first para garagistas: estoque, vitrine pública por loja e simulações de financiamento com CNH. A loja paga pelo Asaas uma mensalidade pelo tamanho da equipe (R$ 39 a R$ 169), com 15 dias grátis.
 
 ## Produto
 

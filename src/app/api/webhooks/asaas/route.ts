@@ -12,9 +12,13 @@ type Recurso = {
   subscription?: string | null;
   externalReference?: string | null;
   checkoutSession?: string | null;
+  value?: number;
 };
 type AsaasPayload = { id?: string; event?: string; payment?: Recurso; subscription?: Recurso; checkout?: Recurso };
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+// Valor da assinatura em reais → centavos; sem valor no evento, não mexe na coluna.
+const mensalidade = (r: Recurso) => (typeof r.value === "number" ? { mensalidadeCentavos: Math.round(r.value * 100) } : {});
 
 const STATUS_POR_PAGAMENTO: Record<string, (typeof lojas.$inferSelect)["planoStatus"]> = {
   PAYMENT_CONFIRMED: "ativo",
@@ -52,6 +56,13 @@ async function processar(tx: Tx, p: AsaasPayload) {
         .set({ asaasSubscriptionId: id, ...(customer && { asaasCustomerId: customer }) })
         .where(and(onde, isNull(lojas.asaasSubscriptionId)));
     }
+  }
+
+  // Valor por id da assinatura, também quando uma cobrança chegou antes e já ligou a assinatura à loja.
+  // UPDATED inclui a mudança de faixa que o próprio app pede (mudarValorAssinatura) e as feitas no painel do Asaas.
+  if ((event === "SUBSCRIPTION_CREATED" || event === "SUBSCRIPTION_UPDATED") && p.subscription?.id) {
+    const valor = mensalidade(p.subscription);
+    if ("mensalidadeCentavos" in valor) await tx.update(lojas).set(valor).where(eq(lojas.asaasSubscriptionId, p.subscription.id));
     return;
   }
 
@@ -59,7 +70,7 @@ async function processar(tx: Tx, p: AsaasPayload) {
     // Solta a assinatura para a loja poder assinar de novo pelo checkout.
     await tx
       .update(lojas)
-      .set({ planoStatus: "cancelado", asaasSubscriptionId: null })
+      .set({ planoStatus: "cancelado", asaasSubscriptionId: null, mensalidadeCentavos: null })
       .where(eq(lojas.asaasSubscriptionId, p.subscription.id));
     return;
   }

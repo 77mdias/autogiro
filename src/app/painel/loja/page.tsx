@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { count, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { Eye, MessageCircle } from "lucide-react";
 import { db } from "@/lib/db";
-import { carros, lojas, simulacoesFinanciamento as sim } from "@/lib/db/schema";
+import { carros, lojas, membros, simulacoesFinanciamento as sim } from "@/lib/db/schema";
 import { getSession, requireLojaId } from "@/lib/session";
 import { buttonVariants } from "@/components/ui/button";
 import { CopyLinkButton, ShareLinkButton } from "@/components/copy-link-button";
 import { LojaForm } from "@/components/loja-form";
-import { PLANO_VALOR_REAIS, planoLiberado, type PlanoLoja } from "@/lib/plano";
+import { faixaPlano, planoLiberado, type PlanoLoja } from "@/lib/plano";
 import { formatBRL } from "@/lib/utils";
 import { whatsappUrl } from "@/lib/masks";
 import { AssinarForm } from "./assinar-form";
@@ -20,15 +20,23 @@ const dataCurta = (d: Date) => d.toLocaleDateString("pt-BR", { day: "2-digit", m
 // Fase de venda assistida: sem ASAAS_CHECKOUT=on, assinar é falar com a AutoGiro (link de pagamento + liberação manual).
 const autoatendimento = () => process.env.ASAAS_CHECKOUT === "on";
 
+type Mensalidade = { faixa: ReturnType<typeof faixaPlano>; assinaturaCentavos: number | null };
+
 /** O que dizer sobre o plano e qual botão mostrar, conforme o estado que o webhook do Asaas mantém. */
-function situacao(plano: PlanoLoja, voltouDoCheckout: boolean) {
-  const preco = `${formatBRL(PLANO_VALOR_REAIS * 100)} por mês`;
+function situacao(plano: PlanoLoja, voltouDoCheckout: boolean, { faixa, assinaturaCentavos }: Mensalidade) {
+  const faixaCentavos = faixa.reais * 100;
+  const preco = `${formatBRL(faixaCentavos)} por mês (${faixa.rotulo.toLowerCase()})`;
   const liberado = planoLiberado(plano);
-  if (plano.planoStatus === "ativo") return { titulo: "Plano ativo", texto: `${preco}.` };
+  // Assinatura com o valor antigo: a loja muda de faixa na próxima cobrança (aviso às lojas do plano de R$ 149).
+  const mudanca =
+    plano.asaasSubscriptionId && assinaturaCentavos != null && assinaturaCentavos !== faixaCentavos
+      ? ` A partir da próxima cobrança, passa de ${formatBRL(assinaturaCentavos)} para ${formatBRL(faixaCentavos)} (${faixa.rotulo.toLowerCase()}).`
+      : "";
+  if (plano.planoStatus === "ativo") return { titulo: "Plano ativo", texto: `${formatBRL(assinaturaCentavos ?? faixaCentavos)} por mês.${mudanca}` };
   if (plano.planoStatus === "inadimplente")
     return { titulo: "Pagamento em atraso", texto: "Painel e vitrine pausados até o pagamento da fatura.", botao: "Pagar fatura" };
   if (plano.asaasSubscriptionId && liberado)
-    return { titulo: "Assinatura feita", texto: `A primeira cobrança de ${formatBRL(PLANO_VALOR_REAIS * 100)} sai em ${dataCurta(plano.trialAte)}.` };
+    return { titulo: "Assinatura feita", texto: `A primeira cobrança de ${formatBRL(faixaCentavos)} sai em ${dataCurta(plano.trialAte)}.` };
   if (voltouDoCheckout) return { titulo: "Assinatura recebida", texto: "A confirmação do Asaas chega em instantes. Recarregue a página em um minuto." };
   if (plano.planoStatus === "cancelado")
     return { titulo: "Assinatura cancelada", texto: `Painel e vitrine pausados. Assine de novo para voltar: ${preco}.`, botao: "Assinar com cartão" };
@@ -48,7 +56,7 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
   const { assinatura } = await searchParams;
   // Vendedor vê a situação e o link, mas dados e assinatura ficam com o gestor (as actions também checam).
   const gestor = (await getSession())?.user.papel === "gestor";
-  const [[loja], porStatus, [{ leads }]] = await Promise.all([
+  const [[loja], porStatus, [{ leads }], [{ vendedores }]] = await Promise.all([
     db
       .select({
         nome: lojas.nome,
@@ -57,18 +65,23 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
         planoStatus: lojas.planoStatus,
         trialAte: lojas.trialAte,
         asaasSubscriptionId: lojas.asaasSubscriptionId,
+        mensalidadeCentavos: lojas.mensalidadeCentavos,
       })
       .from(lojas)
       .where(eq(lojas.id, lojaId))
       .limit(1),
     db.select({ status: carros.status, n: count() }).from(carros).where(eq(carros.lojaId, lojaId)).groupBy(carros.status),
     db.select({ leads: count() }).from(sim).where(eq(sim.lojaId, lojaId)),
+    db
+      .select({ vendedores: count() })
+      .from(membros)
+      .where(and(eq(membros.lojaId, lojaId), eq(membros.papel, "vendedor"), eq(membros.ativo, true))),
   ]);
   const disponiveis = porStatus.find((r) => r.status === "disponivel")?.n ?? 0;
   const vendidos = porStatus.find((r) => r.status === "vendido")?.n ?? 0;
   const vitrine = `/loja/${loja?.slug}`;
   const host = (process.env.APP_BASE_URL ?? "").replace(/^https?:\/\//, "");
-  const plano = loja && situacao(loja, assinatura === "ok");
+  const plano = loja && situacao(loja, assinatura === "ok", { faixa: faixaPlano(vendedores), assinaturaCentavos: loja.mensalidadeCentavos });
   const pausado = !!loja && !planoLiberado(loja);
 
   return (

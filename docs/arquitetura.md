@@ -51,7 +51,7 @@ src/
     db/schema.ts          tabelas (ver Dados)          db/migrar.ts   aplica drizzle/ ao subir
     auth.ts               Auth.js: Google + e-mail; loja_id no token (callback jwt)
     session.ts            getSession, getLojaId/requireLojaId (única fonte de loja_id), requireAdmin
-    plano.ts              planoLiberado(), situacaoPlano(), resumoAssinaturas()
+    plano.ts              planoLiberado(), situacaoPlano(), resumoAssinaturas(), FAIXAS/valorPlano() (mensalidade por vendedores)
     admin.ts              ehAdmin() (ADMIN_EMAILS)
     asaas.ts              API v3 do Asaas (fetch, sem SDK)
     r2.ts                 fotos (bucket público) e CNH (privado, URL assinada de 5 min)
@@ -75,7 +75,7 @@ Módulos de `src/lib` com testes (`*.test.ts`) rodam direto no `node --test`: n�
 
 Esquema em `src/lib/db/schema.ts`, migrações SQL em `drizzle/`.
 
-- **lojas**: `auth_user_id` (o `sub` do Google, único), `nome`, `slug` (único), `whatsapp`, `cidade`, `plano_status` (`trial | ativo | inadimplente | cancelado`), `trial_ate` (padrão `now() + 7 dias`), `asaas_customer_id` (único), `asaas_checkout_id`, `asaas_subscription_id` (único).
+- **lojas**: `auth_user_id` (o `sub` do Google, único), `nome`, `slug` (único), `whatsapp`, `cidade`, `plano_status` (`trial | ativo | inadimplente | cancelado`), `trial_ate` (padrão `now() + 15 dias`), `asaas_customer_id` (único), `asaas_checkout_id`, `asaas_subscription_id` (único), `mensalidade_centavos` (o que a assinatura do Asaas cobra hoje; null sem assinatura).
 - **membros**: quem entra no painel. `loja_id`, `auth_user_id` (o `sub`, único: uma conta, uma loja), `papel` (`gestor | vendedor`), `nome`, `ativo`. O dono que criou a loja é o gestor.
 - **convites**: `loja_id`, `nome` (do vendedor), `token_hash` (sha256; o token só existe no link), `expira_em` (7 dias), `criado_por`. Apagado ao ser aceito.
 - **carros**: `loja_id`, marca, modelo, versão, ano, km, `preco_centavos`, cor, câmbio, combustível, descrição, `fotos` (jsonb com as chaves no R2), `status` (`disponivel | vendido`), `cadastrado_por` (membro que cadastrou).
@@ -130,6 +130,8 @@ Cada link novo apaga os anteriores do mesmo tipo, e só sai um e-mail por minuto
 | `ativo` | sim |
 | `trial` | sim, se ainda está dentro de `trial_ate` **ou** já tem assinatura (o cartão será cobrado no fim do teste) |
 | `inadimplente`, `cancelado` | não |
+
+A mensalidade sai da faixa de vendedores ativos (`valorPlano()`); mudança de faixa e o aviso às lojas estão em [pagamentos-asaas.md](pagamentos-asaas.md#mudança-de-faixa).
 
 Plano pausado: as páginas do painel levam para Minha loja (`requireLojaId` com `exigePlano`), a vitrine mostra "Vitrine fora do ar", `POST /api/simulacoes` responde 404 e a CNH responde 402. Minha loja sempre abre (`exigePlano: false`), porque é lá que se paga.
 

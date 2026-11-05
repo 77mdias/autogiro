@@ -5,7 +5,7 @@ import { Calculator, Car, Check, MessageCircle, ShieldCheck, Smartphone, Store }
 import { buttonVariants } from "@/components/ui/button";
 import { Wordmark } from "@/components/wordmark";
 import { Reveal } from "@/components/landing/reveal";
-import { PLANO_VALOR_REAIS, TRIAL_DIAS } from "@/lib/plano";
+import { FAIXAS, MAX_VENDEDORES, TRIAL_DIAS } from "@/lib/plano";
 import "./landing.css";
 
 export const metadata: Metadata = {
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description: "Cadastre os carros pelo celular, mande o link da vitrine e receba pedidos de financiamento com a CNH do cliente.",
 };
 
-const PRECO = `R$ ${PLANO_VALOR_REAIS}`;
+const A_PARTIR = `a partir de R$ ${FAIXAS[0].reais}`;
 const CTA = `Testar ${TRIAL_DIAS} dias grátis`;
 
 const PASSOS = [
@@ -50,13 +50,17 @@ const VANTAGENS = [
   ["Mandar fotos soltas para cada cliente", "Mandar um link só, com o estoque inteiro"],
   ["Pedir entrada, prazo e CNH no meio da conversa", "Receber o pedido pronto, com a CNH anexada"],
   ["Guardar documento de cliente na galeria do celular", "Documento guardado com segurança e apagado sozinho"],
-  ["Pagar portal por anúncio ou por contato", `${PRECO} por mês, com carros ilimitados`],
+  ["Pagar portal por anúncio ou por contato", `Mensalidade fixa, ${A_PARTIR}, com carros ilimitados`],
 ];
 
 const PERGUNTAS = [
   ["Preciso instalar um aplicativo?", "Não. O AutoGiro abre no navegador do celular ou do computador. Se quiser, dá para colocar um atalho na tela inicial, como um aplicativo."],
   ["O cliente precisa criar conta?", "Não. Ele abre o link, vê os carros e pede a simulação. Só você entra no painel, com a conta Google ou o e-mail da loja."],
-  ["Preciso de cartão para testar?", `Não. São ${TRIAL_DIAS} dias grátis sem cartão. Depois, ${PRECO} por mês.`],
+  ["Preciso de cartão para testar?", `Não. São ${TRIAL_DIAS} dias grátis sem cartão. Depois, a mensalidade da sua faixa, ${A_PARTIR} por mês.`],
+  [
+    "Meus vendedores podem usar?",
+    `Sim, até ${MAX_VENDEDORES}. Cada um entra com a própria conta, cadastra carros e cuida dos clientes dele; editar ou excluir passa pela sua aprovação. A mensalidade muda conforme o número de vendedores.`,
+  ],
   ["Quantos carros posso cadastrar?", "Quantos quiser. O plano não tem limite de carros nem de simulações."],
   ["Marcar como vendido apaga o anúncio?", "Não. O carro continua na vitrine com o selo Vendido, mostrando que sua loja vende."],
 ];
@@ -105,7 +109,7 @@ export default function Home() {
                 {CTA}
               </Link>
               <ul className="flex flex-wrap gap-x-6 gap-y-2 text-lg text-ink-2">
-                {["Sem cartão", "Carros ilimitados", `Depois, ${PRECO}/mês`].map((item) => (
+                {["Sem cartão", "Carros ilimitados", `Depois, ${A_PARTIR}/mês`].map((item) => (
                   <li key={item} className="inline-flex items-center gap-2">
                     <Check className="size-5 text-signal" aria-hidden /> {item}
                   </li>
@@ -166,10 +170,22 @@ export default function Home() {
 
         <Secao id="preco" titulo="Quanto custa">
           <div className="grid max-w-xl gap-6 rounded-card border border-rule-2 p-8">
-            <p className="num font-display text-display-s font-semibold">
-              {PRECO}
-              <span className="text-xl font-medium text-ink-2"> por mês</span>
-            </p>
+            <table className="w-full border-collapse text-left text-lg">
+              <caption className="pb-2 text-left text-ink-2">Mensalidade pelo número de vendedores (você, o dono, não conta)</caption>
+              <tbody>
+                {FAIXAS.map((f) => (
+                  <tr key={f.rotulo} className="border-b border-rule">
+                    <th scope="row" className="py-3 pr-4 font-normal">
+                      {f.ate === 0 ? "Só você" : f.rotulo}
+                    </th>
+                    <td className="num py-3 text-right font-display text-2xl font-semibold whitespace-nowrap">
+                      R$ {f.reais}
+                      <span className="text-base font-normal text-ink-3"> /mês</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
             <ul className="grid gap-3 text-lg">
               {[`${TRIAL_DIAS} dias grátis para testar, sem cartão`, "Carros e simulações sem limite", "Vitrine, WhatsApp e simulação inclusos"].map((item) => (
                 <li key={item} className="inline-flex items-start gap-2">
