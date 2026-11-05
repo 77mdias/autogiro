@@ -33,9 +33,12 @@ export const lojas = pgTable("lojas", {
   asaasCustomerId: text("asaas_customer_id").unique(),
   asaasCheckoutId: text("asaas_checkout_id"),
   asaasSubscriptionId: text("asaas_subscription_id").unique(),
+  // O que a assinatura do Asaas cobra hoje, gravado pelo webhook e ao mudar de faixa. null = sem assinatura.
+  // Diferente de valorPlano(vendedores) = a loja muda de faixa na próxima cobrança (Minha loja avisa).
+  mensalidadeCentavos: integer("mensalidade_centavos"),
   planoStatus: planoStatus("plano_status").notNull().default("trial"),
-  // 7 dias de teste grátis (TRIAL_DIAS em lib/plano.ts) contados da criação da loja
-  trialAte: timestamp("trial_ate", { withTimezone: true }).notNull().default(sql`now() + interval '7 days'`),
+  // 15 dias de teste grátis (TRIAL_DIAS em lib/plano.ts) contados da criação da loja
+  trialAte: timestamp("trial_ate", { withTimezone: true }).notNull().default(sql`now() + interval '15 days'`),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }).enableRLS();
 

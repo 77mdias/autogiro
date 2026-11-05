@@ -1,16 +1,15 @@
 import "server-only";
-import { PLANO_VALOR_REAIS } from "@/lib/plano";
 
 // API v3 do Asaas: https://docs.asaas.com — sandbox por padrão; em produção, ASAAS_API_URL=https://api.asaas.com/v3
 const API_URL = process.env.ASAAS_API_URL ?? "https://api-sandbox.asaas.com/v3";
 
 export class AsaasError extends Error {}
 
-async function asaas<T>(path: string, body?: unknown): Promise<T> {
+async function asaas<T>(path: string, body?: unknown, method = body ? "POST" : "GET"): Promise<T> {
   const key = process.env.ASAAS_API_KEY;
   if (!key) throw new Error("ASAAS_API_KEY não configurada");
   const res = await fetch(API_URL + path, {
-    method: body ? "POST" : "GET",
+    method,
     headers: { access_token: key, "content-type": "application/json", "user-agent": "AutoGiro/1.0" },
     body: body ? JSON.stringify(body) : undefined,
     cache: "no-store",
@@ -24,7 +23,7 @@ async function asaas<T>(path: string, body?: unknown): Promise<T> {
  * Checkout hospedado: sem `customer`/`customerData`, o pagador preenche nome, CPF/CNPJ e cartão na
  * página do Asaas, que cria o cliente e a assinatura mensal ao concluir.
  */
-export async function criarCheckoutAssinatura(p: { lojaId: string; primeiraCobranca: Date; voltarPara: string }) {
+export async function criarCheckoutAssinatura(p: { lojaId: string; valorReais: number; primeiraCobranca: Date; voltarPara: string }) {
   // "yyyy-MM-dd HH:mm:ss" no horário de Brasília
   const nextDueDate = p.primeiraCobranca.toLocaleString("sv-SE", { timeZone: "America/Sao_Paulo" });
   const checkout = await asaas<{ id: string; link?: string | null }>("/checkouts", {
@@ -38,7 +37,7 @@ export async function criarCheckoutAssinatura(p: { lojaId: string; primeiraCobra
         name: "AutoGiro mensal",
         description: "Vitrine, estoque e simulações com CNH",
         quantity: 1,
-        value: PLANO_VALOR_REAIS,
+        value: p.valorReais,
         imageBase64: LOGO_BASE64,
       },
     ],
@@ -46,6 +45,15 @@ export async function criarCheckoutAssinatura(p: { lojaId: string; primeiraCobra
   });
   const site = API_URL.includes("sandbox") ? "https://sandbox.asaas.com" : "https://asaas.com";
   return { id: checkout.id, url: checkout.link ?? `${site}/checkoutSession/show?id=${checkout.id}` };
+}
+
+/**
+ * Novo valor da mensalidade (mudou de faixa). `updatePendingPayments` leva o valor também à cobrança que
+ * o Asaas já gerou e ainda não foi paga, para valer na próxima. Em produção, mudar valor de assinatura
+ * de cartão exige a tokenização habilitada na conta.
+ */
+export async function mudarValorAssinatura(subscriptionId: string, valorReais: number) {
+  await asaas(`/subscriptions/${encodeURIComponent(subscriptionId)}`, { value: valorReais, updatePendingPayments: true }, "PUT");
 }
 
 /** Link de uma fatura vencida da assinatura, para pagar o atraso na página do Asaas. */

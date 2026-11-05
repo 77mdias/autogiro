@@ -64,6 +64,13 @@
       "when": 1793891309184,
       "tag": "0008_vendas",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793896630152,
+      "tag": "0009_mensalidade",
+      "breakpoints": true
     }
   ]
 }

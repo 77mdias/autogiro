@@ -1,9 +1,20 @@
 // Sem imports com alias: este arquivo roda direto no `node --test`.
 
-export const PLANO_VALOR_REAIS = 149;
-export const TRIAL_DIAS = 7;
+export const TRIAL_DIAS = 15;
 /** Vendedores ativos mais convites em aberto, por loja. Acima disso, fala com a AutoGiro. */
 export const MAX_VENDEDORES = 20;
+
+/** Mensalidade por número de vendedores ativos (o gestor não conta). `ate` inclusivo, em ordem. */
+export const FAIXAS = [
+  { ate: 0, reais: 39, rotulo: "Individual" },
+  { ate: 4, reais: 99, rotulo: "1 a 4 vendedores" },
+  { ate: 10, reais: 139, rotulo: "5 a 10 vendedores" },
+  { ate: MAX_VENDEDORES, reais: 169, rotulo: `11 a ${MAX_VENDEDORES} vendedores` },
+] as const;
+
+/** A faixa de uma loja pelos vendedores ativos. Acima do limite fica na última (convidar já é bloqueado). */
+export const faixaPlano = (vendedores: number) => FAIXAS.find((f) => vendedores <= f.ate) ?? FAIXAS[FAIXAS.length - 1];
+export const valorPlano = (vendedores: number) => faixaPlano(vendedores).reais;
 
 export type PlanoLoja = {
   planoStatus: "trial" | "ativo" | "inadimplente" | "cancelado";
@@ -31,9 +42,14 @@ export function situacaoPlano(l: PlanoLoja, agora = new Date()): Situacao {
   return planoLiberado(l, agora) ? "teste" : "teste_vencido";
 }
 
-/** Contagem por situação e MRR (só lojas ativas pagam; centavos, como no resto do app). */
-export function resumoAssinaturas(lojas: PlanoLoja[], agora = new Date()) {
+/** Contagem por situação e MRR (só lojas ativas pagam, cada uma o valor da sua mensalidade; centavos). */
+export function resumoAssinaturas(lojas: (PlanoLoja & { mensalidadeCentavos: number })[], agora = new Date()) {
   const porSituacao: Record<Situacao, number> = { teste: 0, teste_vencido: 0, ativa: 0, inadimplente: 0, cancelada: 0 };
-  for (const l of lojas) porSituacao[situacaoPlano(l, agora)]++;
-  return { porSituacao, mrrCentavos: porSituacao.ativa * PLANO_VALOR_REAIS * 100 };
+  let mrrCentavos = 0;
+  for (const l of lojas) {
+    const s = situacaoPlano(l, agora);
+    porSituacao[s]++;
+    if (s === "ativa") mrrCentavos += l.mensalidadeCentavos;
+  }
+  return { porSituacao, mrrCentavos };
 }

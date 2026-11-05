@@ -57,13 +57,16 @@ Pelo ngrok, o Next repassa o host como `localhost:3000` e o Auth.js montava o ca
 ## 2026-11-02 · Escapar o `$` da chave do Asaas no `.env`
 A chave começa com `$`; o Next expande variáveis no `.env` e ela ficava vazia. Escrever `\$aact_...`.
 
+## 2026-11-05 · Preço por número de vendedores, 15 dias grátis
+Com equipe, o plano único deixou de servir. Individual R$ 39, 1 a 4 vendedores R$ 99, 5 a 10 R$ 139, 11 a 20 R$ 169; acima disso, fala com a AutoGiro. Conta só vendedor ativo (o gestor e os convites não). Mudou de faixa, a assinatura do Asaas muda na próxima cobrança. As lojas do R$ 149 veem o aviso em Minha loja e migram quando a AutoGiro rodar `pnpm loja mensalidades aplicar`. O teste grátis passou de 7 para 15 dias.
+
 ## 2026-11-02 · Logo sempre leva à página inicial; telas sem largura máxima
 Pedido do produto. A logo do painel ia para o Estoque; a do onboarding e a do rodapé da landing não tinham link. Vitrine e painel ocupam a largura toda.
 
 ## 2026-11-01 · Asaas no lugar da Appmax
 Troca de gateway. Asaas tem assinatura recorrente nativa (gera as cobranças sozinho), Checkout hospedado, Pix/boleto/cartão e Sandbox completo.
 
-## 2026-11-01 · Plano único: R$ 149/mês, 7 dias grátis sem cartão
+## 2026-11-01 · Plano único: R$ 149/mês, 7 dias grátis sem cartão (trocado em 2026-11-05)
 Simples de vender e de explicar. O teste começa ao criar a loja (`trial_ate`), sem pedir cartão.
 
 ## 2026-11-01 · Sem CPF/CNPJ no cadastro

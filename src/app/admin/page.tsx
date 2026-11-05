@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { count, desc, sql } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { carros, lojas, simulacoesFinanciamento as sim } from "@/lib/db/schema";
-import { PLANO_VALOR_REAIS, resumoAssinaturas, situacaoPlano, type Situacao } from "@/lib/plano";
+import { carros, lojas, membros, simulacoesFinanciamento as sim } from "@/lib/db/schema";
+import { resumoAssinaturas, situacaoPlano, valorPlano, type Situacao } from "@/lib/plano";
 import { requireAdmin } from "@/lib/session";
 import { cn, formatBRL } from "@/lib/utils";
 import { Wordmark } from "@/components/wordmark";
@@ -37,7 +37,7 @@ async function Painel() {
   const desde = new Date(agora.getTime() - DIAS_RECENTES * 24 * 60 * 60 * 1000).toISOString();
 
   // shortcut: lista todas as lojas numa página; paginar quando passar de algumas centenas.
-  const [lista, carrosPorLoja, simPorLoja] = await Promise.all([
+  const [lojasDb, carrosPorLoja, simPorLoja, vendedoresPorLoja] = await Promise.all([
     db
       .select({
         id: lojas.id,
@@ -46,6 +46,7 @@ async function Painel() {
         planoStatus: lojas.planoStatus,
         trialAte: lojas.trialAte,
         asaasSubscriptionId: lojas.asaasSubscriptionId,
+        mensalidadeAsaas: lojas.mensalidadeCentavos,
         createdAt: lojas.createdAt,
       })
       .from(lojas)
@@ -66,7 +67,19 @@ async function Painel() {
       })
       .from(sim)
       .groupBy(sim.lojaId),
+    db
+      .select({ lojaId: membros.lojaId, n: count() })
+      .from(membros)
+      .where(and(eq(membros.papel, "vendedor"), eq(membros.ativo, true)))
+      .groupBy(membros.lojaId),
   ]);
+
+  const vendedoresDe = new Map(vendedoresPorLoja.map((v) => [v.lojaId, v.n]));
+  // Quem tem assinatura paga o que o Asaas cobra hoje; sem ela, vale a faixa pela equipe atual.
+  const lista = lojasDb.map((l) => {
+    const faixaCentavos = valorPlano(vendedoresDe.get(l.id) ?? 0) * 100;
+    return { ...l, faixaCentavos, mensalidadeCentavos: l.mensalidadeAsaas ?? faixaCentavos };
+  });
 
   const carrosDe = new Map(carrosPorLoja.map((c) => [c.lojaId, c]));
   const simDe = new Map(simPorLoja.map((s) => [s.lojaId, s]));
@@ -92,7 +105,7 @@ async function Painel() {
           </h2>
           <p className="font-display text-display-s leading-none font-semibold">{formatBRL(mrrCentavos)}</p>
           <p className="text-sm text-ink-3">
-            {porSituacao.ativa} {porSituacao.ativa === 1 ? "loja ativa" : "lojas ativas"} × {formatBRL(PLANO_VALOR_REAIS * 100)}
+            {porSituacao.ativa} {porSituacao.ativa === 1 ? "loja ativa" : "lojas ativas"}, cada uma pela mensalidade dela
           </p>
         </div>
         <dl className="grid grid-cols-3 border-y border-rule">
@@ -128,15 +141,16 @@ async function Painel() {
           <p className="ticks px-6 py-10 text-ink-2">Nenhuma loja cadastrada ainda.</p>
         ) : (
           <div className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0">
-            <table className="w-full min-w-[44rem] border-collapse text-left text-sm">
+            <table className="w-full min-w-[50rem] border-collapse text-left text-sm">
               <caption className="sr-only">
-                Lojas, da mais nova para a mais antiga, com situação do plano, carros e simulações
+                Lojas, da mais nova para a mais antiga, com situação do plano, mensalidade, carros e simulações
               </caption>
               <thead className="text-ink-3">
                 <tr className="border-b border-rule-2">
                   <th scope="col" className="py-3 pr-4 font-normal">Loja</th>
                   <th scope="col" className="py-3 pr-4 font-normal">Situação</th>
                   <th scope="col" className="py-3 pr-4 font-normal">Criada em</th>
+                  <th scope="col" className="py-3 pr-4 text-right font-normal">Mensalidade</th>
                   <th scope="col" className="py-3 pr-4 text-right font-normal">Carros à venda</th>
                   <th scope="col" className="py-3 pr-4 text-right font-normal">Simulações ({DIAS_RECENTES} dias)</th>
                   <th scope="col" className="py-3 text-right font-normal">Simulações (total)</th>
@@ -169,6 +183,12 @@ async function Painel() {
                         )}
                       </td>
                       <td className="num py-3 pr-4 whitespace-nowrap text-ink-2">{data.format(l.createdAt)}</td>
+                      <td className="num py-3 pr-4 text-right whitespace-nowrap">
+                        {formatBRL(l.mensalidadeCentavos)}
+                        {l.mensalidadeCentavos !== l.faixaCentavos && (
+                          <span className="block text-xs text-ink-3">passa a {formatBRL(l.faixaCentavos)}</span>
+                        )}
+                      </td>
                       <td className="num py-3 pr-4 text-right">
                         {c?.aVenda ?? 0}
                         <span className="text-ink-3"> de {c?.total ?? 0}</span>

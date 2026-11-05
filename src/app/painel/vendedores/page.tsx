@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { and, asc, desc, eq, gt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { convites, membros } from "@/lib/db/schema";
-import { MAX_VENDEDORES } from "@/lib/plano";
+import { faixaPlano, MAX_VENDEDORES } from "@/lib/plano";
 import { requireMembro } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { CancelarConvite, ConviteForm, VendedorAcoes } from "./equipe-acoes";
@@ -29,6 +29,9 @@ export default async function VendedoresPage() {
   const ativos = equipe.filter((v) => v.ativo).length;
   const usadas = ativos + abertos.length;
   const cheia = usadas >= MAX_VENDEDORES;
+  const faixa = faixaPlano(ativos);
+  // A faixa muda quando o próximo vendedor ativo passa do topo dela (convite em aberto ainda não paga).
+  const proxima = ativos + 1 > faixa.ate && ativos < MAX_VENDEDORES ? faixaPlano(ativos + 1) : null;
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-12">
@@ -43,6 +46,15 @@ export default async function VendedoresPage() {
             </>
           )}{" "}
           · até <span className="num">{MAX_VENDEDORES}</span>
+        </p>
+        <p className="text-ink-3">
+          Mensalidade: <span className="num text-ink-2">R$ {faixa.reais}</span> ({faixa.rotulo.toLowerCase()}).
+          {proxima && (
+            <>
+              {" "}
+              Com mais um vendedor ativo, passa a <span className="num">R$ {proxima.reais}</span> na próxima cobrança.
+            </>
+          )}
         </p>
       </header>
 
