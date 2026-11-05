@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { and, count, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { lojas, simulacoesFinanciamento as sim } from "@/lib/db/schema";
-import { getLojaId } from "@/lib/session";
+import { getMembro } from "@/lib/session";
 import { Nav, NavAtual } from "@/components/painel-nav";
 
 // Layout só monta a navegação. A autorização fica em cada página (requireLojaId),
@@ -22,11 +22,15 @@ export default function PainelLayout({ children }: LayoutProps<"/painel">) {
 }
 
 async function NavDaLoja() {
-  const lojaId = await getLojaId();
-  if (!lojaId) return <NavAtual />;
+  const membro = await getMembro();
+  if (!membro) return <NavAtual />;
   const [[loja], [{ novas }]] = await Promise.all([
-    db.select({ nome: lojas.nome, slug: lojas.slug }).from(lojas).where(eq(lojas.id, lojaId)).limit(1),
-    db.select({ novas: count() }).from(sim).where(and(eq(sim.lojaId, lojaId), eq(sim.status, "novo"))),
+    db.select({ nome: lojas.nome, slug: lojas.slug }).from(lojas).where(eq(lojas.id, membro.lojaId)).limit(1),
+    // Só os leads novos de quem está logado: é a fila que ele tem de responder
+    db
+      .select({ novas: count() })
+      .from(sim)
+      .where(and(eq(sim.lojaId, membro.lojaId), eq(sim.responsavelId, membro.membroId), eq(sim.status, "novo"))),
   ]);
   return <NavAtual loja={loja} novas={novas} />;
 }

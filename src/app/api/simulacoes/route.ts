@@ -1,4 +1,4 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { carros, lojas, simulacoesFinanciamento } from "@/lib/db/schema";
@@ -34,7 +34,17 @@ export async function POST(request: Request) {
   const { valorEntrada, valorFinanciar, ...data } = parsed.data;
 
   const [carro] = await db
-    .select({ lojaId: carros.lojaId, planoStatus: lojas.planoStatus, trialAte: lojas.trialAte, asaasSubscriptionId: lojas.asaasSubscriptionId })
+    .select({
+      lojaId: carros.lojaId,
+      planoStatus: lojas.planoStatus,
+      trialAte: lojas.trialAte,
+      asaasSubscriptionId: lojas.asaasSubscriptionId,
+      // O lead é de quem cadastrou o carro; se ele saiu da equipe, do gestor
+      responsavelId: sql<string | null>`coalesce(
+        (select m.id from membros m where m.id = ${carros.cadastradoPor} and m.ativo),
+        (select m.id from membros m where m.loja_id = ${carros.lojaId} and m.papel = 'gestor' and m.ativo order by m.created_at limit 1)
+      )`,
+    })
     .from(carros)
     .innerJoin(lojas, eq(lojas.id, carros.lojaId))
     .where(and(eq(carros.id, data.carroId), ne(carros.status, "vendido")))
@@ -58,6 +68,7 @@ export async function POST(request: Request) {
       ...data,
       id,
       lojaId: carro.lojaId,
+      responsavelId: carro.responsavelId,
       valorEntradaCentavos: valorEntrada,
       valorFinanciarCentavos: valorFinanciar,
       consentimentoLgpdEm: new Date(),

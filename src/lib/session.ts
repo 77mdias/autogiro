@@ -39,17 +39,32 @@ export async function lojaLiberada(lojaId: string) {
   return !!loja && planoLiberado(loja);
 }
 
+export type Membro = { lojaId: string; membroId: string; papel: "gestor" | "vendedor" };
+
+/** Loja, membro e papel de quem está logado (para actions); null sem loja. */
+export async function getMembro(): Promise<Membro | null> {
+  const u = (await getSession())?.user;
+  return u?.loja_id && u.membro_id && u.papel ? { lojaId: u.loja_id, membroId: u.membro_id, papel: u.papel } : null;
+}
+
+type Exige = { exigePlano?: boolean; soGestor?: boolean };
+
 /**
  * Para páginas: sem sessão → login; logado sem loja → onboarding; plano vencido → Minha loja,
  * onde fica a assinatura (essa página passa `exigePlano: false`). `soGestor`: vendedor volta ao estoque.
  */
-export async function requireLojaId(returnTo = "/painel", { exigePlano = true, soGestor = false } = {}): Promise<string> {
+export async function requireMembro(returnTo = "/painel", { exigePlano = true, soGestor = false }: Exige = {}): Promise<Membro> {
   const session = await getSession();
   if (!session) redirect(`/login?callbackUrl=${encodeURIComponent(returnTo)}`);
-  if (!session.user.loja_id) redirect("/onboarding");
-  if (soGestor && session.user.papel !== "gestor") redirect("/painel/estoque");
-  if (exigePlano && !(await lojaLiberada(session.user.loja_id))) redirect("/painel/loja");
-  return session.user.loja_id;
+  const { loja_id: lojaId, membro_id: membroId, papel } = session.user;
+  if (!lojaId || !membroId || !papel) redirect("/onboarding");
+  if (soGestor && papel !== "gestor") redirect("/painel/estoque");
+  if (exigePlano && !(await lojaLiberada(lojaId))) redirect("/painel/loja");
+  return { lojaId, membroId, papel };
+}
+
+export async function requireLojaId(returnTo = "/painel", exige: Exige = {}): Promise<string> {
+  return (await requireMembro(returnTo, exige)).lojaId;
 }
 
 /** Painel do dono do SaaS: sem sessão → login; logado sem permissão → 404, para não revelar a rota. */
