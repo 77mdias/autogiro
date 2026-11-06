@@ -1,6 +1,6 @@
 # Deploy (Vercel)
 
-Banco no Supabase (um projeto para dev, outro para produção), app na Vercel, segredos no Criptenv. Produção em **https://autogiro.wdias.tech** (subdomínio por enquanto; trocar de domínio é só atualizar as variáveis de URL e os callbacks abaixo).
+Banco no Supabase (um projeto para dev, outro para produção), app na Vercel, segredos no Criptenv. Produção migrando para **https://autogiro.wdias.tech**: até os passos 6 e 7 terminarem, o app responde em `autogiro.77mdevseven.tech` (subdomínio por enquanto; trocar de domínio é só atualizar as variáveis de URL e os callbacks abaixo).
 
 ## Fluxo
 

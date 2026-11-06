@@ -2,7 +2,7 @@
 
 O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md), [SRS](srs.md), [fluxos](fluxos.md), [briefing](briefing.md)) e o que falta. **Atualize este arquivo a cada entrega.**
 
-Última revisão: 2026-11-06. No ar em `https://autogiro.wdias.tech` (Vercel).
+Última revisão: 2026-11-06. No ar na Vercel, migrando de `autogiro.77mdevseven.tech` para `https://autogiro.wdias.tech` (passos 6 e 7 de [deploy.md](../deploy.md)).
 
 ## Pronto
 
