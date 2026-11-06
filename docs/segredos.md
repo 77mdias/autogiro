@@ -43,7 +43,7 @@ Requer criptenv **0.2.3+** (a 0.2.2 repassava a senha do cofre para o app e não
    ```
 3. **Cadastrar as variáveis** de cada ambiente (nomes e explicação em `.env.example`), uma a uma, com aspas simples para o shell não mexer no valor:
    ```bash
-   criptenv set 'APP_BASE_URL=https://autogiro.77mdevseven.tech' -e production -p <ID>
+   criptenv set 'APP_BASE_URL=https://autogiro.wdias.tech' -e production -p <ID>
    criptenv list -e production -p <ID>   # confere os nomes (nunca mostra valores)
    ```
    Guarde o valor puro: sem aspas, sem comentário, sem espaço no fim. A `ASAAS_API_KEY` começa com `$` e vai como está (`'ASAAS_API_KEY=$aact_...'`). O `.env.local` antigo foi migrado com `criptenv push` e apagado com `shred` em 2026-11-03, depois de um `criptenv diff` sem nenhum valor só local.

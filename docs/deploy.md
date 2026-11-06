@@ -1,6 +1,6 @@
 # Deploy (Vercel)
 
-Banco no Supabase (um projeto para dev, outro para produção), app na Vercel, segredos no Criptenv. Produção em **https://autogiro.77mdevseven.tech** (subdomínio por enquanto; trocar de domínio é só atualizar as variáveis de URL e os callbacks abaixo).
+Banco no Supabase (um projeto para dev, outro para produção), app na Vercel, segredos no Criptenv. Produção em **https://autogiro.wdias.tech** (subdomínio por enquanto; trocar de domínio é só atualizar as variáveis de URL e os callbacks abaixo).
 
 ## Fluxo
 
@@ -29,10 +29,10 @@ branch ──► PR ──► CI (GitHub Actions) + prévia da Vercel ──► 
    ```
    Depois, em Settings → Environment Variables, confira que as de `production` ficaram só no alvo **Production** e que **Preview** recebeu as de `development` (banco de dev). Valores que mudam em produção: `APP_BASE_URL` e `AUTH_URL` (domínio final), `DATABASE_URL` (pooler de transação, 6543) e `DATABASE_URL_DIRECT` (session pooler, 5432, usado nas migrações), chaves do Asaas de produção, R2 de produção. `ADMIN_EMAILS` com o seu e-mail; `E2E_*` não vai para produção.
 
-   **`AUTH_URL` exato**, `https://autogiro.77mdevseven.tech`: com `https://`, sem barra nem caminho no fim, sem aspas, espaço ou comentário. Inválido, o `next-auth` quebra em toda rota `/api/auth/*` com 500 sem corpo e o login para (aconteceu em 2026-11-03). Variável alterada só vale depois de um **Redeploy**.
+   **`AUTH_URL` exato**, `https://autogiro.wdias.tech`: com `https://`, sem barra nem caminho no fim, sem aspas, espaço ou comentário. Inválido, o `next-auth` quebra em toda rota `/api/auth/*` com 500 sem corpo e o login para (aconteceu em 2026-11-03). Variável alterada só vale depois de um **Redeploy**.
 5. **Proteção da `main`** (GitHub → Settings → Branches): exigir PR e o check **"Lint, tipos, testes, build e migrações"**. Assim só código aprovado pelo CI chega à `main` e, portanto, à produção.
-6. **Domínio**: em Settings → Domains da Vercel, adicione `autogiro.77mdevseven.tech`; na Cloudflare, o CNAME `autogiro` que a Vercel pedir, **sem proxy** (nuvem cinza).
-7. **Serviços que apontam para o domínio**: callback do Google OAuth (`https://<domínio>/api/auth/callback/google`), webhook do Asaas de produção (`/api/webhooks/asaas`) e o Worker do cron (`/api/cron/delete-expired-cnh`, Bearer `CRON_SECRET`).
+6. **Domínio**: em Settings → Domains da Vercel, adicione `autogiro.wdias.tech`; no DNS de `wdias.tech`, o CNAME `autogiro` que a Vercel pedir (TTL 300 enquanto configura; na Cloudflare, **sem proxy**, nuvem cinza). O domínio anterior, `autogiro.77mdevseven.tech`, fica na Vercel como **redirect 308** para o novo, para não quebrar os links de vitrine já mandados no WhatsApp.
+7. **Serviços que apontam para o domínio**: callback do Google OAuth (`https://<domínio>/api/auth/callback/google`), webhook do Asaas de produção (`/api/webhooks/asaas`) e o Worker do cron (`/api/cron/delete-expired-cnh`, Bearer `CRON_SECRET`). Ao trocar de domínio, mude esses três e também `AUTH_URL` e `APP_BASE_URL`, e faça um Redeploy; quem estava logado entra de novo (o cookie é do domínio antigo).
 
 ## Cron (limpeza das CNHs)
 
@@ -41,7 +41,7 @@ branch ──► PR ──► CI (GitHub Actions) + prévia da Vercel ──► 
 ```js
 export default {
   async scheduled(_evento, env) {
-    await fetch("https://autogiro.77mdevseven.tech/api/cron/delete-expired-cnh", {
+    await fetch("https://autogiro.wdias.tech/api/cron/delete-expired-cnh", {
       method: "POST",
       headers: { Authorization: `Bearer ${env.CRON_SECRET}` },
     });

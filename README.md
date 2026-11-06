@@ -2,7 +2,7 @@
 
 PWA mobile-first para garagistas: estoque pelo celular, vitrine pública por loja e simulações de financiamento com CNH. A loja paga pelo Asaas uma mensalidade pelo tamanho da equipe (R$ 39 a R$ 169), com 15 dias grátis.
 
-No ar em **https://autogiro.77mdevseven.tech** (Vercel). O que está pronto e o que falta: [docs/produto/estado.md](docs/produto/estado.md).
+No ar em **https://autogiro.wdias.tech** (Vercel). O que está pronto e o que falta: [docs/produto/estado.md](docs/produto/estado.md).
 
 Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind v4 + shadcn/ui · Drizzle + Supabase Postgres · Auth.js (Google e e-mail) · Cloudflare R2 · Asaas · Resend · segredos no Criptenv.
 
