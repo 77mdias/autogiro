@@ -2,7 +2,7 @@
 
 O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md), [SRS](srs.md), [fluxos](fluxos.md), [briefing](briefing.md)) e o que falta. **Atualize este arquivo a cada entrega.**
 
-Última revisão: 2026-11-05. No ar em `https://autogiro.77mdevseven.tech` (Vercel).
+Última revisão: 2026-11-06. No ar na Vercel, migrando de `autogiro.77mdevseven.tech` para `https://autogiro.wdias.tech` (passos 6 e 7 de [deploy.md](../deploy.md)).
 
 ## Pronto
 
@@ -59,4 +59,4 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 - [ ] `favicon.ico` responde 404 (o ícone do app existe em `src/app/icon.png`).
 - [ ] Fotos em WebP (REQ-004).
 - [ ] Testes de ponta a ponta automatizados (hoje a validação no navegador é manual, com a conta de teste).
-- [ ] Domínio próprio `.com` (hoje subdomínio `autogiro.77mdevseven.tech`).
+- [ ] Domínio próprio `.com` (hoje subdomínio `autogiro.wdias.tech`).
