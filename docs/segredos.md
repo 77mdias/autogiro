@@ -53,6 +53,11 @@ Requer criptenv **0.2.3+** (a 0.2.2 repassava a senha do cofre para o app e não
    secret-tool store --label "criptenv autogiro api key" service criptenv project autogiro item api-key
    secret-tool store --label "criptenv autogiro vault"   service criptenv project autogiro item vault-password
    ```
+   Para operar a produção pela máquina (`pnpm loja:prod`), crie a chave de `production` (`criptenv api-keys create -p <ID> --name docker-prod --env production`) e guarde no item `api-key-production`. O `docker/compose.sh` escolhe o item pelo `CRIPTENV_ENV`: `api-key` em `development`, `api-key-<ambiente>` nos outros.
+   ```bash
+   secret-tool store --label "criptenv autogiro api key production" service criptenv project autogiro item api-key-production
+   ```
+   Essa chave lê os segredos de produção, inclusive o banco: guarde só na sua máquina e revogue no Criptenv se ela for comprometida.
 
 ## Usar
 
@@ -62,8 +67,9 @@ O Criptenv só aceita o **ID** do projeto (UUID, em `criptenv projects list`), n
 |---|---|
 | Desenvolver | `pnpm docker:up` (container de dev com hot reload; lê as credenciais do chaveiro por `docker/compose.sh`) |
 | Testar a imagem de produção | `pnpm docker:prod` |
-| Outro ambiente no Docker | `CRIPTENV_ENV=production pnpm docker:prod` (com a API key de produção no chaveiro) |
+| Outro ambiente no Docker | `CRIPTENV_ENV=production pnpm docker:prod` (com a chave no item `api-key-production`) |
 | Qualquer comando com os segredos | `pnpm docker:exec pnpm loja listar` (vale para `db:migrate` também), com o container de dev no ar |
+| Operação manual do plano em produção | `pnpm loja:prod listar` (container avulso com os segredos de `production`; não precisa do dev no ar) |
 | Ver o que mudou | `criptenv diff <arquivo> -e development -p <ID>` |
 
 Não há fluxo fora do Docker: nada de `next dev` no host nem `.env` no disco.

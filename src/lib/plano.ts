@@ -6,7 +6,7 @@ export const MAX_VENDEDORES = 20;
 
 /** Mensalidade por número de vendedores ativos (o gestor não conta). `ate` inclusivo, em ordem. */
 export const FAIXAS = [
-  { ate: 0, reais: 39, rotulo: "Individual" },
+  { ate: 0, reais: 59, rotulo: "Individual" },
   { ate: 4, reais: 99, rotulo: "1 a 4 vendedores" },
   { ate: 10, reais: 139, rotulo: "5 a 10 vendedores" },
   { ate: MAX_VENDEDORES, reais: 169, rotulo: `11 a ${MAX_VENDEDORES} vendedores` },

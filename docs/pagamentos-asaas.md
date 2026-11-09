@@ -8,7 +8,7 @@ Mensalidade por número de vendedores ativos (`FAIXAS` e `valorPlano()` em `src/
 
 | Vendedores ativos | Mensalidade |
 |---|---|
-| 0 (individual) | R$ 39 |
+| 0 (individual) | R$ 59 |
 | 1 a 4 | R$ 99 |
 | 5 a 10 | R$ 139 |
 | 11 a 20 | R$ 169 |
@@ -21,22 +21,22 @@ Acima de 20 o app não deixa convidar (`MAX_VENDEDORES`). 15 dias grátis (`TRIA
 - Convidado aceito, vendedor desativado ou reativado: se a faixa mudou e a loja tem assinatura, `ajustarMensalidade()` (em `actions.ts`) chama `PUT /subscriptions/{id}` com o novo `value` e `updatePendingPayments: true`, para valer já na próxima cobrança.
 - Se o Asaas recusar, a mudança na equipe vale do mesmo jeito; a coluna fica com o valor antigo e o erro vai para o log.
 - Enquanto `mensalidade_centavos` difere da faixa, Minha loja avisa "a partir da próxima cobrança, passa de X para Y" e `/admin` mostra "passa a Y".
-- `pnpm docker:exec pnpm loja mensalidades` lista as assinaturas fora da faixa; `... mensalidades aplicar` muda o valor no Asaas. Serve para as lojas do plano antigo e para recusas do Asaas.
+- `pnpm loja:prod mensalidades` lista as assinaturas fora da faixa; `... mensalidades aplicar` muda o valor no Asaas. Serve para as lojas do plano antigo e para recusas do Asaas.
 
 ### Lojas do plano antigo (R$ 149)
 
-A migração `0009_mensalidade` grava 14900 em toda loja que já tinha assinatura. Elas já veem o aviso em Minha loja. Depois de avisar cada loja (WhatsApp), rode `pnpm loja mensalidades aplicar` antes da próxima cobrança.
+A migração `0009_mensalidade` grava 14900 em toda loja que já tinha assinatura. Elas já veem o aviso em Minha loja. Depois de avisar cada loja (WhatsApp), rode `pnpm loja:prod mensalidades aplicar` antes da próxima cobrança.
 
 ## Fase 1 · venda assistida (`ASAAS_CHECKOUT` vazio)
 
 Minha loja mostra "Falar com a AutoGiro" (WhatsApp em `AUTOGIRO_WHATSAPP`, só DDD + número, sem `+55`).
 
-1. No painel do Asaas, crie o cliente e uma **assinatura** mensal no valor da faixa da loja (Minha loja mostra; individual R$ 39) com forma de pagamento "Pergunte ao cliente" (Pix, boleto ou cartão), ou um link de pagamento.
-2. Pago: `pnpm docker:exec pnpm loja liberar <slug> cus_...` (o `cus_` está em Clientes).
+1. No painel do Asaas, crie o cliente e uma **assinatura** mensal no valor da faixa da loja (Minha loja mostra; individual R$ 59) com forma de pagamento "Pergunte ao cliente" (Pix, boleto ou cartão), ou um link de pagamento.
+2. Pago: `pnpm loja:prod liberar <slug> cus_...` (o `cus_` está em Clientes; o slug, em `pnpm loja:prod listar`).
 3. Com o `cus_` gravado, o webhook assume as cobranças seguintes.
-4. `pnpm docker:exec pnpm loja listar` lista as lojas; `pnpm docker:exec pnpm loja pausar <slug>` pausa.
+4. `pnpm loja:prod listar` lista as lojas; `pnpm loja:prod pausar <slug>` pausa.
 
-Sem o `cus_`, a loja fica ativa até ser pausada à mão.
+Sem o `cus_`, a loja fica ativa até ser pausada à mão. `pnpm loja:prod` roda num container avulso com os segredos de `production` e precisa da chave `api-key-production` no chaveiro ([segredos.md](segredos.md)). No banco de dev, os mesmos comandos são `pnpm docker:exec pnpm loja ...`.
 
 ## Fase 2 · autoatendimento (`ASAAS_CHECKOUT=on`)
 

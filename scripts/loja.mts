@@ -1,4 +1,5 @@
-// Administração manual do plano (fase de venda assistida). Roda no container de dev, com os segredos do Criptenv:
+// Administração manual do plano (fase de venda assistida). Roda em container, com os segredos do Criptenv.
+// Em produção, troque `pnpm docker:exec pnpm loja` por `pnpm loja:prod` (container avulso, ambiente production).
 //   pnpm docker:exec pnpm loja listar
 //   pnpm docker:exec pnpm loja liberar <slug> [cus_...]   ativa o plano; com o cliente do Asaas, o webhook assume as próximas cobranças
 //   pnpm docker:exec pnpm loja pausar <slug>              pausa painel e vitrine

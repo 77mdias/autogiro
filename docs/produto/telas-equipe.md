@@ -22,7 +22,7 @@ Leva o painel de "uma loja, um dono" para "uma loja, um gestor e vendedores" (me
 
 | Vendedores ativos | Mensalidade |
 |---|---|
-| 0 (individual, um vendedor sozinho) | R$ 39 |
+| 0 (individual, um vendedor sozinho) | R$ 59 |
 | 1 a 4 | R$ 99 |
 | 5 a 10 | R$ 139 |
 | 11 a 20 | R$ 169 |

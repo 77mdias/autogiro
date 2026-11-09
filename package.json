@@ -15,7 +15,8 @@
     "tunnel": "ngrok http 3000",
     "docker:up": "sh docker/compose.sh -f compose.dev.yaml up --build --watch",
     "docker:prod": "sh docker/compose.sh up --build",
-    "docker:exec": "sh docker/compose.sh -f compose.dev.yaml exec app entrypoint.sh"
+    "docker:exec": "sh docker/compose.sh -f compose.dev.yaml exec app entrypoint.sh",
+    "loja:prod": "CRIPTENV_ENV=production sh docker/compose.sh -f compose.dev.yaml run --rm --no-deps --build app pnpm loja"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1161.0",

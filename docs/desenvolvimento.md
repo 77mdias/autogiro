@@ -32,7 +32,8 @@ Para testar a imagem de produção (standalone, sem hot reload): `pnpm docker:pr
 | `pnpm lint` / `pnpm test` / `pnpm typecheck` | No host; não precisam de segredo (`typecheck` gera os tipos das rotas com `next typegen` antes do `tsc`) |
 | `pnpm db:generate` | Gera migração a partir do `schema.ts` (no host, sem segredo) |
 | `pnpm docker:exec pnpm db:migrate` | Aplica as migrações |
-| `pnpm docker:exec pnpm loja listar \| liberar <slug> [cus_...] \| pausar <slug>` | Operação manual do plano (fase 1) |
+| `pnpm docker:exec pnpm loja listar \| liberar <slug> [cus_...] \| pausar <slug>` | Operação manual do plano (fase 1), no banco de dev |
+| `pnpm loja:prod listar \| liberar <slug> [cus_...] \| pausar <slug>` | O mesmo no banco de produção (chave `api-key-production` no chaveiro, [segredos.md](segredos.md)) |
 | `pnpm tunnel -- --url=<dominio>` | ngrok para a porta 3000 |
 
 ## Variáveis de ambiente

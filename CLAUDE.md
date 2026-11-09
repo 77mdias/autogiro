@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @AGENTS.md
 
-AutoGiro: mobile-first PWA for used-car dealers ("garagistas"): inventory, public storefront per store, and financing-simulation leads with CNH (driver's license) upload. Stores pay a monthly fee via Asaas by team size (R$ 39 to R$ 169, `valorPlano()` in `src/lib/plano.ts`), 15-day free trial. Code, UI copy, and docs are in Portuguese; keep it that way.
+AutoGiro: mobile-first PWA for used-car dealers ("garagistas"): inventory, public storefront per store, and financing-simulation leads with CNH (driver's license) upload. Stores pay a monthly fee via Asaas by team size (R$ 59 to R$ 169, `valorPlano()` in `src/lib/plano.ts`), 15-day free trial. Code, UI copy, and docs are in Portuguese; keep it that way.
 
 Full docs live in `docs/`, indexed in `docs/README.md`. Start with `docs/produto/estado.md` (what is done, what differs from the PRD/SRS and why, what is missing); product specs are in `docs/produto/`. Read the relevant file before changing payments, auth, or infra. **Docs change in the same PR as the code**: the "Manter em dia" table in `docs/README.md` says which file each kind of change updates. `DESIGN.md` is the locked visual system.
 
@@ -23,7 +23,8 @@ node --test src/lib/plano.test.ts   # single test file
 pnpm typecheck                 # next typegen (route types, no server/secrets) + tsc --noEmit
 pnpm db:generate                    # migration from src/lib/db/schema.ts, on the host: no DB, no secrets (interactive on column renames)
 pnpm docker:exec pnpm db:migrate    # apply drizzle/*.sql (uses DATABASE_URL_DIRECT = Supabase session pooler)
-pnpm docker:exec pnpm loja listar | liberar <slug> [cus_...] | pausar <slug> | mensalidades [aplicar]   # manual plan ops (scripts/loja.mts)
+pnpm docker:exec pnpm loja listar | liberar <slug> [cus_...] | pausar <slug> | mensalidades [aplicar]   # manual plan ops (scripts/loja.mts), dev DB
+pnpm loja:prod listar | liberar <slug> [cus_...] | ...   # same ops on the production DB (one-off container, keyring item api-key-production)
 pnpm tunnel -- --url=<domain>  # ngrok, needed for Asaas webhooks and Google OAuth in dev
 ```
 

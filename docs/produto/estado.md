@@ -16,7 +16,7 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 | Simulação | Nome, WhatsApp, entrada, valor a financiar, 24 a 60x, CNH opcional (foto ou PDF), aceite LGPD obrigatório | `/simular`, `POST /api/simulacoes` |
 | Navegação | Barra lateral no desktop; no celular, gaveta com botões de menu e cadastrar carro embaixo | [decisoes.md](../decisoes.md) |
 | Interessados | Lista das simulações, Ver CNH (link assinado de 5 min), chamar no WhatsApp, descartar | `/painel/interessados` |
-| Plano | Mensalidade por vendedores ativos (R$ 39, 99, 139 ou 169), 15 dias grátis sem cartão; assinatura muda de valor ao mudar de faixa; venda assistida (fase 1) e checkout de cartão (fase 2); bloqueio por atraso via webhook | [pagamentos-asaas.md](../pagamentos-asaas.md) |
+| Plano | Mensalidade por vendedores ativos (R$ 59, 99, 139 ou 169), 15 dias grátis sem cartão; assinatura muda de valor ao mudar de faixa; venda assistida (fase 1) e checkout de cartão (fase 2); bloqueio por atraso via webhook | [pagamentos-asaas.md](../pagamentos-asaas.md) |
 | Administrador | MRR, lojas por situação do plano, carros e simulações por loja | `/admin` ([arquitetura.md](../arquitetura.md#rotas)) |
 | LGPD | CNH em bucket privado, link de 5 min só para a loja, cron apaga após 90 dias | [arquitetura.md › Arquivos](../arquitetura.md#arquivos-cloudflare-r2) |
 | Plataforma | PWA, multi-tenant por `loja_id`, segredos no Criptenv, dev em Docker com hot reload, CI nos PRs, deploy na Vercel com migração automática | [deploy.md](../deploy.md) |
@@ -52,7 +52,7 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 - [x] Passo 3: edição e exclusão do vendedor viram pedido; gestor aprova ou recusa em Pedidos.
 - [x] Passo 4: tela Vendedores, convite por link, desativar devolve carros e clientes ao gestor, limite de 20.
 - [x] Passo 5: venda ao marcar vendido (valor; gestor escolhe quem vendeu), Vendas e comissões por mês, comissão só para o gestor.
-- [ ] Passo 6: preço por faixa e 15 dias grátis.
+- [x] Passo 6: preço por faixa e 15 dias grátis.
 - Carros marcados como vendidos antes do passo 5 não têm venda registrada (não havia valor nem vendedor para preencher).
 
 **Melhorias conhecidas**
