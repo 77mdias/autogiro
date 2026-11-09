@@ -23,7 +23,8 @@ node --test src/lib/plano.test.ts   # single test file
 pnpm typecheck                 # next typegen (route types, no server/secrets) + tsc --noEmit
 pnpm db:generate                    # migration from src/lib/db/schema.ts, on the host: no DB, no secrets (interactive on column renames)
 pnpm docker:exec pnpm db:migrate    # apply drizzle/*.sql (uses DATABASE_URL_DIRECT = Supabase session pooler)
-pnpm docker:exec pnpm loja listar | liberar <slug> [cus_...] | pausar <slug> | mensalidades [aplicar]   # manual plan ops (scripts/loja.mts)
+pnpm docker:exec pnpm loja listar | liberar <slug> [cus_...] | pausar <slug> | mensalidades [aplicar]   # manual plan ops (scripts/loja.mts), dev DB
+pnpm loja:prod listar | liberar <slug> [cus_...] | ...   # same ops on the production DB (one-off container, keyring item api-key-production)
 pnpm tunnel -- --url=<domain>  # ngrok, needed for Asaas webhooks and Google OAuth in dev
 ```
 

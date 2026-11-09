@@ -52,7 +52,7 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 - [x] Passo 3: edição e exclusão do vendedor viram pedido; gestor aprova ou recusa em Pedidos.
 - [x] Passo 4: tela Vendedores, convite por link, desativar devolve carros e clientes ao gestor, limite de 20.
 - [x] Passo 5: venda ao marcar vendido (valor; gestor escolhe quem vendeu), Vendas e comissões por mês, comissão só para o gestor.
-- [ ] Passo 6: preço por faixa e 15 dias grátis.
+- [x] Passo 6: preço por faixa e 15 dias grátis.
 - Carros marcados como vendidos antes do passo 5 não têm venda registrada (não havia valor nem vendedor para preencher).
 
 **Melhorias conhecidas**

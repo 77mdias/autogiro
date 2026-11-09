@@ -2,6 +2,12 @@
 
 Mais recentes primeiro. Cada uma: o que foi decidido e por quê.
 
+## 2026-11-09 · Operação manual da produção pela máquina, com `pnpm loja:prod`
+A venda assistida precisa de `liberar` no banco de produção, e o `docker:exec` só alcança o de dev (a imagem de produção nem tem `scripts/`).
+- `pnpm loja:prod` sobe um container avulso da imagem de dev com `CRIPTENV_ENV=production` e roda o mesmo `scripts/loja.mts`. Não liga o `next dev` nem aplica migração.
+- O `docker/compose.sh` tira do chaveiro uma chave do Criptenv por ambiente (`api-key-production`), para nunca misturar dev e produção.
+- Descartada por enquanto: botões de liberar e pausar no `/admin`. Deixariam o William operar pelo celular, mas são uma ação privilegiada nova na web. Volta à mesa se a venda assistida crescer.
+
 ## 2026-11-05 · Barra lateral no lugar das abas de baixo
 O painel vai ganhar telas (equipe, vendas) e três abas embaixo não comportam mais itens.
 - **Desktop**: barra lateral fixa à esquerda com a loja, os itens, o tema e Sair.
