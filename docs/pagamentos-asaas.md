@@ -80,6 +80,20 @@ Respostas: 401 sem token válido, 400 JSON inválido ou sem `id`/`event`, 200 `{
 
 Endpoint só do Sandbox: `POST /sandbox/payment/{id}/confirm` confirma uma cobrança (dispara `PAYMENT_CONFIRMED`/`RECEIVED`). Não há como simular atraso no Sandbox.
 
+## Chave de API
+
+Criada em Integrações › Chaves de API (só administrador; o valor aparece uma vez). Deixe **sem data de expiração**: com data, o Asaas não avisa antes de vencer e o app passa a receber 401.
+
+Mesmo sem data, chave sem uso é desligada ([Asaas › Chaves de API](https://docs.asaas.com/docs/chaves-de-api)):
+
+| Sem uso por | O que acontece |
+|---|---|
+| 3 meses | Desabilitada (401). Reative em Integrações › Chaves de API |
+| 4 meses, 5 meses e 1 semana antes de vencer | Aviso por e-mail |
+| 6 meses | Expirada de vez. Crie outra |
+
+Na fase 1, o app só chama a API quando uma loja com assinatura muda de faixa (`ajustarMensalidade()`), então a chave pode ficar parada: fique de olho nos e-mails do Asaas. Chave expirada: crie outra, `criptenv set 'ASAAS_API_KEY=$aact_...' -e production -p <ID>`, sincronize com a Vercel e faça um Redeploy. O webhook não usa a chave: ativar e pausar lojas continua funcionando.
+
 ## Para ir para produção
 
 O passo a passo geral (Vercel, Supabase, R2, domínio) está em [deploy.md](deploy.md). Do lado do Asaas:
