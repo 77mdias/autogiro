@@ -2,6 +2,10 @@
 
 Mais recentes primeiro. Cada uma: o que foi decidido e por quê.
 
+## 2026-11-09 · Plano individual passa de R$ 39 para R$ 59
+Decisão do Jean; as outras faixas continuam (R$ 99, 139 e 169). Muda só `FAIXAS` em `src/lib/plano.ts`: a landing, Minha loja, o checkout e o `/admin` leem de lá.
+- Assinatura já existente de R$ 39 não muda sozinha: Minha loja avisa "passa de R$ 39 para R$ 59" e `pnpm loja:prod mensalidades aplicar` acerta no Asaas, depois de avisar a loja. Em produção ainda não havia loja pagante.
+
 ## 2026-11-09 · Operação manual da produção pela máquina, com `pnpm loja:prod`
 A venda assistida precisa de `liberar` no banco de produção, e o `docker:exec` só alcança o de dev (a imagem de produção nem tem `scripts/`).
 - `pnpm loja:prod` sobe um container avulso da imagem de dev com `CRIPTENV_ENV=production` e roda o mesmo `scripts/loja.mts`. Não liga o `next dev` nem aplica migração.

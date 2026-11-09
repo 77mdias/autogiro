@@ -1,6 +1,6 @@
 # AutoGiro
 
-PWA mobile-first para garagistas: estoque pelo celular, vitrine pública por loja e simulações de financiamento com CNH. A loja paga pelo Asaas uma mensalidade pelo tamanho da equipe (R$ 39 a R$ 169), com 15 dias grátis.
+PWA mobile-first para garagistas: estoque pelo celular, vitrine pública por loja e simulações de financiamento com CNH. A loja paga pelo Asaas uma mensalidade pelo tamanho da equipe (R$ 59 a R$ 169), com 15 dias grátis.
 
 Produção na Vercel, migrando para **https://autogiro.wdias.tech**; até a troca terminar ([deploy.md](docs/deploy.md), passos 6 e 7), o app responde em `autogiro.77mdevseven.tech`. O que está pronto e o que falta: [docs/produto/estado.md](docs/produto/estado.md).
 

@@ -34,7 +34,7 @@ test("situação e resumo das assinaturas para o administrador", () => {
 });
 
 test("mensalidade pela faixa de vendedores ativos", () => {
-  assert.deepEqual([0, 1, 4, 5, 10, 11, 20, 25].map(valorPlano), [39, 99, 99, 139, 139, 169, 169, 169]);
+  assert.deepEqual([0, 1, 4, 5, 10, 11, 20, 25].map(valorPlano), [59, 99, 99, 139, 139, 169, 169, 169]);
   assert.equal(faixaPlano(0).rotulo, "Individual");
   assert.equal(faixaPlano(7).rotulo, "5 a 10 vendedores");
 });

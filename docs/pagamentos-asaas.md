@@ -8,7 +8,7 @@ Mensalidade por número de vendedores ativos (`FAIXAS` e `valorPlano()` em `src/
 
 | Vendedores ativos | Mensalidade |
 |---|---|
-| 0 (individual) | R$ 39 |
+| 0 (individual) | R$ 59 |
 | 1 a 4 | R$ 99 |
 | 5 a 10 | R$ 139 |
 | 11 a 20 | R$ 169 |
@@ -31,7 +31,7 @@ A migração `0009_mensalidade` grava 14900 em toda loja que já tinha assinatur
 
 Minha loja mostra "Falar com a AutoGiro" (WhatsApp em `AUTOGIRO_WHATSAPP`, só DDD + número, sem `+55`).
 
-1. No painel do Asaas, crie o cliente e uma **assinatura** mensal no valor da faixa da loja (Minha loja mostra; individual R$ 39) com forma de pagamento "Pergunte ao cliente" (Pix, boleto ou cartão), ou um link de pagamento.
+1. No painel do Asaas, crie o cliente e uma **assinatura** mensal no valor da faixa da loja (Minha loja mostra; individual R$ 59) com forma de pagamento "Pergunte ao cliente" (Pix, boleto ou cartão), ou um link de pagamento.
 2. Pago: `pnpm loja:prod liberar <slug> cus_...` (o `cus_` está em Clientes; o slug, em `pnpm loja:prod listar`).
 3. Com o `cus_` gravado, o webhook assume as cobranças seguintes.
 4. `pnpm loja:prod listar` lista as lojas; `pnpm loja:prod pausar <slug>` pausa.
