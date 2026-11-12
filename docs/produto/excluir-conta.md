@@ -4,7 +4,7 @@
 
 **Objetivo:** o garagista (gestor ou vendedor) exclui a própria conta pelo painel; os dados dele somem, e do gestor some a loja inteira. Fica guardado só o número do WhatsApp em `testes_whatsapp`, para registrar que o teste grátis foi usado. A política de privacidade passa a existir e diz isso.
 
-**Arquitetura:** uma server action `excluirConta` em `src/app/painel/actions.ts` decide pelo papel: vendedor sai da loja (carteira volta ao gestor, como em `desativarVendedor`); gestor cancela a assinatura no Asaas, apaga a loja (o `on delete cascade` leva carros, leads, membros, convites, pedidos e vendas; `testes_whatsapp.loja_id` vira null) e depois os arquivos no R2. As regras puras ficam em `src/lib/conta.ts`, testadas com `node --test`.
+**Arquitetura:** uma server action `excluirConta` em `src/app/painel/actions.ts` decide pelo papel: vendedor sai da loja (carteira volta ao gestor, como em `desativarVendedor`); gestor cancela a assinatura no Asaas, apaga a loja (o `on delete cascade` leva carros, leads, membros, convites, pedidos e vendas; `testes_whatsapp.loja_id` vira null) e depois os arquivos no R2. As regras puras ficam em `src/lib/exclusao.ts`, testadas com `node --test`.
 
 **Stack:** Next.js 16 (server actions), Drizzle no Supabase Postgres, Auth.js v5, Asaas API v3, Cloudflare R2, `@base-ui/react` (AlertDialog do shadcn em `src/components/ui`).
 
@@ -44,8 +44,8 @@
 ### Tarefa 1: regras puras da exclusão
 
 **Arquivos:**
-- Criar: `src/lib/conta.ts`
-- Teste: `src/lib/conta.test.ts`
+- Criar: `src/lib/exclusao.ts`
+- Teste: `src/lib/exclusao.test.ts`
 
 **Interfaces:**
 - Produz: `CONFIRMACAO_EXCLUSAO = "EXCLUIR"`; `confirmouExclusao(texto: string): boolean`; `arquivosDaLoja(fotosCarros: string[][], pedidos: Pick<MudancasCarro, "fotosNovas">[]): string[]` (sem repetidas); `contaDeEmail(sub: string): boolean` (o `sub` é um UUID de `usuarios`; o do Google é numérico).
@@ -71,9 +71,9 @@ test("conta de e-mail ou Google", () => {
 });
 ```
 
-- [ ] **Passo 2:** `node --test src/lib/conta.test.ts` falha (módulo não existe).
-- [ ] **Passo 3:** implementar as quatro exportações em `src/lib/conta.ts` (`import type { MudancasCarro } from "./pedidos.ts"`).
-- [ ] **Passo 4:** `node --test src/lib/conta.test.ts` passa.
+- [ ] **Passo 2:** `node --test src/lib/exclusao.test.ts` falha (módulo não existe).
+- [ ] **Passo 3:** implementar as quatro exportações em `src/lib/exclusao.ts` (`import type { MudancasCarro } from "./pedidos.ts"`).
+- [ ] **Passo 4:** `node --test src/lib/exclusao.test.ts` passa.
 - [ ] **Passo 5:** commit `feat(conta): regras puras da exclusão de conta`.
 
 ### Tarefa 2: cancelar assinatura no Asaas
