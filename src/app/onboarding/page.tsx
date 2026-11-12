@@ -41,6 +41,17 @@ export default function OnboardingPage() {
             <h1 className="font-display text-3xl font-semibold">Vamos criar sua loja</h1>
             <p className="text-ink-2">{TRIAL_DIAS} dias grátis, sem cartão (um teste por WhatsApp). O link da vitrine sai na hora.</p>
             <p className="text-sm text-ink-3">Vai trabalhar na loja de outra pessoa? Não crie uma loja: abra o link de convite que o gestor mandou.</p>
+            <p className="text-sm text-ink-3">
+              Ao criar a loja, você concorda com os{" "}
+              <Link href="/termos" className="rounded-card underline underline-offset-4">
+                termos de uso
+              </Link>{" "}
+              e a{" "}
+              <Link href="/privacidade" className="rounded-card underline underline-offset-4">
+                política de privacidade
+              </Link>
+              .
+            </p>
           </div>
           <Suspense>
             <Onboarding />

@@ -238,6 +238,9 @@ export default function Home() {
               <Wordmark />
             </Link>
             <div className="flex flex-wrap items-center gap-6">
+              <Link href="/termos" className="text-ink-2 underline hover:text-ink">
+                Termos de uso
+              </Link>
               <Link href="/privacidade" className="text-ink-2 underline hover:text-ink">
                 Política de privacidade
               </Link>

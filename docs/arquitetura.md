@@ -18,6 +18,7 @@ Cron ───────► POST /api/cron/delete-expired-cnh ──► apaga 
 | `/login` | público | Entrar com Google ou com e-mail e senha (Auth.js) |
 | `/cadastro` | público | Cria conta com e-mail e senha e manda o e-mail de confirmação |
 | `/privacidade` | público | Política de privacidade (estática; link na landing, na vitrine, no cadastro e no aceite da simulação) |
+| `/termos` | público | Termos de uso (estática; preços e teste lidos de `lib/plano.ts`; aceite no cadastro e ao criar a loja, link na landing) |
 | `/esqueci-senha` | público | Manda o link de redefinição (mesma resposta com ou sem conta) |
 | `/redefinir-senha?token=` | quem tem o link | Grava a senha nova; o token só é gasto ao salvar |
 | `GET /api/conta/confirmar?token=` | quem tem o link | Confirma o e-mail e leva para `/login?aviso=confirmado` |
