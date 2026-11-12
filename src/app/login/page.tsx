@@ -16,6 +16,7 @@ const destino = (v: unknown) => (typeof v === "string" && v.startsWith("/") && !
 
 const AVISOS: Record<string, string> = {
   confirmado: "E-mail confirmado. Agora é só entrar.",
+  excluida: "Conta excluída.",
   senha: "Senha nova salva. Entre com ela.",
   link: "Este link venceu ou já foi usado. Se o e-mail ainda não estiver confirmado, tente entrar: mandamos um link novo.",
 };
