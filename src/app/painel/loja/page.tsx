@@ -20,10 +20,10 @@ const dataCurta = (d: Date) => d.toLocaleDateString("pt-BR", { day: "2-digit", m
 // Fase de venda assistida: sem ASAAS_CHECKOUT=on, assinar é falar com a AutoGiro (link de pagamento + liberação manual).
 const autoatendimento = () => process.env.ASAAS_CHECKOUT === "on";
 
-type Mensalidade = { faixa: ReturnType<typeof faixaPlano>; assinaturaCentavos: number | null };
+type Mensalidade = { faixa: ReturnType<typeof faixaPlano>; assinaturaCentavos: number | null; criadaEm: Date };
 
 /** O que dizer sobre o plano e qual botão mostrar, conforme o estado que o webhook do Asaas mantém. */
-function situacao(plano: PlanoLoja, voltouDoCheckout: boolean, { faixa, assinaturaCentavos }: Mensalidade) {
+function situacao(plano: PlanoLoja, voltouDoCheckout: boolean, { faixa, assinaturaCentavos, criadaEm }: Mensalidade) {
   const faixaCentavos = faixa.reais * 100;
   const preco = `${formatBRL(faixaCentavos)} por mês (${faixa.rotulo.toLowerCase()})`;
   const liberado = planoLiberado(plano);
@@ -40,6 +40,13 @@ function situacao(plano: PlanoLoja, voltouDoCheckout: boolean, { faixa, assinatu
   if (voltouDoCheckout) return { titulo: "Assinatura recebida", texto: "A confirmação do Asaas chega em instantes. Recarregue a página em um minuto." };
   if (plano.planoStatus === "cancelado")
     return { titulo: "Assinatura cancelada", texto: `Painel e vitrine pausados. Assine de novo para voltar: ${preco}.`, botao: "Assinar com cartão" };
+  // Loja que nasceu com o teste já vencido: o WhatsApp dela já teve teste grátis em outra loja (criarLoja).
+  if (!liberado && plano.trialAte <= criadaEm)
+    return {
+      titulo: "Este WhatsApp já usou o teste grátis",
+      texto: `O teste grátis é um por WhatsApp. Assine para usar o painel e a vitrine: ${preco}.`,
+      botao: "Assinar com cartão",
+    };
   if (!liberado)
     return { titulo: "Teste grátis encerrado", texto: `Painel e vitrine pausados. Assine para voltar: ${preco}.`, botao: "Assinar com cartão" };
   return {
@@ -66,6 +73,7 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
         trialAte: lojas.trialAte,
         asaasSubscriptionId: lojas.asaasSubscriptionId,
         mensalidadeCentavos: lojas.mensalidadeCentavos,
+        createdAt: lojas.createdAt,
       })
       .from(lojas)
       .where(eq(lojas.id, lojaId))
@@ -81,7 +89,7 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
   const vendidos = porStatus.find((r) => r.status === "vendido")?.n ?? 0;
   const vitrine = `/loja/${loja?.slug}`;
   const host = (process.env.APP_BASE_URL ?? "").replace(/^https?:\/\//, "");
-  const plano = loja && situacao(loja, assinatura === "ok", { faixa: faixaPlano(vendedores), assinaturaCentavos: loja.mensalidadeCentavos });
+  const plano = loja && situacao(loja, assinatura === "ok", { faixa: faixaPlano(vendedores), assinaturaCentavos: loja.mensalidadeCentavos, criadaEm: loja.createdAt });
   const pausado = !!loja && !planoLiberado(loja);
 
   return (

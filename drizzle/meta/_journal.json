@@ -71,6 +71,13 @@
       "when": 1793896630152,
       "tag": "0009_mensalidade",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794518007257,
+      "tag": "0010_teste_por_whatsapp",
+      "breakpoints": true
     }
   ]
 }

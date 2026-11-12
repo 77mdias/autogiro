@@ -84,6 +84,7 @@ Esquema em `src/lib/db/schema.ts`, migrações SQL em `drizzle/`.
 - **tokens_email**: links dos e-mails. `usuario_id`, `tipo` (`confirmar | redefinir`), `token_hash` (sha256; o token só existe no link), `expira_em`.
 - **pedidos_edicao**: `loja_id`, `carro_id` (set null se o carro sair), `membro_id` (quem pediu), `tipo` (`editar | excluir`), `mudancas` (jsonb com os campos do carro, `fotosNovas` e `fotosRemover`), `status` (`pendente | aprovado | recusado`), `decidido_por`, `decidido_em`. Um pendente por carro (índice único parcial).
 - **vendas**: `loja_id`, `carro_id` (único; set null se o carro sair), `carro` (nome guardado), `membro_id` (quem vendeu), `valor_centavos`, `comissao_centavos` (null = não definida), `vendida_em`.
+- **testes_whatsapp**: WhatsApps que já tiveram teste grátis. `chave` (DDD + 8 últimos dígitos, `chaveWhatsapp()` em `lib/masks.ts`; com ou sem o 9 é o mesmo número), `loja_id` (set null se a loja sair: o registro fica). Não é dado da loja, por isso sobrevive a ela.
 - **webhook_events**: `provider`, `event_key` (único por provider), `event_type`, `payload`, `processed_at`. Serve de idempotência e de histórico.
 
 Valores em dinheiro são inteiros em centavos. RLS ligado em todas as tabelas sem policies: a API REST do Supabase não lê nada; o app usa a role do servidor.
@@ -132,6 +133,8 @@ Cada link novo apaga os anteriores do mesmo tipo, e só sai um e-mail por minuto
 | `inadimplente`, `cancelado` | não |
 
 A mensalidade sai da faixa de vendedores ativos (`valorPlano()`); mudança de faixa e o aviso às lojas estão em [pagamentos-asaas.md](pagamentos-asaas.md#mudança-de-faixa).
+
+**Um teste grátis por WhatsApp.** `criarLoja` grava o WhatsApp em `testes_whatsapp`; se outra loja já teve teste com ele, a loja nasce com `trial_ate = now()` (sem teste) e o gestor vai direto para Minha loja, que diz "Este WhatsApp já usou o teste grátis". Em Minha loja, a loja em teste sem assinatura não pode trocar para o WhatsApp de outra loja (seria o atalho: criar com um número qualquer e trocar depois); com assinatura ou plano ativo, pode. Uma conta continua com uma loja só (`lojas.auth_user_id` e `membros.auth_user_id` únicos).
 
 Plano pausado: as páginas do painel levam para Minha loja (`requireLojaId` com `exigePlano`), a vitrine mostra "Vitrine fora do ar", `POST /api/simulacoes` responde 404 e a CNH responde 402. Minha loja sempre abre (`exigePlano: false`), porque é lá que se paga.
 

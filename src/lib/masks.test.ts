@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { formatPhone, formatMilhar, reaisToCentavos, slugify, whatsappUrl } from "./masks.ts";
+import { chaveWhatsapp, formatPhone, formatMilhar, reaisToCentavos, slugify, whatsappUrl } from "./masks.ts";
 
 test("telefone", () => {
   assert.equal(formatPhone(""), "");
@@ -23,4 +23,14 @@ test("milhar e reais", () => {
 test("slug e whatsapp", () => {
   assert.equal(slugify("  Auto Peças São João! "), "auto-pecas-sao-joao");
   assert.equal(whatsappUrl("(11) 98765-4321", "Olá & tal"), "https://wa.me/5511987654321?text=Ol%C3%A1%20%26%20tal");
+});
+
+test("chave do WhatsApp para o teste grátis", () => {
+  // Com e sem o 9 da frente, com ou sem máscara: o mesmo número.
+  assert.equal(chaveWhatsapp("11987654321"), "1187654321");
+  assert.equal(chaveWhatsapp("1187654321"), "1187654321");
+  assert.equal(chaveWhatsapp("(11) 98765-4321"), "1187654321");
+  // Outro DDD é outro número; fixo continua igual.
+  assert.notEqual(chaveWhatsapp("21987654321"), chaveWhatsapp("11987654321"));
+  assert.equal(chaveWhatsapp("1133334444"), "1133334444");
 });
