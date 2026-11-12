@@ -16,6 +16,13 @@ export default function CadastroPage() {
           Entrar
         </Link>
       </p>
+      <p className="text-sm text-ink-3">
+        Ao criar a conta, você concorda com a{" "}
+        <Link href="/privacidade" className="rounded-card underline underline-offset-4">
+          política de privacidade
+        </Link>
+        .
+      </p>
     </ContaShell>
   );
 }

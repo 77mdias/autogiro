@@ -11,6 +11,7 @@ import { faixaPlano, planoLiberado, type PlanoLoja } from "@/lib/plano";
 import { formatBRL } from "@/lib/utils";
 import { whatsappUrl } from "@/lib/masks";
 import { AssinarForm } from "./assinar-form";
+import { ExcluirConta } from "./excluir-conta";
 import { salvarLoja } from "../actions";
 
 export const metadata: Metadata = { title: "Minha loja" };
@@ -72,6 +73,7 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
         planoStatus: lojas.planoStatus,
         trialAte: lojas.trialAte,
         asaasSubscriptionId: lojas.asaasSubscriptionId,
+        asaasCustomerId: lojas.asaasCustomerId,
         mensalidadeCentavos: lojas.mensalidadeCentavos,
         createdAt: lojas.createdAt,
       })
@@ -159,6 +161,8 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
           <p className="text-ink-2">Só o gestor altera os dados da loja.</p>
         )}
       </section>
+
+      <ExcluirConta gestor={gestor} vendedores={vendedores} temAssinatura={!!(loja?.asaasSubscriptionId || loja?.asaasCustomerId)} />
     </div>
   );
 }

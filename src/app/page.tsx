@@ -237,9 +237,14 @@ export default function Home() {
             <Link href="/" aria-label="AutoGiro, página inicial" className="rounded-card">
               <Wordmark />
             </Link>
-            <Link href="/login" className="text-lg text-ink-2 underline hover:text-ink">
-              Entrar no painel
-            </Link>
+            <div className="flex flex-wrap items-center gap-6">
+              <Link href="/privacidade" className="text-ink-2 underline hover:text-ink">
+                Política de privacidade
+              </Link>
+              <Link href="/login" className="text-lg text-ink-2 underline hover:text-ink">
+                Entrar no painel
+              </Link>
+            </div>
           </div>
           <p className="text-sm text-ink-3">
             Fotos dos carros de exemplo nas telas:{" "}

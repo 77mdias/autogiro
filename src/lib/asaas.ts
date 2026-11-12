@@ -3,7 +3,14 @@ import "server-only";
 // API v3 do Asaas: https://docs.asaas.com — sandbox por padrão; em produção, ASAAS_API_URL=https://api.asaas.com/v3
 const API_URL = process.env.ASAAS_API_URL ?? "https://api-sandbox.asaas.com/v3";
 
-export class AsaasError extends Error {}
+export class AsaasError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}
 
 async function asaas<T>(path: string, body?: unknown, method = body ? "POST" : "GET"): Promise<T> {
   const key = process.env.ASAAS_API_KEY;
@@ -15,7 +22,7 @@ async function asaas<T>(path: string, body?: unknown, method = body ? "POST" : "
     cache: "no-store",
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new AsaasError(json?.errors?.[0]?.description ?? `Asaas respondeu ${res.status}`);
+  if (!res.ok) throw new AsaasError(json?.errors?.[0]?.description ?? `Asaas respondeu ${res.status}`, res.status);
   return json as T;
 }
 
@@ -54,6 +61,31 @@ export async function criarCheckoutAssinatura(p: { lojaId: string; valorReais: n
  */
 export async function mudarValorAssinatura(subscriptionId: string, valorReais: number) {
   await asaas(`/subscriptions/${encodeURIComponent(subscriptionId)}`, { value: valorReais, updatePendingPayments: true }, "PUT");
+}
+
+/**
+ * Ids das assinaturas ativas de um cliente (fase 1: a loja tem o `cus_` antes de ter a assinatura).
+ * Cliente que não existe mais no Asaas responde 404 (visto no Sandbox): sem assinaturas.
+ */
+export async function assinaturasAtivas(customerId: string) {
+  try {
+    const { data } = await asaas<{ data: { id: string }[] }>(
+      `/subscriptions?customer=${encodeURIComponent(customerId)}&status=ACTIVE&limit=100`,
+    );
+    return data.map((s) => s.id);
+  } catch (err) {
+    if (err instanceof AsaasError && err.status === 404) return [];
+    throw err;
+  }
+}
+
+/** Cancela a assinatura (exclusão da loja). 404 = já não existe no Asaas: conta como cancelada. */
+export async function cancelarAssinatura(subscriptionId: string) {
+  try {
+    await asaas(`/subscriptions/${encodeURIComponent(subscriptionId)}`, undefined, "DELETE");
+  } catch (err) {
+    if (!(err instanceof AsaasError && err.status === 404)) throw err;
+  }
 }
 
 /** Link de uma fatura vencida da assinatura, para pagar o atraso na página do Asaas. */

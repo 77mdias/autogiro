@@ -114,7 +114,11 @@ export function SimulacaoForm({ carroId, precoReais, lojaNome }: { carroId: stri
       <label className="flex items-start gap-3 rounded-card bg-paper-2 p-4 text-sm text-ink-2">
         <input type="checkbox" name="lgpd" required className="mt-0.5 size-5 shrink-0 accent-brand" />
         <span>
-          Autorizo {lojaNome} a usar meus dados pessoais e a imagem da minha CNH exclusivamente para análise de financiamento, conforme a LGPD.
+          Autorizo {lojaNome} a usar meus dados pessoais e a imagem da minha CNH exclusivamente para análise de financiamento, conforme a LGPD e a{" "}
+          <a href="/privacidade" target="_blank" rel="noopener" className="underline">
+            política de privacidade
+          </a>
+          .
         </span>
       </label>
 

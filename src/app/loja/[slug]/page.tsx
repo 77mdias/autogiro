@@ -238,6 +238,9 @@ export default async function VitrinePage({ params, searchParams }: PageProps<"/
           <Link href="/" aria-label="AutoGiro, conhecer o app" className="rounded-card">
             <Wordmark className="text-md" />
           </Link>
+          <Link href="/privacidade" className="ml-auto underline hover:text-ink">
+            Privacidade
+          </Link>
         </div>
       </footer>
     </div>
