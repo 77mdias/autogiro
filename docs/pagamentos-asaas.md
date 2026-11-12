@@ -102,5 +102,5 @@ O passo a passo geral (Vercel, Supabase, R2, domínio) está em [deploy.md](depl
 1. Conta Asaas de produção aprovada; chave de produção em `ASAAS_API_KEY`, `ASAAS_API_URL=https://api.asaas.com/v3`.
 2. Webhook de produção com um token novo.
 3. `APP_BASE_URL` e o redirecionamento do Google no domínio final.
-4. `ASAAS_CHECKOUT=on` só quando quiser abrir o autoatendimento.
-5. Peça ao gerente de contas a **tokenização de cartão**: sem ela o Asaas de produção não deixa mudar o valor de assinatura de cartão, e a mudança de faixa falha (no Sandbox já vem ligada).
+4. `ASAAS_CHECKOUT=on` só quando quiser abrir o autoatendimento. Antes, confira se o webhook tem os eventos `CHECKOUT_*`, e depois teste com um cartão real numa loja em teste grátis (apague a assinatura no Asaas antes do fim do teste).
+5. **Tokenização de cartão**: liberada na conta de produção em 2026-11-12, a pedido ao gerente de contas. Sem ela o Asaas de produção não deixa mudar o valor de assinatura de cartão, e a mudança de faixa falha (no Sandbox já vem ligada). O app não chama a API de tokenização: é a permissão que o `PUT /subscriptions/{id}` precisa. A liberação fica sob monitoramento do Asaas, e chargeback, reclamação ou infração Pix podem fazê-lo desligar; se a mudança de faixa voltar a falhar, confira com o gerente.

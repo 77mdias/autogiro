@@ -44,7 +44,8 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 
 **Validar em produção**
 - [ ] Fluxo completo no ar: cadastro, onboarding, foto no R2 de produção, simulação com CNH, Ver CNH.
-- [ ] Webhook do Asaas de produção e primeira cobrança real.
+- [x] Webhook do Asaas de produção respondendo 200 (cobrança avulsa de teste, 2026-11-09).
+- [ ] Autoatendimento com cartão em produção (`ASAAS_CHECKOUT=on`; tokenização já liberada em 2026-11-12) e primeira cobrança real.
 
 **Próximas telas** ([plano](telas-equipe.md))
 - [x] Passo 1: tabela `membros`, papel gestor/vendedor na sessão, travas de gestor nas actions.
