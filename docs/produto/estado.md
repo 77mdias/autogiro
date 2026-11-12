@@ -37,7 +37,7 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 ## Falta
 
 **Antes de divulgar em escala**
-- [ ] **Revisão jurídica da política de privacidade** (`/privacidade`, publicada em 2026-11-12 com texto técnico; controlador: William Henrique Moreira Dias, MEI, CNPJ 61.750.284/0001-28).
+- [ ] **Revisão jurídica da política de privacidade e dos termos de uso** (`/privacidade` e `/termos`, publicados em 2026-11-12 com texto técnico; os termos não têm foro, regra de reembolso nem limite de responsabilidade; controlador: William Henrique Moreira Dias, MEI, CNPJ 61.750.284/0001-28).
 - [ ] **Prazo de guarda da CNH** definido com o jurídico. Hoje: só o arquivo é apagado, em 90 dias; o lead fica. O SRS (REQ-010) fala em apagar CNH **e** lead (ex.: 30 dias).
 - [ ] **Limite de envios** (rate limit ou captcha, ex.: Cloudflare Turnstile) no `POST /api/simulacoes`, que é público.
 - [ ] **Cron de produção**: Worker apontando para o domínio de produção com o `CRON_SECRET` de `production` ([deploy.md › Cron](../deploy.md#cron-limpeza-das-cnhs)).

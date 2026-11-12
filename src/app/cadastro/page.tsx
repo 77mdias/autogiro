@@ -17,7 +17,11 @@ export default function CadastroPage() {
         </Link>
       </p>
       <p className="text-sm text-ink-3">
-        Ao criar a conta, você concorda com a{" "}
+        Ao criar a conta, você concorda com os{" "}
+        <Link href="/termos" className="rounded-card underline underline-offset-4">
+          termos de uso
+        </Link>{" "}
+        e a{" "}
         <Link href="/privacidade" className="rounded-card underline underline-offset-4">
           política de privacidade
         </Link>
