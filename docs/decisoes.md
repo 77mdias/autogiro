@@ -2,6 +2,12 @@
 
 Mais recentes primeiro. Cada uma: o que foi decidido e por quê.
 
+## 2026-11-12 · Excluir conta guarda só o WhatsApp
+O garagista exclui a própria conta em Minha loja. Do gestor, some a loja inteira; do vendedor, a carteira volta ao gestor.
+- Fica só a chave do WhatsApp em `testes_whatsapp`, sem ligação com a loja, para o teste grátis não se repetir (prevenção de fraude, dito na política de privacidade), e os eventos de pagamento do Asaas.
+- A assinatura é cancelada no Asaas **antes** de apagar: se o Asaas recusar, nada é apagado. Pior que uma exclusão que falha é uma loja apagada que continua sendo cobrada.
+- Exclusão imediata, sem carência nem "desfazer". Descartada por ora: dá trabalho (estado "agendada", cron) para um caso que ainda não apareceu.
+
 ## 2026-11-12 · Um teste grátis por WhatsApp
 Uma conta já tinha uma loja só, mas outra conta (outro e-mail ou Google) ganhava mais 15 dias. Agora o WhatsApp da loja identifica quem já teve teste (`testes_whatsapp`).
 - WhatsApp porque o garagista vive dele e ele vai na vitrine: trocar de número só para ganhar 15 dias custa caro. Com e sem o 9 da frente contam como o mesmo número.

@@ -17,6 +17,7 @@ Cron ───────► POST /api/cron/delete-expired-cnh ──► apaga 
 | `/` | público | Landing para garagistas |
 | `/login` | público | Entrar com Google ou com e-mail e senha (Auth.js) |
 | `/cadastro` | público | Cria conta com e-mail e senha e manda o e-mail de confirmação |
+| `/privacidade` | público | Política de privacidade (estática; link na landing, na vitrine, no cadastro e no aceite da simulação) |
 | `/esqueci-senha` | público | Manda o link de redefinição (mesma resposta com ou sem conta) |
 | `/redefinir-senha?token=` | quem tem o link | Grava a senha nova; o token só é gasto ao salvar |
 | `GET /api/conta/confirmar?token=` | quem tem o link | Confirma o e-mail e leva para `/login?aviso=confirmado` |
@@ -28,7 +29,7 @@ Cron ───────► POST /api/cron/delete-expired-cnh ──► apaga 
 | `/painel/vendas?mes=AAAA-MM` | membro | Gestor: vendas do mês, totais, resumo por vendedor e comissão editável em R$ com a %. Vendedor: só as vendas dele, sem comissão |
 | `/painel/vendedores` | gestor | Equipe: gerar link de convite, desativar e reativar vendedores, cancelar convites (até 20, contando convites em aberto) |
 | `/convite/[token]` | quem tem o link | Mostra a loja; logado sem loja aceita e vira vendedor; sem sessão vai para `/login` e volta |
-| `/painel/loja` | membro | Plano, link da vitrine, números; dados da loja e assinatura só para o gestor |
+| `/painel/loja` | membro | Plano, link da vitrine, números; dados da loja e assinatura só para o gestor; "Excluir minha conta" para todos |
 | `/admin` | e-mail em `ADMIN_EMAILS` | Dono do SaaS: MRR, lojas por situação do plano, carros e simulações por loja. Outros logados recebem 404 |
 | `/loja/[slug]` | público | Vitrine; fora do ar se o plano estiver pausado (`layout.tsx`) |
 | `/loja/[slug]/carros/[carroId]` | público | Detalhe do carro, WhatsApp e Simular |
@@ -133,6 +134,12 @@ Cada link novo apaga os anteriores do mesmo tipo, e só sai um e-mail por minuto
 | `inadimplente`, `cancelado` | não |
 
 A mensalidade sai da faixa de vendedores ativos (`valorPlano()`); mudança de faixa e o aviso às lojas estão em [pagamentos-asaas.md](pagamentos-asaas.md#mudança-de-faixa).
+
+**Excluir conta** (`excluirConta` em `painel/actions.ts`, regras puras em `lib/exclusao.ts`; plano em [produto/excluir-conta.md](produto/excluir-conta.md)). Confirmação digitando `EXCLUIR`.
+- Vendedor: carros e clientes passam ao gestor (`devolverCarteira`, a mesma de desativar), o membro é apagado (pedidos pendentes dele em cascata, fotos novas desses pedidos apagadas do R2; nas vendas, `membro_id` vira null) e a mensalidade é recalculada.
+- Gestor: com assinatura, `cancelarAssinatura` (`DELETE /subscriptions/{id}`; 404 conta como cancelada) **antes** de tudo; se o Asaas recusar, nada é apagado. Depois `delete from lojas` (cascata em carros, simulações, membros, convites, pedidos e vendas; `testes_whatsapp.loja_id` vira null) e, por último, fotos e CNHs no R2 (falha só vai para o log).
+- Conta de e-mail: apaga `usuarios` (tokens em cascata). Conta Google não tem linha própria.
+- Fica guardado: a chave em `testes_whatsapp` e `webhook_events`. Depois, `signOut` para `/login?aviso=excluida`.
 
 **Um teste grátis por WhatsApp.** `criarLoja` grava o WhatsApp em `testes_whatsapp`; se outra loja já teve teste com ele, a loja nasce com `trial_ate = now()` (sem teste) e o gestor vai direto para Minha loja, que diz "Este WhatsApp já usou o teste grátis". Em Minha loja, a loja em teste sem assinatura não pode trocar para o WhatsApp de outra loja (seria o atalho: criar com um número qualquer e trocar depois); com assinatura ou plano ativo, pode. Uma conta continua com uma loja só (`lojas.auth_user_id` e `membros.auth_user_id` únicos).
 

@@ -8,7 +8,7 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 
 | Área | O que tem | Onde ver |
 |---|---|---|
-| Conta | Login com Google ou e-mail e senha; confirmação por e-mail; "Esqueci a senha" | [arquitetura.md › Autenticação](../arquitetura.md#autenticação) |
+| Conta | Login com Google ou e-mail e senha; confirmação por e-mail; "Esqueci a senha"; excluir a conta em Minha loja (guarda só o WhatsApp) | [arquitetura.md › Autenticação](../arquitetura.md#autenticação) |
 | Loja | Onboarding (nome + WhatsApp), slug fixo, dados editáveis em Minha loja | `/onboarding`, `/painel/loja` |
 | Estoque | Cadastrar, editar, marcar vendido, excluir, até 15 fotos, compartilhar o link do carro e da vitrine | `/painel/estoque` |
 | Vitrine | Lista da loja com filtro (disponíveis, vendidos) e busca; vendidos aparecem marcados | `/loja/[slug]` |
@@ -37,7 +37,7 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 ## Falta
 
 **Antes de divulgar em escala**
-- [ ] **Política de privacidade** publicada no site (o [briefing](briefing.md) pede; não existe página).
+- [ ] **Revisão jurídica da política de privacidade** (`/privacidade`, publicada em 2026-11-12 com texto técnico; falta a identificação da empresa, como CNPJ).
 - [ ] **Prazo de guarda da CNH** definido com o jurídico. Hoje: só o arquivo é apagado, em 90 dias; o lead fica. O SRS (REQ-010) fala em apagar CNH **e** lead (ex.: 30 dias).
 - [ ] **Limite de envios** (rate limit ou captcha, ex.: Cloudflare Turnstile) no `POST /api/simulacoes`, que é público.
 - [ ] **Cron de produção**: Worker apontando para o domínio de produção com o `CRON_SECRET` de `production` ([deploy.md › Cron](../deploy.md#cron-limpeza-das-cnhs)).
