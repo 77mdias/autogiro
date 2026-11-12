@@ -134,7 +134,7 @@ test("conta de e-mail ou Google", () => {
 - Modificar: rodapé da landing (`src/app/page.tsx`), rodapé da vitrine (`src/app/loja/[slug]/page.tsx`), cadastro (`src/app/cadastro/page.tsx`) e o aceite LGPD da simulação (`simulacao-form.tsx`), com link para `/privacidade`.
 
 - [ ] **Passo 1:** escrever a página com estas seções, cada uma com o que o app faz hoje (fonte: `arquitetura.md`, `pagamentos-asaas.md`):
-  - Quem é o controlador (AutoGiro / 77dev) e contato.
+  - Quem é o controlador (William Henrique Moreira Dias, MEI; app desenvolvido pela 77mdevseven) e contato.
   - Dados da loja e da equipe (nome, WhatsApp, e-mail, conta Google) e para quê.
   - Dados de quem pede simulação (nome, telefone, valores, CNH), que a loja recebe; CNH em bucket privado, link de 5 minutos, apagada em 90 dias.
   - Pagamento: feito pelo Asaas; o AutoGiro não vê nem guarda cartão nem CPF/CNPJ.
