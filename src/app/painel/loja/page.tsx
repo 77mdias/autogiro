@@ -73,6 +73,7 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
         planoStatus: lojas.planoStatus,
         trialAte: lojas.trialAte,
         asaasSubscriptionId: lojas.asaasSubscriptionId,
+        asaasCustomerId: lojas.asaasCustomerId,
         mensalidadeCentavos: lojas.mensalidadeCentavos,
         createdAt: lojas.createdAt,
       })
@@ -161,7 +162,7 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
         )}
       </section>
 
-      <ExcluirConta gestor={gestor} vendedores={vendedores} temAssinatura={!!loja?.asaasSubscriptionId} />
+      <ExcluirConta gestor={gestor} vendedores={vendedores} temAssinatura={!!(loja?.asaasSubscriptionId || loja?.asaasCustomerId)} />
     </div>
   );
 }

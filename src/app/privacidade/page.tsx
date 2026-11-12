@@ -69,8 +69,9 @@ export default function PrivacidadePage() {
 
         <Secao titulo="Pagamento">
           <p>
-            A mensalidade é cobrada pelo Asaas. Cartão, CPF ou CNPJ e dados de cobrança são informados direto ao Asaas: o AutoGiro não
-            vê nem guarda esses dados. Guardamos só os registros dos eventos de pagamento que o Asaas nos envia.
+            A mensalidade é cobrada pelo Asaas. O número do cartão e o CPF ou CNPJ são informados direto ao Asaas, não ao AutoGiro.
+            Guardamos os avisos de pagamento que o Asaas nos envia, como chegam: podem trazer os identificadores do cliente e da
+            assinatura no Asaas, valores, datas, a forma de pagamento e, no cartão, a bandeira e os últimos dígitos.
           </p>
         </Secao>
 
@@ -88,8 +89,9 @@ export default function PrivacidadePage() {
             os carros e clientes dele passam para o gestor da loja.
           </p>
           <p>
-            Depois da exclusão, guardamos só o número do WhatsApp da loja, sem ligação com nenhum outro dado, para registrar que o teste
-            grátis já foi usado e evitar que ele se repita. Os registros de pagamento ficam pelo prazo exigido por lei.
+            Depois da exclusão, guardamos o número do WhatsApp da loja, separado dos dados apagados, para registrar que o teste grátis
+            já foi usado e evitar que ele se repita. Os avisos de pagamento do Asaas ficam pelo prazo exigido por lei. Vendedor
+            desativado ou conta sem loja, que não entram no painel, pedem a exclusão pelo {contato}.
           </p>
         </Secao>
 

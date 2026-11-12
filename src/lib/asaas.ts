@@ -63,6 +63,22 @@ export async function mudarValorAssinatura(subscriptionId: string, valorReais: n
   await asaas(`/subscriptions/${encodeURIComponent(subscriptionId)}`, { value: valorReais, updatePendingPayments: true }, "PUT");
 }
 
+/**
+ * Ids das assinaturas ativas de um cliente (fase 1: a loja tem o `cus_` antes de ter a assinatura).
+ * Cliente que não existe mais no Asaas responde 404 (visto no Sandbox): sem assinaturas.
+ */
+export async function assinaturasAtivas(customerId: string) {
+  try {
+    const { data } = await asaas<{ data: { id: string }[] }>(
+      `/subscriptions?customer=${encodeURIComponent(customerId)}&status=ACTIVE&limit=100`,
+    );
+    return data.map((s) => s.id);
+  } catch (err) {
+    if (err instanceof AsaasError && err.status === 404) return [];
+    throw err;
+  }
+}
+
 /** Cancela a assinatura (exclusão da loja). 404 = já não existe no Asaas: conta como cancelada. */
 export async function cancelarAssinatura(subscriptionId: string) {
   try {

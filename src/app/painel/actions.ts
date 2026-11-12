@@ -9,8 +9,8 @@ import { db } from "@/lib/db";
 import { carros, convites, lojas, membros, pedidosEdicao, simulacoesFinanciamento as sim, testesWhatsapp, usuarios, vendas } from "@/lib/db/schema";
 import { fotosAprovadas, MAX_FOTOS, type MudancasCarro } from "@/lib/pedidos";
 import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
-import { AsaasError, cancelarAssinatura, criarCheckoutAssinatura, faturaVencida, mudarValorAssinatura } from "@/lib/asaas";
-import { arquivosDaLoja, confirmouExclusao, contaDeEmail } from "@/lib/exclusao";
+import { AsaasError, assinaturasAtivas, cancelarAssinatura, criarCheckoutAssinatura, faturaVencida, mudarValorAssinatura } from "@/lib/asaas";
+import { arquivosDaLoja, cobrancaNaExclusao, confirmouExclusao, contaDeEmail, naoApagados } from "@/lib/exclusao";
 import { chaveWhatsapp, MAX_CENTAVOS, onlyDigits, reaisToCentavos, slugify } from "@/lib/masks";
 import { deleteCnhs, deleteFotos, uploadFoto } from "@/lib/r2";
 import { getLojaIdDoGestor, getMembro, getSession, lojaLiberada, type Membro } from "@/lib/session";
@@ -438,22 +438,33 @@ async function excluirVendedor({ lojaId, membroId }: Membro) {
     await tx.delete(membros).where(and(eq(membros.id, membroId), eq(membros.lojaId, lojaId)));
     return arquivosDaLoja([], pedidos.flatMap((p) => (p.mudancas ? [p.mudancas] : [])));
   });
-  if (fotos.length) await deleteFotos(fotos).catch((err) => console.error("Fotos não apagadas do R2", { lojaId, fotos, err }));
+  await apagarDoR2(lojaId, deleteFotos, fotos);
   await ajustarMensalidade(lojaId);
 }
 
 /** Apaga a loja. Devolve a mensagem de erro se o Asaas não cancelar a assinatura (aí nada é apagado). */
 async function excluirLoja(lojaId: string): Promise<string | undefined> {
-  const [loja] = await db.select({ sub: lojas.asaasSubscriptionId }).from(lojas).where(eq(lojas.id, lojaId)).limit(1);
-  if (loja?.sub) {
+  const [loja] = await db
+    .select({ sub: lojas.asaasSubscriptionId, cliente: lojas.asaasCustomerId, planoStatus: lojas.planoStatus })
+    .from(lojas)
+    .where(eq(lojas.id, lojaId))
+    .limit(1);
+  if (!loja) return;
+  const cobranca = cobrancaNaExclusao(loja);
+  if (cobranca === "recusar") return "A loja tem plano pago, mas sem cliente do Asaas ligado. Fale com a AutoGiro para excluir a conta.";
+  if (cobranca !== "nada") {
     try {
-      await cancelarAssinatura(loja.sub);
+      const subs = cobranca === "assinatura" ? [loja.sub!] : await assinaturasAtivas(loja.cliente!);
+      for (const sub of subs) await cancelarAssinatura(sub);
     } catch (err) {
       console.error("Assinatura não cancelada no Asaas", { lojaId, err });
       return "Não deu para cancelar a assinatura no Asaas. Tente de novo em alguns minutos.";
     }
-    // Já cancelada: se algo falhar daqui em diante, a nova tentativa não cancela de novo.
-    await db.update(lojas).set({ asaasSubscriptionId: null }).where(eq(lojas.id, lojaId));
+    // Já cancelada: se algo falhar daqui em diante, a nova tentativa cai em "nada" e não cancela de novo.
+    await db
+      .update(lojas)
+      .set({ asaasSubscriptionId: null, asaasCustomerId: null, planoStatus: "cancelado" })
+      .where(eq(lojas.id, lojaId));
   }
   const [doCarros, doPedidos, cnhs] = await Promise.all([
     db.select({ fotos: carros.fotos }).from(carros).where(eq(carros.lojaId, lojaId)),
@@ -464,10 +475,20 @@ async function excluirLoja(lojaId: string): Promise<string | undefined> {
   await db.delete(lojas).where(eq(lojas.id, lojaId));
   const fotos = arquivosDaLoja(doCarros.map((c) => c.fotos), doPedidos.flatMap((p) => (p.mudancas ? [p.mudancas] : [])));
   const chavesCnh = cnhs.flatMap((c) => (c.key ? [c.key] : []));
-  // A conta já sumiu: falha no R2 só vai para o log, com as chaves para limpar à mão.
-  await Promise.all([fotos.length && deleteFotos(fotos), chavesCnh.length && deleteCnhs(chavesCnh)]).catch((err) =>
-    console.error("Arquivos não apagados do R2", { lojaId, fotos, chavesCnh, err }),
-  );
+  // A conta já sumiu: falha no R2 só vai para o log, com as chaves para limpar à mão (a CNH não tem mais
+  // linha no banco, então o cron dos 90 dias não a acharia).
+  await apagarDoR2(lojaId, deleteFotos, fotos);
+  await apagarDoR2(lojaId, deleteCnhs, chavesCnh);
+}
+
+async function apagarDoR2(lojaId: string, apagar: (keys: string[]) => Promise<string[]>, chaves: string[]) {
+  if (!chaves.length) return;
+  try {
+    const sobraram = naoApagados(chaves, await apagar(chaves));
+    if (sobraram.length) console.error("Arquivos não apagados do R2", { lojaId, sobraram });
+  } catch (err) {
+    console.error("Arquivos não apagados do R2", { lojaId, sobraram: chaves, err });
+  }
 }
 
 /** Gestor aprova: aplica a edição (ou exclui o carro) e marca o pedido, tudo numa transação. */
