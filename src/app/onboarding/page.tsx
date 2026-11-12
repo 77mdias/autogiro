@@ -8,6 +8,7 @@ import { Wordmark } from "@/components/wordmark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { criarLoja } from "@/app/painel/actions";
 import { TRIAL_DIAS } from "@/lib/plano";
+import { ExcluirConta } from "@/app/painel/loja/excluir-conta";
 
 export const metadata: Metadata = { title: "Criar sua loja" };
 
@@ -15,7 +16,12 @@ async function Onboarding() {
   const session = await getSession();
   if (!session) redirect("/login?callbackUrl=/onboarding");
   if (session.user.loja_id) redirect("/painel/estoque");
-  return <LojaForm action={criarLoja} submitLabel="Criar minha loja" />;
+  return (
+    <>
+      <LojaForm action={criarLoja} submitLabel="Criar minha loja" />
+      <ExcluirConta papel={null} />
+    </>
+  );
 }
 
 export default function OnboardingPage() {

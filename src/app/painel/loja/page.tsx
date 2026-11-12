@@ -162,7 +162,7 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
         )}
       </section>
 
-      <ExcluirConta gestor={gestor} vendedores={vendedores} temAssinatura={!!(loja?.asaasSubscriptionId || loja?.asaasCustomerId)} />
+      <ExcluirConta papel={gestor ? "gestor" : "vendedor"} vendedores={vendedores} temAssinatura={!!(loja?.asaasSubscriptionId || loja?.asaasCustomerId)} />
     </div>
   );
 }
