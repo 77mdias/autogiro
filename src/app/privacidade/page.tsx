@@ -47,8 +47,9 @@ export default function PrivacidadePage() {
 
         <Secao titulo="Quem somos">
           <p>
-            O AutoGiro é um app da 77dev para garagens de carros usados: estoque, vitrine e pedidos de simulação de financiamento. Quem
-            responde pelos dados da conta e da loja (o controlador) é {CONTROLADOR}. Dúvidas e pedidos sobre seus dados: {contato}.
+            O AutoGiro é um app para garagens de carros usados (estoque, vitrine e pedidos de simulação de financiamento),
+            desenvolvido pela 77mdevseven. O responsável pelo AutoGiro e pelos dados da conta e da loja (o controlador) é{" "}
+            {CONTROLADOR}. Dúvidas e pedidos sobre seus dados: {contato}.
           </p>
         </Secao>
 
