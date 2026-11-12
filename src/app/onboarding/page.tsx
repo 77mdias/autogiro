@@ -33,7 +33,7 @@ export default function OnboardingPage() {
         <div className="ticks grid content-start gap-8 bg-paper-2 p-6 sm:p-10">
           <div className="grid grid-cols-1 gap-2 border-b border-rule pb-6">
             <h1 className="font-display text-3xl font-semibold">Vamos criar sua loja</h1>
-            <p className="text-ink-2">{TRIAL_DIAS} dias grátis, sem cartão. O link da vitrine sai na hora.</p>
+            <p className="text-ink-2">{TRIAL_DIAS} dias grátis, sem cartão (um teste por WhatsApp). O link da vitrine sai na hora.</p>
             <p className="text-sm text-ink-3">Vai trabalhar na loja de outra pessoa? Não crie uma loja: abra o link de convite que o gestor mandou.</p>
           </div>
           <Suspense>

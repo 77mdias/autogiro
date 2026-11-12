@@ -13,7 +13,7 @@ Mensalidade por número de vendedores ativos (`FAIXAS` e `valorPlano()` em `src/
 | 5 a 10 | R$ 139 |
 | 11 a 20 | R$ 169 |
 
-Acima de 20 o app não deixa convidar (`MAX_VENDEDORES`). 15 dias grátis (`TRIAL_DIAS`, gravado em `lojas.trial_ate` ao criar a loja; lojas criadas antes ficam com o prazo que já tinham). Regras de liberação em [arquitetura.md](arquitetura.md#plano).
+Acima de 20 o app não deixa convidar (`MAX_VENDEDORES`). 15 dias grátis (`TRIAL_DIAS`, gravado em `lojas.trial_ate` ao criar a loja; lojas criadas antes ficam com o prazo que já tinham). Um teste por WhatsApp: loja nova com um número que já teve teste nasce sem teste ([arquitetura.md](arquitetura.md#plano)). Regras de liberação em [arquitetura.md](arquitetura.md#plano).
 
 ### Mudança de faixa
 

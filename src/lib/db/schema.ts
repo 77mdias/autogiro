@@ -42,6 +42,14 @@ export const lojas = pgTable("lojas", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }).enableRLS();
 
+// WhatsApps que já tiveram teste grátis (chaveWhatsapp em lib/masks: DDD + 8 últimos dígitos). Não é dado da loja:
+// fica mesmo se a loja sumir, para outra conta não ganhar outro teste com o mesmo número.
+export const testesWhatsapp = pgTable("testes_whatsapp", {
+  chave: text("chave").primaryKey(),
+  lojaId: uuid("loja_id").references(() => lojas.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
 // Quem entra no painel de cada loja. O dono (lojas.auth_user_id) é o gestor; vendedores entram por convite.
 // auth_user_id único: uma conta pertence a uma loja só. Desativar tira o acesso na hora (lib/auth consulta a cada request).
 export const membros = pgTable(

@@ -1,16 +1,16 @@
 "use server";
 
-import { and, count, eq, gt, gte } from "drizzle-orm";
+import { and, count, eq, gt, gte, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { carros, convites, lojas, membros, pedidosEdicao, simulacoesFinanciamento as sim, vendas } from "@/lib/db/schema";
+import { carros, convites, lojas, membros, pedidosEdicao, simulacoesFinanciamento as sim, testesWhatsapp, vendas } from "@/lib/db/schema";
 import { fotosAprovadas, MAX_FOTOS, type MudancasCarro } from "@/lib/pedidos";
 import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
 import { AsaasError, criarCheckoutAssinatura, faturaVencida, mudarValorAssinatura } from "@/lib/asaas";
-import { MAX_CENTAVOS, onlyDigits, reaisToCentavos, slugify } from "@/lib/masks";
+import { chaveWhatsapp, MAX_CENTAVOS, onlyDigits, reaisToCentavos, slugify } from "@/lib/masks";
 import { deleteCnhs, deleteFotos, uploadFoto } from "@/lib/r2";
 import { getLojaIdDoGestor, getMembro, getSession, lojaLiberada } from "@/lib/session";
 import { MAX_VENDEDORES, valorPlano } from "@/lib/plano";
@@ -246,6 +246,18 @@ const lojaSchema = z.object({
     .refine((d) => d.length === 10 || d.length === 11, "WhatsApp com DDD, ex.: (11) 98765-4321"),
 });
 
+/**
+ * Marca o WhatsApp como já usado num teste grátis. true = o número é desta loja (novo ou já dela);
+ * false = outra loja teve teste com ele antes.
+ */
+async function registrarWhatsapp(tx: Tx, whatsapp: string, lojaId: string) {
+  const chave = chaveWhatsapp(whatsapp);
+  const [novo] = await tx.insert(testesWhatsapp).values({ chave, lojaId }).onConflictDoNothing().returning({ chave: testesWhatsapp.chave });
+  if (novo) return true;
+  const [dono] = await tx.select({ lojaId: testesWhatsapp.lojaId }).from(testesWhatsapp).where(eq(testesWhatsapp.chave, chave)).limit(1);
+  return dono?.lojaId === lojaId;
+}
+
 const lojaCampos = (fd: FormData) => ({
   nome: str(fd, "nome"),
   whatsapp: str(fd, "whatsapp") ?? "",
@@ -257,7 +269,19 @@ export async function salvarLoja(_prev: FormState, fd: FormData): Promise<FormSt
   const parsed = lojaSchema.safeParse(lojaCampos(fd));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  await db.update(lojas).set(parsed.data).where(eq(lojas.id, lojaId));
+  const erro = await db.transaction(async (tx) => {
+    const [loja] = await tx
+      .select({ planoStatus: lojas.planoStatus, sub: lojas.asaasSubscriptionId })
+      .from(lojas)
+      .where(eq(lojas.id, lojaId))
+      .limit(1);
+    const doTeste = await registrarWhatsapp(tx, parsed.data.whatsapp, lojaId);
+    // Em teste grátis, trocar para o WhatsApp de outra loja seria o jeito de ganhar um segundo teste.
+    if (!doTeste && loja?.planoStatus === "trial" && !loja.sub)
+      return "Esse WhatsApp já usou o teste grátis em outra loja. Para usá-lo aqui, assine o plano.";
+    await tx.update(lojas).set(parsed.data).where(eq(lojas.id, lojaId));
+  });
+  if (erro) return { error: erro };
   revalidatePath("/painel", "layout");
   return {};
 }
@@ -273,16 +297,21 @@ export async function criarLoja(_prev: FormState, fd: FormData): Promise<FormSta
   // Sufixo aleatório evita colisão de slug; o slug não muda ao renomear (link da vitrine estável).
   const slug = `${slugify(parsed.data.nome) || "loja"}-${crypto.randomUUID().slice(0, 4)}`;
   // Conflito = duplo envio; a loja já criada vale. O jwt callback (lib/auth) acha o gestor e põe o loja_id na sessão.
-  await db.transaction(async (tx) => {
+  const comTeste = await db.transaction(async (tx) => {
     const [loja] = await tx
       .insert(lojas)
       .values({ ...parsed.data, slug, authUserId: session.user.id! })
       .onConflictDoNothing({ target: lojas.authUserId })
       .returning({ id: lojas.id });
-    if (loja) await tx.insert(membros).values({ lojaId: loja.id, authUserId: session.user.id!, papel: "gestor" });
+    if (!loja) return true;
+    await tx.insert(membros).values({ lojaId: loja.id, authUserId: session.user.id!, papel: "gestor" });
+    if (await registrarWhatsapp(tx, parsed.data.whatsapp, loja.id)) return true;
+    // Um teste grátis por WhatsApp: a loja nasce, mas para usar o painel e a vitrine precisa assinar.
+    await tx.update(lojas).set({ trialAte: sql`now()` }).where(eq(lojas.id, loja.id));
+    return false;
   });
 
-  redirect("/painel/estoque");
+  redirect(comTeste ? "/painel/estoque" : "/painel/loja");
 }
 
 /**

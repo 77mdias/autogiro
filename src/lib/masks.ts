@@ -32,6 +32,15 @@ export function slugify(nome: string) {
     .slice(0, 40);
 }
 
+/**
+ * Identidade do WhatsApp para o teste grátis: DDD + 8 últimos dígitos. Com ou sem o 9 da frente é o mesmo número.
+ * Celular e fixo não colidem: depois do DDD, celular começa em 6 a 9 e fixo em 2 a 5.
+ */
+export function chaveWhatsapp(value: string) {
+  const d = onlyDigits(value);
+  return d.slice(0, 2) + d.slice(-8);
+}
+
 export function whatsappUrl(phoneDigits: string, text?: string) {
   const q = text ? `?text=${encodeURIComponent(text)}` : "";
   return `https://wa.me/55${onlyDigits(phoneDigits)}${q}`;

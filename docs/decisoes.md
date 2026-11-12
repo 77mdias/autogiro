@@ -2,6 +2,13 @@
 
 Mais recentes primeiro. Cada uma: o que foi decidido e por quê.
 
+## 2026-11-12 · Um teste grátis por WhatsApp
+Uma conta já tinha uma loja só, mas outra conta (outro e-mail ou Google) ganhava mais 15 dias. Agora o WhatsApp da loja identifica quem já teve teste (`testes_whatsapp`).
+- WhatsApp porque o garagista vive dele e ele vai na vitrine: trocar de número só para ganhar 15 dias custa caro. Com e sem o 9 da frente contam como o mesmo número.
+- Número repetido não barra a loja: ela nasce sem teste e pode assinar. Assim quem tem duas garagens com o mesmo número abre a segunda pagando, sem precisar falar com a AutoGiro.
+- Em teste, Minha loja não deixa trocar para o número de outra loja; assinando, deixa.
+- Descartadas por enquanto: cartão no início do teste (menos garagistas começam) e CPF/CNPJ no cadastro (atrito cedo). Voltam se o abuso aparecer.
+
 ## 2026-11-09 · Plano individual passa de R$ 39 para R$ 59
 Decisão do Jean; as outras faixas continuam (R$ 99, 139 e 169). Muda só `FAIXAS` em `src/lib/plano.ts`: a landing, Minha loja, o checkout e o `/admin` leem de lá.
 - Assinatura já existente de R$ 39 não muda sozinha: Minha loja avisa "passa de R$ 39 para R$ 59" e `pnpm loja:prod mensalidades aplicar` acerta no Asaas, depois de avisar a loja. Em produção ainda não havia loja pagante.
