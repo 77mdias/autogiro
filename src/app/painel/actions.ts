@@ -1,18 +1,19 @@
 "use server";
 
-import { and, count, eq, gt, gte, sql } from "drizzle-orm";
+import { and, count, eq, gt, gte, isNotNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { auth, signOut } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { carros, convites, lojas, membros, pedidosEdicao, simulacoesFinanciamento as sim, testesWhatsapp, vendas } from "@/lib/db/schema";
+import { carros, convites, lojas, membros, pedidosEdicao, simulacoesFinanciamento as sim, testesWhatsapp, usuarios, vendas } from "@/lib/db/schema";
 import { fotosAprovadas, MAX_FOTOS, type MudancasCarro } from "@/lib/pedidos";
 import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
-import { AsaasError, criarCheckoutAssinatura, faturaVencida, mudarValorAssinatura } from "@/lib/asaas";
+import { AsaasError, cancelarAssinatura, criarCheckoutAssinatura, faturaVencida, mudarValorAssinatura } from "@/lib/asaas";
+import { arquivosDaLoja, confirmouExclusao, contaDeEmail } from "@/lib/exclusao";
 import { chaveWhatsapp, MAX_CENTAVOS, onlyDigits, reaisToCentavos, slugify } from "@/lib/masks";
 import { deleteCnhs, deleteFotos, uploadFoto } from "@/lib/r2";
-import { getLojaIdDoGestor, getMembro, getSession, lojaLiberada } from "@/lib/session";
+import { getLojaIdDoGestor, getMembro, getSession, lojaLiberada, type Membro } from "@/lib/session";
 import { MAX_VENDEDORES, valorPlano } from "@/lib/plano";
 import { hashToken, novoToken } from "@/lib/senha";
 
@@ -402,6 +403,73 @@ export async function sair() {
   await signOut({ redirectTo: "/" });
 }
 
+/**
+ * Exclui a conta de quem está logado. Vendedor: sai da loja e a carteira volta ao gestor. Gestor: apaga a
+ * loja inteira (cascata), depois de cancelar a assinatura no Asaas. Fica só o WhatsApp em testes_whatsapp.
+ */
+export async function excluirConta(_prev: FormState, fd: FormData): Promise<FormState> {
+  if (!confirmouExclusao(String(fd.get("confirmacao") ?? ""))) return { error: "Digite EXCLUIR para confirmar." };
+  const sub = (await getSession())?.user.id;
+  const membro = await getMembro();
+  // Sem membro: já excluída (clique duplo ou outra aba).
+  if (sub && membro?.papel === "vendedor") await excluirVendedor(membro);
+  if (sub && membro?.papel === "gestor") {
+    const erro = await excluirLoja(membro.lojaId);
+    if (erro) return { error: erro };
+  }
+  if (sub && contaDeEmail(sub)) await db.delete(usuarios).where(eq(usuarios.id, sub));
+  await signOut({ redirectTo: "/login?aviso=excluida" });
+  return {};
+}
+
+async function excluirVendedor({ lojaId, membroId }: Membro) {
+  const fotos = await db.transaction(async (tx) => {
+    const [gestor] = await tx
+      .select({ id: membros.id })
+      .from(membros)
+      .where(and(eq(membros.lojaId, lojaId), eq(membros.papel, "gestor")))
+      .limit(1);
+    if (gestor) await devolverCarteira(tx, lojaId, membroId, gestor.id);
+    // Pedidos pendentes dele somem em cascata; as fotos novas desses pedidos já estão no R2.
+    const pedidos = await tx
+      .select({ mudancas: pedidosEdicao.mudancas })
+      .from(pedidosEdicao)
+      .where(and(eq(pedidosEdicao.membroId, membroId), eq(pedidosEdicao.status, "pendente")));
+    await tx.delete(membros).where(and(eq(membros.id, membroId), eq(membros.lojaId, lojaId)));
+    return arquivosDaLoja([], pedidos.flatMap((p) => (p.mudancas ? [p.mudancas] : [])));
+  });
+  if (fotos.length) await deleteFotos(fotos).catch((err) => console.error("Fotos não apagadas do R2", { lojaId, fotos, err }));
+  await ajustarMensalidade(lojaId);
+}
+
+/** Apaga a loja. Devolve a mensagem de erro se o Asaas não cancelar a assinatura (aí nada é apagado). */
+async function excluirLoja(lojaId: string): Promise<string | undefined> {
+  const [loja] = await db.select({ sub: lojas.asaasSubscriptionId }).from(lojas).where(eq(lojas.id, lojaId)).limit(1);
+  if (loja?.sub) {
+    try {
+      await cancelarAssinatura(loja.sub);
+    } catch (err) {
+      console.error("Assinatura não cancelada no Asaas", { lojaId, err });
+      return "Não deu para cancelar a assinatura no Asaas. Tente de novo em alguns minutos.";
+    }
+    // Já cancelada: se algo falhar daqui em diante, a nova tentativa não cancela de novo.
+    await db.update(lojas).set({ asaasSubscriptionId: null }).where(eq(lojas.id, lojaId));
+  }
+  const [doCarros, doPedidos, cnhs] = await Promise.all([
+    db.select({ fotos: carros.fotos }).from(carros).where(eq(carros.lojaId, lojaId)),
+    db.select({ mudancas: pedidosEdicao.mudancas }).from(pedidosEdicao).where(eq(pedidosEdicao.lojaId, lojaId)),
+    db.select({ key: sim.cnhKey }).from(sim).where(and(eq(sim.lojaId, lojaId), isNotNull(sim.cnhKey))),
+  ]);
+  // Cascata: carros, simulações, membros, convites, pedidos e vendas; testes_whatsapp.loja_id vira null.
+  await db.delete(lojas).where(eq(lojas.id, lojaId));
+  const fotos = arquivosDaLoja(doCarros.map((c) => c.fotos), doPedidos.flatMap((p) => (p.mudancas ? [p.mudancas] : [])));
+  const chavesCnh = cnhs.flatMap((c) => (c.key ? [c.key] : []));
+  // A conta já sumiu: falha no R2 só vai para o log, com as chaves para limpar à mão.
+  await Promise.all([fotos.length && deleteFotos(fotos), chavesCnh.length && deleteCnhs(chavesCnh)]).catch((err) =>
+    console.error("Arquivos não apagados do R2", { lojaId, fotos, chavesCnh, err }),
+  );
+}
+
 /** Gestor aprova: aplica a edição (ou exclui o carro) e marca o pedido, tudo numa transação. */
 export async function aprovarPedido(id: string): Promise<FormState> {
   const gestor = await getMembro();
@@ -557,6 +625,12 @@ export async function cancelarConvite(id: string) {
 }
 
 /** Desativa e devolve ao gestor os carros e clientes do vendedor (senão ninguém poderia agir sobre eles). */
+/** Carros e clientes de um membro passam para outro (vendedor que sai: voltam ao gestor). */
+async function devolverCarteira(tx: Tx, lojaId: string, de: string, para: string) {
+  await tx.update(carros).set({ cadastradoPor: para }).where(and(eq(carros.lojaId, lojaId), eq(carros.cadastradoPor, de)));
+  await tx.update(sim).set({ responsavelId: para }).where(and(eq(sim.lojaId, lojaId), eq(sim.responsavelId, de)));
+}
+
 export async function desativarVendedor(id: string): Promise<FormState> {
   const gestor = await getMembro();
   if (gestor?.papel !== "gestor" || !uuid.safeParse(id).success) return { error: "Vendedor não encontrado" };
@@ -567,14 +641,7 @@ export async function desativarVendedor(id: string): Promise<FormState> {
       .where(and(eq(membros.id, id), eq(membros.lojaId, gestor.lojaId), eq(membros.papel, "vendedor")))
       .returning({ id: membros.id });
     if (!v) return false;
-    await tx
-      .update(carros)
-      .set({ cadastradoPor: gestor.membroId })
-      .where(and(eq(carros.lojaId, gestor.lojaId), eq(carros.cadastradoPor, v.id)));
-    await tx
-      .update(sim)
-      .set({ responsavelId: gestor.membroId })
-      .where(and(eq(sim.lojaId, gestor.lojaId), eq(sim.responsavelId, v.id)));
+    await devolverCarteira(tx, gestor.lojaId, v.id, gestor.membroId);
     return true;
   });
   if (!feito) return { error: "Vendedor não encontrado" };
