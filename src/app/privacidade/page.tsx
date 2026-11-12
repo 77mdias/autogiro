@@ -8,6 +8,7 @@ export const metadata: Metadata = { title: "Política de privacidade" };
 
 // Texto técnico, a partir do que o app faz hoje (docs/arquitetura.md). Precisa de revisão jurídica.
 const ATUALIZADA = "12 de novembro de 2026";
+const CONTROLADOR = "William Henrique Moreira Dias, MEI, CNPJ 61.750.284/0001-28";
 
 function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
@@ -46,8 +47,8 @@ export default function PrivacidadePage() {
 
         <Secao titulo="Quem somos">
           <p>
-            O AutoGiro é um app da 77dev para garagens de carros usados: estoque, vitrine e pedidos de simulação de financiamento. A
-            77dev é a controladora dos dados da conta e da loja. Dúvidas e pedidos sobre seus dados: {contato}.
+            O AutoGiro é um app da 77dev para garagens de carros usados: estoque, vitrine e pedidos de simulação de financiamento. Quem
+            responde pelos dados da conta e da loja (o controlador) é {CONTROLADOR}. Dúvidas e pedidos sobre seus dados: {contato}.
           </p>
         </Secao>
 
@@ -90,8 +91,8 @@ export default function PrivacidadePage() {
           </p>
           <p>
             Depois da exclusão, guardamos o número do WhatsApp da loja, separado dos dados apagados, para registrar que o teste grátis
-            já foi usado e evitar que ele se repita. Os avisos de pagamento do Asaas ficam pelo prazo exigido por lei. Vendedor
-            desativado ou conta sem loja, que não entram no painel, pedem a exclusão pelo {contato}.
+            já foi usado e evitar que ele se repita. Os avisos de pagamento do Asaas ficam pelo prazo exigido por lei. Conta
+            sem loja, inclusive a de vendedor desativado, é excluída na tela de criar loja, com o mesmo botão.
           </p>
         </Secao>
 

@@ -411,8 +411,9 @@ export async function excluirConta(_prev: FormState, fd: FormData): Promise<Form
   if (!confirmouExclusao(String(fd.get("confirmacao") ?? ""))) return { error: "Digite EXCLUIR para confirmar." };
   const sub = (await getSession())?.user.id;
   const membro = await getMembro();
-  // Sem membro: já excluída (clique duplo ou outra aba).
   if (sub && membro?.papel === "vendedor") await excluirVendedor(membro);
+  // Sem membro ativo: vendedor desativado (a carteira já voltou ao gestor), conta sem loja ou exclusão repetida.
+  if (sub && !membro) await db.delete(membros).where(and(eq(membros.authUserId, sub), eq(membros.ativo, false)));
   if (sub && membro?.papel === "gestor") {
     const erro = await excluirLoja(membro.lojaId);
     if (erro) return { error: erro };
@@ -457,6 +458,8 @@ async function excluirLoja(lojaId: string): Promise<string | undefined> {
       const subs = cobranca === "assinatura" ? [loja.sub!] : await assinaturasAtivas(loja.cliente!);
       for (const sub of subs) await cancelarAssinatura(sub);
     } catch (err) {
+      // Outra aba pode ter terminado a exclusão enquanto esta cancelava: aí não há erro a mostrar.
+      if (!(await lojaExiste(lojaId))) return;
       console.error("Assinatura não cancelada no Asaas", { lojaId, err });
       return "Não deu para cancelar a assinatura no Asaas. Tente de novo em alguns minutos.";
     }
@@ -466,19 +469,30 @@ async function excluirLoja(lojaId: string): Promise<string | undefined> {
       .set({ asaasSubscriptionId: null, asaasCustomerId: null, planoStatus: "cancelado" })
       .where(eq(lojas.id, lojaId));
   }
-  const [doCarros, doPedidos, cnhs] = await Promise.all([
-    db.select({ fotos: carros.fotos }).from(carros).where(eq(carros.lojaId, lojaId)),
-    db.select({ mudancas: pedidosEdicao.mudancas }).from(pedidosEdicao).where(eq(pedidosEdicao.lojaId, lojaId)),
-    db.select({ key: sim.cnhKey }).from(sim).where(and(eq(sim.lojaId, lojaId), isNotNull(sim.cnhKey))),
-  ]);
-  // Cascata: carros, simulações, membros, convites, pedidos e vendas; testes_whatsapp.loja_id vira null.
-  await db.delete(lojas).where(eq(lojas.id, lojaId));
+  let doCarros: { fotos: string[] }[], doPedidos: { mudancas: MudancasCarro | null }[], cnhs: { key: string | null }[];
+  try {
+    [doCarros, doPedidos, cnhs] = await Promise.all([
+      db.select({ fotos: carros.fotos }).from(carros).where(eq(carros.lojaId, lojaId)),
+      db.select({ mudancas: pedidosEdicao.mudancas }).from(pedidosEdicao).where(eq(pedidosEdicao.lojaId, lojaId)),
+      db.select({ key: sim.cnhKey }).from(sim).where(and(eq(sim.lojaId, lojaId), isNotNull(sim.cnhKey))),
+    ]);
+    // Cascata: carros, simulações, membros, convites, pedidos e vendas; testes_whatsapp.loja_id vira null.
+    await db.delete(lojas).where(eq(lojas.id, lojaId));
+  } catch (err) {
+    console.error("Loja não apagada", { lojaId, err });
+    return "Não deu para terminar a exclusão. Tente de novo em alguns minutos.";
+  }
   const fotos = arquivosDaLoja(doCarros.map((c) => c.fotos), doPedidos.flatMap((p) => (p.mudancas ? [p.mudancas] : [])));
   const chavesCnh = cnhs.flatMap((c) => (c.key ? [c.key] : []));
   // A conta já sumiu: falha no R2 só vai para o log, com as chaves para limpar à mão (a CNH não tem mais
   // linha no banco, então o cron dos 90 dias não a acharia).
   await apagarDoR2(lojaId, deleteFotos, fotos);
   await apagarDoR2(lojaId, deleteCnhs, chavesCnh);
+}
+
+async function lojaExiste(lojaId: string) {
+  const [l] = await db.select({ id: lojas.id }).from(lojas).where(eq(lojas.id, lojaId)).limit(1);
+  return !!l;
 }
 
 async function apagarDoR2(lojaId: string, apagar: (keys: string[]) => Promise<string[]>, chaves: string[]) {
@@ -645,13 +659,13 @@ export async function cancelarConvite(id: string) {
   revalidatePath("/painel/vendedores");
 }
 
-/** Desativa e devolve ao gestor os carros e clientes do vendedor (senão ninguém poderia agir sobre eles). */
 /** Carros e clientes de um membro passam para outro (vendedor que sai: voltam ao gestor). */
 async function devolverCarteira(tx: Tx, lojaId: string, de: string, para: string) {
   await tx.update(carros).set({ cadastradoPor: para }).where(and(eq(carros.lojaId, lojaId), eq(carros.cadastradoPor, de)));
   await tx.update(sim).set({ responsavelId: para }).where(and(eq(sim.lojaId, lojaId), eq(sim.responsavelId, de)));
 }
 
+/** Desativa e devolve ao gestor os carros e clientes do vendedor (senão ninguém poderia agir sobre eles). */
 export async function desativarVendedor(id: string): Promise<FormState> {
   const gestor = await getMembro();
   if (gestor?.papel !== "gestor" || !uuid.safeParse(id).success) return { error: "Vendedor não encontrado" };
