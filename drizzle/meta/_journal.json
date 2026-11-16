@@ -78,6 +78,13 @@
       "when": 1794518007257,
       "tag": "0010_teste_por_whatsapp",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794823056490,
+      "tag": "0011_contas_better_auth",
+      "breakpoints": true
     }
   ]
 }

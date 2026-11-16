@@ -27,7 +27,7 @@ Acima de 20 o app não deixa convidar (`MAX_VENDEDORES`). 15 dias grátis (`TRIA
 
 A migração `0009_mensalidade` grava 14900 em toda loja que já tinha assinatura. Elas já veem o aviso em Minha loja. Depois de avisar cada loja (WhatsApp), rode `pnpm loja:prod mensalidades aplicar` antes da próxima cobrança.
 
-## Fase 1 · venda assistida (`ASAAS_CHECKOUT` vazio)
+## Fase 1 · venda assistida (`ASAAS_CHECKOUT=off`; qualquer valor diferente de `on`)
 
 Minha loja mostra "Falar com a AutoGiro" (WhatsApp em `AUTOGIRO_WHATSAPP`, só DDD + número, sem `+55`).
 
@@ -92,11 +92,11 @@ Mesmo sem data, chave sem uso é desligada ([Asaas › Chaves de API](https://do
 | 4 meses, 5 meses e 1 semana antes de vencer | Aviso por e-mail |
 | 6 meses | Expirada de vez. Crie outra |
 
-Na fase 1, o app só chama a API quando uma loja com assinatura muda de faixa (`ajustarMensalidade()`), então a chave pode ficar parada: fique de olho nos e-mails do Asaas. Chave expirada: crie outra, `criptenv set 'ASAAS_API_KEY=$aact_...' -e production -p <ID>`, sincronize com a Vercel e faça um Redeploy. O webhook não usa a chave: ativar e pausar lojas continua funcionando.
+Na fase 1, o app só chama a API quando uma loja com assinatura muda de faixa (`ajustarMensalidade()`), então a chave pode ficar parada: fique de olho nos e-mails do Asaas. Chave expirada: crie outra, `criptenv set 'ASAAS_API_KEY=$aact_...' -e production -p <ID>`, sincronize com a Cloudflare (`criptenv integrations sync --provider cloudflare --env production --direction push`); o Worker passa a usar a chave nova sem redeploy. O webhook não usa a chave: ativar e pausar lojas continua funcionando.
 
 ## Para ir para produção
 
-O passo a passo geral (Vercel, Supabase, R2, domínio) está em [deploy.md](deploy.md). Do lado do Asaas:
+O passo a passo geral (Cloudflare Worker, Supabase, R2, domínio) está em [deploy.md](deploy.md). Do lado do Asaas:
 
 
 1. Conta Asaas de produção aprovada; chave de produção em `ASAAS_API_KEY`, `ASAAS_API_URL=https://api.asaas.com/v3`.

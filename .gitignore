@@ -49,3 +49,6 @@ ruvector.db
 
 # configuração local do Claude Code
 .claude/settings.local.json
+/dist/
+.vinext/
+.cloudflare/

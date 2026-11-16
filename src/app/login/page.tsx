@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { signIn } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { getSession } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/field";
@@ -21,9 +22,19 @@ const AVISOS: Record<string, string> = {
   link: "Este link venceu ou já foi usado. Se o e-mail ainda não estiver confirmado, tente entrar: mandamos um link novo.",
 };
 
+// Erros que o retorno do Google traz em ?error= (Better Auth).
+const ERROS: Record<string, string> = {
+  account_not_linked:
+    "Este e-mail tem um cadastro com senha que ainda não foi confirmado. Abra o link que mandamos ou entre com a senha para receber um novo.",
+};
+
 async function entrarGoogle(fd: FormData) {
   "use server";
-  await signIn("google", { redirectTo: destino(fd.get("callbackUrl")) });
+  const { url } = await auth.api.signInSocial({
+    body: { provider: "google", callbackURL: destino(fd.get("callbackUrl")), errorCallbackURL: "/login" },
+    headers: await headers(),
+  });
+  if (url) redirect(url);
 }
 
 async function Login({ searchParams }: { searchParams: PageProps<"/login">["searchParams"] }) {
@@ -39,7 +50,7 @@ async function Login({ searchParams }: { searchParams: PageProps<"/login">["sear
       )}
       <form action={entrarGoogle} className="grid grid-cols-1 gap-3">
         <input type="hidden" name="callbackUrl" value={destino(callbackUrl)} />
-        {error && <FormError message="Não foi possível entrar. Tente novamente." />}
+        {error && <FormError message={(typeof error === "string" && ERROS[error]) || "Não foi possível entrar. Tente novamente."} />}
         <Button type="submit" size="lg">Entrar com Google</Button>
       </form>
       <p className="flex items-center gap-3 text-sm text-ink-3 before:h-px before:flex-1 before:bg-rule after:h-px after:flex-1 after:bg-rule">ou com e-mail</p>

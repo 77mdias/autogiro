@@ -12,3 +12,7 @@ node_modules
 ruvector.db
 *.tsbuildinfo
 docs
+.cloudflare
+.vinext
+dist
+.dev.vars*

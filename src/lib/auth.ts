@@ -1,72 +1,71 @@
 import "server-only";
-import NextAuth, { CredentialsSignin, type DefaultSession } from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import Google from "next-auth/providers/google";
-import { and, eq } from "drizzle-orm";
-import { z } from "zod";
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { nextCookies } from "better-auth/next-js";
+import { and, eq, notExists } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/lib/db";
-import { membros, usuarios } from "@/lib/db/schema";
-import { conferirSenha } from "@/lib/senha";
+import { logins, lojas, membros, sessoes, usuarios, verificacoes } from "@/lib/db/schema";
+import { conferirSenha, hashSenha } from "@/lib/senha";
 
-declare module "next-auth" {
-  interface Session {
-    user: {
-      loja_id: string | null;
-      membro_id: string | null;
-      papel: "gestor" | "vendedor" | null;
-    } & DefaultSession["user"];
-  }
-}
-
-export class EmailNaoConfirmado extends CredentialsSignin {
-  code = "nao_confirmado";
-}
-
-const credenciais = z.object({ email: z.email().trim().toLowerCase(), senha: z.string().min(1).max(200) });
-// Confere contra um hash qualquer quando o e-mail não existe: o tempo de resposta não revela quem tem conta.
-const HASH_FALSO = "scrypt:00000000000000000000000000000000:" + "0".repeat(128);
-
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [
-    Google,
-    Credentials({
-      credentials: { email: {}, senha: {} },
-      async authorize(raw) {
-        const parsed = credenciais.safeParse(raw);
-        if (!parsed.success) return null;
-        const [u] = await db.select().from(usuarios).where(eq(usuarios.email, parsed.data.email)).limit(1);
-        const ok = await conferirSenha(parsed.data.senha, u?.senhaHash ?? HASH_FALSO);
-        if (!u || !ok) return null;
-        if (!u.emailConfirmadoEm) throw new EmailNaoConfirmado();
-        // id vira token.sub; a loja liga por lojas.auth_user_id, igual ao Google
-        return { id: u.id, email: u.email };
+/**
+ * Login por Google ou e-mail e senha, com sessão no banco (tabela sessoes). Quem lê a sessão é lib/session.ts.
+ * Cadastro, confirmação e troca de senha por e-mail são nossos (login/actions.ts e lib/conta.ts); o Better Auth
+ * só confere a senha e abre a sessão.
+ */
+export const auth = betterAuth({
+  secret: process.env.AUTH_SECRET,
+  baseURL: process.env.AUTH_URL,
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    schema: { user: usuarios, account: logins, session: sessoes, verification: verificacoes },
+  }),
+  advanced: {
+    database: { generateId: "uuid" },
+    // Sem o IP real, o limite de tentativas vira um balde só para todo mundo atrás da Cloudflare.
+    ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] },
+  },
+  emailAndPassword: {
+    enabled: true,
+    disableSignUp: true,
+    requireEmailVerification: true,
+    minPasswordLength: 8,
+    maxPasswordLength: 200,
+    // Mesmo formato do Auth.js (scrypt:<salt>:<hash>): as senhas antigas continuam valendo.
+    password: { hash: hashSenha, verify: ({ hash, password }) => conferirSenha(password, hash) },
+  },
+  socialProviders: {
+    google: { clientId: process.env.AUTH_GOOGLE_ID!, clientSecret: process.env.AUTH_GOOGLE_SECRET! },
+  },
+  // Sessão conferida no banco no máximo a cada 5 min; o vínculo com a loja (membros) é lido a cada request.
+  session: { cookieCache: { enabled: true, maxAge: 5 * 60 } },
+  databaseHooks: {
+    account: {
+      create: {
+        after: async (login) => {
+          if (login.providerId === "google") await adotarContaGoogle(login.accountId, login.userId);
+        },
       },
-    }),
-  ],
-  session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
-  callbacks: {
-    // A fonte da verdade é membros.auth_user_id = sub (id do Google ou de usuarios). Consulta a cada
-    // request: o onboarding vale sem refazer login, e vendedor desativado ou com papel trocado muda na hora.
-    async jwt({ token }) {
-      if (token.sub) {
-        const [m] = await db
-          .select({ id: membros.id, lojaId: membros.lojaId, papel: membros.papel })
-          .from(membros)
-          .where(and(eq(membros.authUserId, token.sub), eq(membros.ativo, true)))
-          .limit(1);
-        token.loja_id = m?.lojaId ?? null;
-        token.membro_id = m?.id ?? null;
-        token.papel = m?.papel ?? null;
-      }
-      return token;
-    },
-    session({ session, token }) {
-      session.user.id = token.sub!;
-      session.user.loja_id = (token.loja_id as string | null | undefined) ?? null;
-      session.user.membro_id = (token.membro_id as string | null | undefined) ?? null;
-      session.user.papel = (token.papel as "gestor" | "vendedor" | null | undefined) ?? null;
-      return session;
     },
   },
+  plugins: [nextCookies()], // por último: grava os cookies de sessão nas server actions
 });
+
+const outro = alias(membros, "outro");
+const outra = alias(lojas, "outra");
+
+/**
+ * Antes do Better Auth, quem entrava pelo Google ficava em membros e lojas pelo `sub` do Google. No primeiro login
+ * depois da troca, esse vínculo passa para o id novo. Se o usuário já tiver loja pelo id (e-mail com senha
+ * de mesmo endereço), o vínculo antigo fica como está: uma conta pertence a uma loja só.
+ */
+async function adotarContaGoogle(sub: string, userId: string) {
+  await db
+    .update(membros)
+    .set({ authUserId: userId })
+    .where(and(eq(membros.authUserId, sub), notExists(db.select().from(outro).where(eq(outro.authUserId, userId)))));
+  await db
+    .update(lojas)
+    .set({ authUserId: userId })
+    .where(and(eq(lojas.authUserId, sub), notExists(db.select().from(outra).where(eq(outra.authUserId, userId)))));
+}

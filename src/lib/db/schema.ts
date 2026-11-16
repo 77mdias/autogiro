@@ -189,14 +189,72 @@ export const webhookEvents = pgTable(
   (t) => [uniqueIndex("webhook_events_provider_key_uq").on(t.provider, t.eventKey)],
 ).enableRLS();
 
-// Contas de e-mail e senha. O id vira o `sub` do Auth.js e, como no Google, liga a loja por lojas.auth_user_id.
+// Tabelas do Better Auth (lib/auth.ts). As chaves em inglês são os nomes de campo que ele espera.
+// Quem entra, por senha ou Google. O id liga a loja: membros.auth_user_id e lojas.auth_user_id.
 export const usuarios = pgTable("usuarios", {
   id: uuid("id").primaryKey().defaultRandom(),
+  name: text("nome").notNull().default(""),
   email: text("email").notNull().unique(), // sempre minúsculo
-  senhaHash: text("senha_hash").notNull(),
-  emailConfirmadoEm: timestamp("email_confirmado_em", { withTimezone: true }),
+  emailVerified: boolean("email_verificado").notNull().default(false),
+  image: text("imagem"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  // Legado do Auth.js: a migração 0011 copiou para logins.password e email_verificado. Nada lê nem grava;
+  // sai numa migração depois que esta versão estiver no ar (docs/deploy.md: remover coluna é em dois deploys).
+  senhaHash: text("senha_hash"),
+  emailConfirmadoEm: timestamp("email_confirmado_em", { withTimezone: true }),
 }).enableRLS();
+
+// Formas de entrar de cada usuário: `credential` (senha, hash scrypt de lib/senha.ts) ou `google` (account_id = sub).
+export const logins = pgTable(
+  "logins",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: uuid("user_id").notNull().references(() => usuarios.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (t) => [index("logins_user_id_idx").on(t.userId), uniqueIndex("logins_provider_account_uq").on(t.providerId, t.accountId)],
+).enableRLS();
+
+// Sessões no banco: sair ou trocar a senha encerra na hora. O cookie guarda só o token.
+export const sessoes = pgTable(
+  "sessoes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    token: text("token").notNull().unique(),
+    userId: uuid("user_id").notNull().references(() => usuarios.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (t) => [index("sessoes_user_id_idx").on(t.userId)],
+).enableRLS();
+
+// Estado do OAuth do Google enquanto a pessoa está na tela de consentimento.
+export const verificacoes = pgTable(
+  "verificacoes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  },
+  (t) => [index("verificacoes_identifier_idx").on(t.identifier)],
+).enableRLS();
 
 export const tokenEmailTipo = pgEnum("token_email_tipo", ["confirmar", "redefinir"]);
 

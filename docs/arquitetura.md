@@ -1,13 +1,13 @@
 # Arquitetura
 
-Um único app Next.js 16 (App Router) faz tudo: páginas públicas, painel da loja, API e webhooks. Não há backend separado.
+Um único app Next.js 16 (App Router) faz tudo: páginas públicas, painel da loja, API e webhooks. Não há backend separado. Ele roda num Cloudflare Worker pelo [vinext](https://vinext.dev) (a API do Next reimplementada sobre Vite): `next build` e `next dev` não são usados.
 
 ```
 Comprador ──► /loja/[slug] (vitrine) ──► /carros/[id] ──► /simular ──► POST /api/simulacoes ──► Postgres + R2 (CNH privada)
 Garagista ──► /login (Google ou e-mail) ──► /onboarding ──► /painel/{estoque,interessados,loja}
 Dono do SaaS ──► /admin (e-mail em ADMIN_EMAILS)
 Asaas ──────► POST /api/webhooks/asaas ──► lojas.plano_status
-Cron ───────► POST /api/cron/delete-expired-cnh ──► apaga CNHs vencidas no R2
+Cron do Worker (06:00 UTC) ──► apagarCnhsVencidas() ──► apaga CNHs vencidas no R2
 ```
 
 ## Rotas
@@ -15,7 +15,7 @@ Cron ───────► POST /api/cron/delete-expired-cnh ──► apaga 
 | Rota | Quem acessa | O que faz |
 |---|---|---|
 | `/` | público | Landing para garagistas |
-| `/login` | público | Entrar com Google ou com e-mail e senha (Auth.js) |
+| `/login` | público | Entrar com Google ou com e-mail e senha (Better Auth) |
 | `/cadastro` | público | Cria conta com e-mail e senha e manda o e-mail de confirmação |
 | `/privacidade` | público | Política de privacidade (estática; link na landing, na vitrine, no cadastro e no aceite da simulação) |
 | `/termos` | público | Termos de uso (estática; preços e teste lidos de `lib/plano.ts`; aceite no cadastro e ao criar a loja, link na landing) |
@@ -38,21 +38,21 @@ Cron ───────► POST /api/cron/delete-expired-cnh ──► apaga 
 | `POST /api/simulacoes` | público | Grava o lead; `loja_id` sai do carro, nunca do cliente |
 | `GET /api/simulacoes/[id]/cnh` | responsável pelo lead | Redireciona para URL assinada da CNH (5 min); 402 se plano pausado |
 | `POST /api/webhooks/asaas` | Asaas | Atualiza o plano (ver [pagamentos-asaas.md](pagamentos-asaas.md)) |
-| `POST /api/cron/delete-expired-cnh` | cron | Apaga CNHs com mais de 90 dias (Bearer `CRON_SECRET`) |
-| `/api/auth/*` | Auth.js | Login e callback do Google |
+| `/api/auth/*` | Better Auth | Callback do Google (`/api/auth/callback/google`) e rotas do Better Auth (entrar por e-mail, sessão, sair) |
 
-`src/proxy.ts` (o antigo middleware) é só uma barreira otimista: sem sessão, `/painel`, `/admin` e `/onboarding` vão para `/login`. A checagem de verdade fica em cada página e rota.
+`src/proxy.ts` (o antigo middleware) é só uma barreira otimista: sem sessão, `/painel`, `/admin` e `/onboarding` vão para `/login`. A checagem de verdade fica em cada página e rota. Ele também renova o cookie da sessão, porque as páginas não podem gravar cookie durante o render.
 
 ## Código
 
 ```
 src/
-  proxy.ts                barreira otimista de login (/painel, /admin, /onboarding) e 404 do /admin para quem não é admin
-  instrumentation.ts      migrações ao subir, só nos containers (MIGRAR_AO_SUBIR=1)
+  proxy.ts                barreira otimista de login (/painel, /admin, /onboarding), renova a sessão, 404 do /admin para quem não é admin
   lib/
-    db/schema.ts          tabelas (ver Dados)          db/migrar.ts   aplica drizzle/ ao subir
-    auth.ts               Auth.js: Google + e-mail; loja_id no token (callback jwt)
-    session.ts            getSession, getLojaId/requireLojaId (única fonte de loja_id), requireAdmin
+    db/index.ts           `db`: um cliente Postgres por pedido (escopo aberto por worker/index.ts), um só fora do Worker
+    db/schema.ts          tabelas (ver Dados)
+    auth.ts               Better Auth: Google + e-mail; adota as contas Google antigas no primeiro login
+    session.ts            getSession (usuário + membro ativo), getLojaId/requireLojaId (única fonte de loja_id), requireAdmin
+    limpeza-cnh.ts        apagarCnhsVencidas(), chamada pelo cron do Worker
     plano.ts              planoLiberado(), situacaoPlano(), resumoAssinaturas(), FAIXAS/valorPlano() (mensalidade por vendedores)
     admin.ts              ehAdmin() (ADMIN_EMAILS)
     asaas.ts              API v3 do Asaas (fetch, sem SDK)
@@ -66,8 +66,10 @@ src/
     painel/{estoque,interessados,loja}    painel da loja; painel/actions.ts tem as server actions
     admin/                                painel do dono do SaaS
     loja/[slug]/…                         vitrine, carro, simulação
-    api/                                  simulacoes, simulacoes/[id]/cnh, webhooks/asaas, cron, conta, auth
+    api/                                  simulacoes, simulacoes/[id]/cnh, webhooks/asaas, conta, auth
+worker/index.ts           entrada do Worker: escopo de banco por pedido (Hyperdrive) e o cron diário
 scripts/loja.mts          operação manual do plano (fase 1)
+scripts/primeiro-deploy.mts  primeiro deploy do Worker, com os segredos pelo stdin ([deploy.md](deploy.md))
 drizzle/                  migrações SQL geradas pelo drizzle-kit
 ```
 
@@ -77,12 +79,15 @@ Módulos de `src/lib` com testes (`*.test.ts`) rodam direto no `node --test`: n�
 
 Esquema em `src/lib/db/schema.ts`, migrações SQL em `drizzle/`.
 
-- **lojas**: `auth_user_id` (o `sub` do Google, único), `nome`, `slug` (único), `whatsapp`, `cidade`, `plano_status` (`trial | ativo | inadimplente | cancelado`), `trial_ate` (padrão `now() + 15 dias`), `asaas_customer_id` (único), `asaas_checkout_id`, `asaas_subscription_id` (único), `mensalidade_centavos` (o que a assinatura do Asaas cobra hoje; null sem assinatura).
-- **membros**: quem entra no painel. `loja_id`, `auth_user_id` (o `sub`, único: uma conta, uma loja), `papel` (`gestor | vendedor`), `nome`, `ativo`. O dono que criou a loja é o gestor.
+- **lojas**: `auth_user_id` (`usuarios.id` do dono, único; contas Google que ainda não entraram depois da troca para o Better Auth guardam o `sub` do Google), `nome`, `slug` (único), `whatsapp`, `cidade`, `plano_status` (`trial | ativo | inadimplente | cancelado`), `trial_ate` (padrão `now() + 15 dias`), `asaas_customer_id` (único), `asaas_checkout_id`, `asaas_subscription_id` (único), `mensalidade_centavos` (o que a assinatura do Asaas cobra hoje; null sem assinatura).
+- **membros**: quem entra no painel. `loja_id`, `auth_user_id` (`usuarios.id`, único: uma conta, uma loja), `papel` (`gestor | vendedor`), `nome`, `ativo`. O dono que criou a loja é o gestor.
 - **convites**: `loja_id`, `nome` (do vendedor), `token_hash` (sha256; o token só existe no link), `expira_em` (7 dias), `criado_por`. Apagado ao ser aceito.
 - **carros**: `loja_id`, marca, modelo, versão, ano, km, `preco_centavos`, cor, câmbio, combustível, descrição, `fotos` (jsonb com as chaves no R2), `status` (`disponivel | vendido`), `cadastrado_por` (membro que cadastrou).
 - **simulacoes_financiamento**: `loja_id`, `carro_id` (set null se o carro sair), nome, telefone, entrada e valor a financiar em centavos, parcelas, `consentimento_lgpd_em`, `cnh_key`, `cnh_uploaded_at`, `status` (`novo | em_contato | aprovado | recusado`), `responsavel_id` (membro dono do lead).
-- **usuarios**: contas de e-mail e senha. `email` (único, minúsculo), `senha_hash` (`scrypt:<salt>:<hash>`), `email_confirmado_em`.
+- **usuarios** (Better Auth `user`): `nome`, `email` (único, minúsculo), `email_verificado`, `imagem`. `senha_hash` e `email_confirmado_em` são legado do Auth.js, copiados pela migração 0011 e sem uso; saem numa migração seguinte.
+- **logins** (Better Auth `account`): forma de entrar de cada usuário. `provider_id` `credential` (senha em `password`, `scrypt:<salt>:<hash>`, `account_id` = id do usuário) ou `google` (`account_id` = `sub`). Único por (`provider_id`, `account_id`).
+- **sessoes** (Better Auth `session`): `token` (o cookie guarda só ele), `user_id`, `expires_at`, IP e user agent. Sair ou trocar a senha apaga as sessões.
+- **verificacoes** (Better Auth `verification`): estado do OAuth do Google durante o consentimento.
 - **tokens_email**: links dos e-mails. `usuario_id`, `tipo` (`confirmar | redefinir`), `token_hash` (sha256; o token só existe no link), `expira_em`.
 - **pedidos_edicao**: `loja_id`, `carro_id` (set null se o carro sair), `membro_id` (quem pediu), `tipo` (`editar | excluir`), `mudancas` (jsonb com os campos do carro, `fotosNovas` e `fotosRemover`), `status` (`pendente | aprovado | recusado`), `decidido_por`, `decidido_em`. Um pendente por carro (índice único parcial).
 - **vendas**: `loja_id`, `carro_id` (único; set null se o carro sair), `carro` (nome guardado), `membro_id` (quem vendeu), `valor_centavos`, `comissao_centavos` (null = não definida), `vendida_em`.
@@ -93,26 +98,14 @@ Valores em dinheiro são inteiros em centavos. RLS ligado em todas as tabelas se
 
 ## Autenticação
 
-Auth.js v5, sessão JWT (`src/lib/auth.ts`), com dois provedores:
+Better Auth (`src/lib/auth.ts`), com sessão no banco (`sessoes`) e cache assinado no cookie por 5 minutos:
 
-- **Google**: o `sub` é o id do Google.
-- **E-mail e senha** (Credentials): o `sub` é `usuarios.id`. Só entra quem confirmou o e-mail; sem confirmação, o login reenvia o link.
+- **Google**: na primeira entrada vira um `usuarios` com um `logins` `google`. Contas que vieram do Auth.js ainda têm o `sub` do Google em `membros.auth_user_id` e `lojas.auth_user_id`; no primeiro login depois da troca, o gancho `adotarContaGoogle` passa esse vínculo para o id novo.
+- **E-mail e senha**: cadastro, confirmação e troca de senha são nossos (`login/actions.ts`, `lib/conta.ts`, tokens em `tokens_email`); o Better Auth só confere a senha (scrypt de `lib/senha.ts`, o mesmo formato do Auth.js) e abre a sessão. Só entra quem confirmou o e-mail; sem confirmação, o login reenvia o link. "Esqueci a senha" também serve para quem só entra pelo Google criar uma senha.
 
-Nos dois casos a loja liga por `membros.auth_user_id = sub` (só membros ativos). O callback `jwt` procura o membro a cada request e grava `loja_id`, `membro_id` e `papel` no token: o onboarding vale sem refazer login, e um vendedor desativado perde o acesso na hora. O onboarding cria a loja e o membro gestor na mesma transação; `lojas.auth_user_id` segue como o dono da conta.
+A loja liga por `membros.auth_user_id = usuarios.id` (só membros ativos). `getSession()` (`lib/session.ts`) lê a sessão e procura o membro a cada request: o onboarding vale sem refazer login, e um vendedor desativado perde o acesso na hora. O onboarding cria a loja e o membro gestor na mesma transação; `lojas.auth_user_id` segue como o dono da conta.
 
-Contas Google e de e-mail são **separadas**, mesmo com o mesmo endereço: cada uma tem a sua loja.
-
-Fluxo de e-mail (`src/lib/conta.ts`, `src/lib/email.ts`, `src/app/login/actions.ts`):
-
-| Situação | O que acontece |
-|---|---|
-| Cadastro novo | Cria o usuário e manda "Confirme seu e-mail" (link de 24 h) |
-| Cadastro de e-mail já confirmado | Manda "Você já tem conta"; a tela responde igual, sem revelar quem é cliente |
-| Cadastro de e-mail ainda não confirmado | Troca a senha e manda um link novo (só quem abre o e-mail ativa) |
-| Login sem confirmar | Recusa e reenvia o link |
-| Esqueci a senha | Link de 1 h, uso único; salvar a senha também confirma o e-mail |
-
-Cada link novo apaga os anteriores do mesmo tipo, e só sai um e-mail por minuto por conta e tipo. Senhas com `scrypt` do Node; o login confere contra um hash falso quando o e-mail não existe, para o tempo de resposta não revelar contas.
+Google e e-mail com o mesmo endereço são **a mesma conta**: entrar pelo Google liga o Google à conta de e-mail se ela já foi confirmada. Se o cadastro por e-mail ainda não foi confirmado, o Google é recusado (`account_not_linked`) e a tela de login explica; ligar a uma conta não confirmada deixaria quem a criou entrar com a senha dela.
 
 ## Multi-tenant (isolamento entre lojas)
 
@@ -153,11 +146,13 @@ Plano pausado: as páginas do painel levam para Minha loja (`requireLojaId` com 
 - **Bucket privado** (`R2_PRIVATE_BUCKET`): CNHs. Só o dono da loja recebe uma URL assinada de 5 minutos. Apagadas pelo cron após 90 dias (prazo a confirmar com o jurídico).
 - Uploads até 5 MB, tipo conferido pelos bytes do arquivo (`files.ts`), não pela extensão.
 
-## Renderização (Next 16)
+## Renderização e execução (vinext no Worker)
 
-- `cacheComponents: true` e `partialPrefetching: true`. Dados de sessão ficam atrás de `connection()` em `getSession()`.
-- Toda página que lê dados tem o seu `loading.tsx` (painel, vitrine, carro, simulação): na navegação, o `<Suspense>` do layout pai não cobre a página nova e o Next acusa "uncached data".
-- Migrações: nos containers, `src/instrumentation.ts` aplica as pendentes ao subir; na Vercel, o build de produção aplica antes do `next build` ([deploy.md](deploy.md)).
+- O vinext renderiza cada página a cada pedido; não há cache de páginas (`--cdn-cache=none`). `cacheComponents` saiu: o suporte no vinext é incompleto e nada aqui usa `"use cache"`.
+- `loading.tsx` por página continua: é o que aparece durante a navegação.
+- Banco: no Worker, uma conexão não pode passar de um pedido para outro. `worker/index.ts` abre um escopo por pedido (`pedidoDb`) com a URL do Hyperdrive, e `db` cria o cliente na primeira consulta. Fora do Worker (scripts, migrações) vale um cliente só.
+- Migrações: o container de dev aplica as pendentes ao subir (CMD do `Dockerfile`); em produção, o GitHub Actions aplica antes do deploy ([deploy.md](deploy.md)).
+- `next/image`: otimizado pelo Cloudflare Images (binding `IMAGES`).
 - Server actions em `src/app/painel/actions.ts`, todas escopadas por `loja_id`.
 - PWA: `public/sw.js`, `public/offline.html`, `manifest.ts`.
 
