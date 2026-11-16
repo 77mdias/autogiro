@@ -2,6 +2,12 @@
 
 Mais recentes primeiro. Cada uma: o que foi decidido e por quê.
 
+## 2026-11-15 · Foro, reembolso e limite de responsabilidade nos termos
+Jean e William escolheram entre três opções de cada (texto em `/termos`, ainda sem revisão jurídica). Muitos garagistas são MEI ou lojas pequenas, e o CDC tende a valer para eles; por isso cada cláusula tem a ressalva legal.
+- **Foro:** comarca da sede do MEI responsável, salvo quando a lei garantir à loja o foro do domicílio dela; antes, tentar resolver pelo WhatsApp. Descartadas: domicílio da loja (a AutoGiro responderia em outro estado) e sem foro escolhido.
+- **Reembolso:** sem devolução proporcional; a loja usa até o fim do período pago. Exceção: arrependimento em até 7 dias da primeira cobrança, com devolução integral (CDC art. 49). Descartadas: reembolso proporcional (estorno manual a cada caso) e garantia de 30 dias (somada aos 15 dias grátis, quase 45 dias sem risco).
+- **Limite:** teto no que a loja pagou nos 12 meses anteriores, sem lucro cessante nem dano indireto, salvo dolo, culpa grave ou quando a lei não permitir. Descartadas: teto de 3 meses (mais chance de ser abusiva) e só delimitação sem teto.
+
 ## 2026-11-12 · Excluir conta guarda só o WhatsApp
 O garagista exclui a própria conta em Minha loja. Do gestor, some a loja inteira; do vendedor, a carteira volta ao gestor.
 - Fica só a chave do WhatsApp em `testes_whatsapp`, sem ligação com a loja, para o teste grátis não se repetir (prevenção de fraude, dito na política de privacidade), e os eventos de pagamento do Asaas.
