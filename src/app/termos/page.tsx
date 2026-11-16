@@ -6,12 +6,12 @@ import { FAIXAS, MAX_VENDEDORES, TRIAL_DIAS } from "@/lib/plano";
 export const metadata: Metadata = { title: "Termos de uso" };
 
 // Texto técnico, a partir do que o app faz hoje (docs/pagamentos-asaas.md, docs/arquitetura.md).
-// Precisa de revisão jurídica: foro, reembolso e limites de responsabilidade ficaram para ela.
+// Foro, reembolso e limite: opções escolhidas pelo Jean e pelo William em 2026-11-15 (docs/decisoes.md). Precisa de revisão jurídica.
 export default function TermosPage() {
   const contato = <ContatoAutoGiro mensagem="Olá! Tenho uma dúvida sobre os termos de uso do AutoGiro." />;
 
   return (
-    <PaginaLegal titulo="Termos de uso" atualizada="12 de novembro de 2026">
+    <PaginaLegal titulo="Termos de uso" atualizada="15 de novembro de 2026">
       <Secao titulo="Sobre estes termos">
         <p>
           O AutoGiro é desenvolvido pela 77mdevseven. O responsável pelo AutoGiro é {RESPONSAVEL}. Ao criar uma conta, você
@@ -76,6 +76,17 @@ export default function TermosPage() {
         </p>
       </Secao>
 
+      <Secao titulo="Reembolso">
+        <p>
+          Ao cancelar, a loja usa o AutoGiro até o fim do período já pago, e não há devolução proporcional dos dias que sobram.
+        </p>
+        <p>
+          A exceção é a primeira cobrança: em até 7 dias depois dela, a loja pode desistir e receber o valor de volta por inteiro,
+          como garante o Código de Defesa do Consumidor para contratações pela internet. Para pedir, fale com a AutoGiro pelo{" "}
+          {contato}.
+        </p>
+      </Secao>
+
       <Secao titulo="O que a loja se compromete a fazer">
         <ul className="grid list-disc gap-1 pl-5">
           <li>Anunciar carros que existem, com preço, ano, quilometragem e fotos verdadeiros.</li>
@@ -93,6 +104,26 @@ export default function TermosPage() {
         <p>
           Manter o app funcionando e os dados guardados com cuidado, como descrito na política de privacidade. O app pode ficar fora
           do ar por manutenção ou falha de fornecedores; nesses casos, trabalhamos para voltar o quanto antes.
+        </p>
+      </Secao>
+
+      <Secao titulo="Limite de responsabilidade">
+        <p>
+          A AutoGiro não responde pela venda entre a loja e o comprador, pela aprovação ou recusa de crédito, pelo conteúdo e pelas
+          fotos que a loja publica, nem por lucros que a loja deixou de ter ou outros danos indiretos, como uma venda perdida
+          enquanto o app esteve fora do ar.
+        </p>
+        <p>
+          Em qualquer caso, o valor de uma indenização da AutoGiro fica limitado ao que a loja pagou nos 12 meses anteriores ao
+          fato. Esses limites não valem em caso de dolo ou culpa grave, nem quando a lei não permitir limitar a responsabilidade.
+        </p>
+      </Secao>
+
+      <Secao titulo="Conflitos e foro">
+        <p>
+          Antes de tudo, fale com a AutoGiro pelo {contato}: a maioria dos problemas se resolve assim. Se for preciso ir à
+          Justiça, fica escolhido o foro da comarca de Presidente Prudente (SP), sede do responsável pelo AutoGiro, salvo quando a
+          lei garantir à loja o direito de usar o foro do domicílio dela.
         </p>
       </Secao>
 
