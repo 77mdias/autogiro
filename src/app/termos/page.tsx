@@ -122,8 +122,8 @@ export default function TermosPage() {
       <Secao titulo="Conflitos e foro">
         <p>
           Antes de tudo, fale com a AutoGiro pelo {contato}: a maioria dos problemas se resolve assim. Se for preciso ir à
-          Justiça, fica escolhido o foro da comarca da sede do responsável pelo AutoGiro (o MEI indicado no início destes termos),
-          salvo quando a lei garantir à loja o direito de usar o foro do domicílio dela.
+          Justiça, fica escolhido o foro da comarca de Presidente Prudente (SP), sede do responsável pelo AutoGiro, salvo quando a
+          lei garantir à loja o direito de usar o foro do domicílio dela.
         </p>
       </Secao>
 
