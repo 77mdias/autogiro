@@ -8,7 +8,7 @@ import { usarToken } from "@/lib/conta";
 export async function GET(request: Request) {
   const token = new URL(request.url).searchParams.get("token") ?? "";
   const usuarioId = token ? await usarToken(token, "confirmar") : null;
-  if (usuarioId) await db.update(usuarios).set({ emailConfirmadoEm: new Date() }).where(eq(usuarios.id, usuarioId));
+  if (usuarioId) await db.update(usuarios).set({ emailVerified: true }).where(eq(usuarios.id, usuarioId));
   const base = process.env.APP_BASE_URL ?? new URL(request.url).origin;
   return Response.redirect(`${base}/login?aviso=${usuarioId ? "confirmado" : "link"}`, 303);
 }

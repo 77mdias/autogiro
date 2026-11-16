@@ -12,10 +12,3 @@ export function safeEqual(a: string, b: string): boolean {
 export function verifyToken(token: string | null, secret: string | undefined): boolean {
   return !!token && !!secret && safeEqual(token, secret);
 }
-
-/** Valida "Authorization: Bearer <token>" em tempo constante. */
-export function verifyBearer(header: string | null, secret: string | undefined): boolean {
-  if (!header) return false;
-  const token = header.replace(/^Bearer\s+/i, "");
-  return token !== header && verifyToken(token, secret);
-}

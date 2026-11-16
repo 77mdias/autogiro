@@ -1,19 +1,49 @@
 import "server-only";
-import { connection } from "next/server";
+import { cache } from "react";
+import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { lojas } from "@/lib/db/schema";
+import { lojas, membros } from "@/lib/db/schema";
 import { planoLiberado } from "@/lib/plano";
 import { ehAdmin } from "@/lib/admin";
 
-// Auth.js regrava o cookie da sessão (crypto aleatório); connection() marca o render como
-// dinâmico antes disso, senão o Cache Components acusa valor instável no prerender.
-export async function getSession() {
-  await connection();
-  return auth();
-}
+export type Sessao = {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    loja_id: string | null;
+    membro_id: string | null;
+    papel: "gestor" | "vendedor" | null;
+  };
+};
+
+/**
+ * Quem está logado e a loja dele. A fonte da verdade é membros.auth_user_id = id do usuário, lida a cada request:
+ * o onboarding vale sem refazer login, e vendedor desativado ou com papel trocado muda na hora.
+ * `cache`: layout e página do mesmo render consultam uma vez só.
+ */
+export const getSession = cache(async (): Promise<Sessao | null> => {
+  const s = await auth.api.getSession({ headers: await headers() });
+  if (!s) return null;
+  const [m] = await db
+    .select({ id: membros.id, lojaId: membros.lojaId, papel: membros.papel })
+    .from(membros)
+    .where(and(eq(membros.authUserId, s.user.id), eq(membros.ativo, true)))
+    .limit(1);
+  return {
+    user: {
+      id: s.user.id,
+      email: s.user.email,
+      name: s.user.name,
+      loja_id: m?.lojaId ?? null,
+      membro_id: m?.id ?? null,
+      papel: m?.papel ?? null,
+    },
+  };
+});
 
 /**
  * Único ponto de onde o loja_id deve vir em código autenticado.

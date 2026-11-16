@@ -6,30 +6,28 @@ O app só roda em container, com os segredos do Criptenv ([segredos.md](segredos
 
 ```bash
 pnpm install                         # no host, só para editor, testes, lint e typecheck
-pnpm docker:up                       # http://localhost:3000, com hot reload
-pnpm docker:exec pnpm db:migrate     # aplica drizzle/*.sql no Supabase (DATABASE_URL_DIRECT)
+pnpm docker:up                       # http://localhost:3000, com hot reload; aplica as migrações ao subir
 ```
 
 ### Hot reload no container
 
-`pnpm docker:up` sobe o alvo `dev` do `Dockerfile` (`next dev`) pelo `compose.dev.yaml`, com o [Compose Watch](https://docs.docker.com/compose/how-tos/file-watch/):
+`pnpm docker:up` sobe o `Dockerfile` pelo `compose.dev.yaml`, com o [Compose Watch](https://docs.docker.com/compose/how-tos/file-watch/). O container aplica as migrações pendentes e roda `vite dev`: o vinext com o plugin da Cloudflare executa o app no **workerd**, o mesmo runtime da produção. Os segredos declarados em `cloudflare.config.ts` vêm do ambiente do container (Criptenv); o Hyperdrive, no dev, conecta direto no `DATABASE_URL`.
 
-- Salvou algo em `src/`, `public/`, `drizzle/` ou `scripts/`: o arquivo é copiado para o container e o Next recarrega a página.
-- `next.config.ts` ou `tsconfig.json`: copia e reinicia o container.
+- Salvou algo em `src/`, `public/` ou `scripts/`: o arquivo é copiado para o container e o vite recarrega a página.
+- `worker/`, `drizzle/`, `next.config.ts`, `vite.config.ts`, `cloudflare.config.ts` ou `tsconfig.json`: copia e reinicia o container (migração nova é aplicada ao subir).
 - `package.json` ou `pnpm-lock.yaml`: refaz a imagem (dependência nova entra sozinha).
 
-O container não monta a pasta do projeto: ele recebe cópias e não consegue escrever nos arquivos do host. O cache do Turbopack fica no volume `next-dev`. `Ctrl+C` para o watch; `docker compose -f compose.dev.yaml down` derruba o container.
+O container não monta a pasta do projeto: ele recebe cópias e não consegue escrever nos arquivos do host. `Ctrl+C` para o watch; `docker compose -f compose.dev.yaml down` derruba o container.
 
-Para testar a imagem de produção (standalone, sem hot reload): `pnpm docker:prod`. Ela usa o mesmo serviço e a mesma porta e substitui o container de dev.
+O primeiro acesso a cada página demora (o vite compila sob demanda); depois é rápido. Para testar o Worker construído: `pnpm docker:exec pnpm build` e `pnpm docker:exec pnpm preview` ([deploy.md](deploy.md)).
 
 ## Scripts
 
 | Comando | O que faz |
 |---|---|
 | `pnpm docker:up` | Container de dev com hot reload e os segredos do Criptenv (credenciais do chaveiro) |
-| `pnpm docker:prod` | Imagem de produção (standalone) com os mesmos segredos |
 | `pnpm docker:exec <comando>` | Roda o comando dentro do container de dev, com os segredos |
-| `pnpm lint` / `pnpm test` / `pnpm typecheck` | No host; não precisam de segredo (`typecheck` gera os tipos das rotas com `next typegen` antes do `tsc`) |
+| `pnpm lint` / `pnpm test` / `pnpm typecheck` / `pnpm build` | No host; não precisam de segredo (`typecheck` gera os tipos das rotas com `next typegen` e os do Worker com `cf workers types` antes do `tsc`) |
 | `pnpm db:generate` | Gera migração a partir do `schema.ts` (no host, sem segredo) |
 | `pnpm docker:exec pnpm db:migrate` | Aplica as migrações |
 | `pnpm docker:exec pnpm loja listar \| liberar <slug> [cus_...] \| pausar <slug>` | Operação manual do plano (fase 1), no banco de dev |
@@ -43,9 +41,9 @@ Todas listadas e comentadas em `.env.example`, e cadastradas no Criptenv (um con
 | Variável | Dev (ngrok) | Produção |
 |---|---|---|
 | `APP_BASE_URL` | `https://<dominio>.ngrok-free.dev` (com `https://`, sem barra no fim) | domínio final |
-| `AUTH_URL` | igual ao `APP_BASE_URL` | opcional |
+| `AUTH_URL` | igual ao `APP_BASE_URL` | igual ao `APP_BASE_URL` (obrigatório: é a `baseURL` do Better Auth) |
 | `ASAAS_API_URL` | Sandbox | produção |
-| `ASAAS_CHECKOUT` | `on` para testar a fase 2 | vazio na fase 1 |
+| `ASAAS_CHECKOUT` | `on` para testar a fase 2 | `off` na fase 1 (sem valor, o deploy recusa) |
 | `EMAIL_FROM` | `AutoGiro <nao-responda@77mdevseven.tech>` | o mesmo, ou um domínio próprio do AutoGiro quando existir |
 
 ## ngrok (túnel em dev)
@@ -57,30 +55,32 @@ Instalado em `~/.local/bin/ngrok`, authtoken em `~/.config/ngrok/ngrok.yml`. Dom
 3. No Google Cloud, o domínio está nas origens JavaScript e o callback `https://<dominio>/api/auth/callback/google` nos redirecionamentos (adicionados, sem apagar os de `localhost`).
 4. O webhook do Asaas Sandbox aponta para `https://<dominio>/api/webhooks/asaas`.
 
-`next.config.ts` libera os domínios do ngrok em `allowedDevOrigins`.
+`vite.config.ts` aceita os domínios do ngrok (`server.allowedHosts`) e `next.config.ts` os libera em `allowedDevOrigins`.
 
 ## Migrações
 
 Altere `src/lib/db/schema.ts` e rode `pnpm db:generate` **no host** (só compara o schema com `drizzle/meta`, sem banco nem segredo; precisa de terminal interativo quando pergunta sobre renomear coluna). Não há passo manual depois:
 
-- **Dev:** o watch leva o SQL novo de `drizzle/` para o container, que reinicia e aplica as migrações ao subir (`MIGRAR_AO_SUBIR=1`, `src/instrumentation.ts`). Se a migração falhar, o container não sobe e o erro aparece no log.
-- **Produção:** depois do merge na `main`, o build da Vercel aplica as migrações antes do `next build` ([deploy.md](deploy.md)).
+- **Dev:** o watch leva o SQL novo de `drizzle/` para o container, que reinicia e aplica as migrações ao subir (`pnpm db:migrate` no CMD do `Dockerfile`). Se a migração falhar, o container não sobe e o erro aparece no log.
+- **Produção:** depois do merge na `main`, o GitHub Actions aplica as migrações antes do deploy do Worker ([deploy.md](deploy.md)).
 - **Esqueceu o `db:generate`?** O CI do PR falha no passo "Schema sem migração pendente".
 
-`pnpm docker:exec pnpm db:migrate` continua disponível para aplicar na mão. O Supabase de dev já tem todas, até `0003_conta_email`.
+`pnpm docker:exec pnpm db:migrate` continua disponível para aplicar na mão. Migração com dados (como a `0011`, que passa as contas para o Better Auth) leva o SQL escrito à mão no fim do arquivo gerado.
 
 ## Armadilhas conhecidas
 
 - **Chave do Asaas começa com `$`.** No Criptenv guarde o valor real, sem barra: `criptenv set 'ASAAS_API_KEY=$aact_...'` (aspas simples, para o shell não expandir o `$`).
 - **`pnpm docker:exec` fora de um terminal** (agente, script): use `docker compose -f compose.dev.yaml exec -T app entrypoint.sh <comando>`; sem `-T` o Compose pede um TTY.
-- **Login quebrado com 500 sem corpo em `/api/auth/*`.** O `AUTH_URL` não é uma URL válida (falta `https://`, tem aspas, espaço ou comentário colado). O `next-auth` faz `new URL(AUTH_URL)` sem tratar o erro. Vale para qualquer ambiente; na Vercel, corrija e faça Redeploy.
+- **`AUTH_URL` exato** (`https://`, sem barra, aspas, espaço ou comentário): é a `baseURL` do Better Auth e a origem aceita nos POSTs de `/api/auth/*`. No dev, entrar por `localhost` com `AUTH_URL` do ngrok faz o Better Auth recusar a origem: abra pelo domínio do ngrok.
 - **`redirect_uri_mismatch` no Google pelo ngrok.** Faltou `AUTH_URL` com o domínio do ngrok.
-- **Erro "uncached data during prerendering or a navigation".** A página do painel precisa do seu próprio `loading.tsx`.
+- **`import { env } from "cloudflare:workers"`** só existe no Worker; o `next dev` não roda mais este app. Use `pnpm docker:up`.
+- **Conexão de banco global** quebra no Worker ("Cannot perform I/O on behalf of a different request"): sempre pelo `db` de `src/lib/db`, que é por pedido.
+- **`pnpm deploy`** sem `run` é um comando do próprio pnpm; o script é `pnpm run deploy`.
 - **`AUTOGIRO_WHATSAPP`** sem `+55`: o app acrescenta o 55.
 - **Conexão direta do Supabase** (`db.<ref>.supabase.co`) é só IPv6; use o session pooler nas migrações.
 
 ## Git
 
-Branch por mudança → PR → CI (GitHub Actions) e prévia da Vercel → merge na `main` → deploy de produção automático ([deploy.md](deploy.md)).
+Branch por mudança → PR → CI (GitHub Actions) → merge na `main` → migrações e deploy do Worker pelo GitHub Actions ([deploy.md](deploy.md)).
 
 Branch `main`, remoto `origin` (`github.com/77mdias/autogiro`). `.env*` ignorado, exceto `.env.example`.

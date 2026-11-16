@@ -11,9 +11,6 @@ export function arquivosDaLoja(fotosCarros: string[][], pedidos: Pick<MudancasCa
   return [...new Set([...fotosCarros.flat(), ...pedidos.flatMap((p) => p.fotosNovas)])];
 }
 
-/** O `sub` da sessão é o id (UUID) de `usuarios` na conta de e-mail; no Google é numérico. */
-export const contaDeEmail = (sub: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sub);
-
 /**
  * O que cancelar no Asaas antes de apagar a loja. Na fase 1 a loja é liberada com o cliente (`cus_`) e o id
  * da assinatura só chega na cobrança seguinte: aí cancela as assinaturas ativas do cliente. Paga sem

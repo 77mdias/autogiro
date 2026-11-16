@@ -2,9 +2,9 @@
 
 PWA mobile-first para garagistas: estoque pelo celular, vitrine pública por loja e simulações de financiamento com CNH. A loja paga pelo Asaas uma mensalidade pelo tamanho da equipe (R$ 59 a R$ 169), com 15 dias grátis.
 
-Produção na Vercel, migrando para **https://autogiro.wdias.tech**; até a troca terminar ([deploy.md](docs/deploy.md), passos 6 e 7), o app responde em `autogiro.77mdevseven.tech`. O que está pronto e o que falta: [docs/produto/estado.md](docs/produto/estado.md).
+Produção em **https://autogiro.wdias.tech**, passando da Vercel para um Cloudflare Worker ([deploy.md](docs/deploy.md)). O que está pronto e o que falta: [docs/produto/estado.md](docs/produto/estado.md).
 
-Next.js 16 (App Router, Cache Components) · TypeScript · Tailwind v4 + shadcn/ui · Drizzle + Supabase Postgres · Auth.js (Google e e-mail) · Cloudflare R2 · Asaas · Resend · segredos no Criptenv.
+Next.js 16 (App Router) sobre vinext num Cloudflare Worker · TypeScript · Tailwind v4 + shadcn/ui · Drizzle + Supabase Postgres (Hyperdrive) · Better Auth (Google e e-mail) · Cloudflare R2 · Asaas · Resend · segredos no Criptenv.
 
 ## Rodar
 
@@ -20,7 +20,7 @@ Primeira vez: configure o Criptenv e o chaveiro ([docs/segredos.md](docs/segredo
 
 ## Trabalhar
 
-Branch → PR → CI (GitHub Actions) e prévia da Vercel → merge na `main` → produção. A `main` é protegida: só entra por PR com o CI verde. Mudou o schema? `pnpm db:generate` e commite `drizzle/`; a migração se aplica sozinha no container e no deploy.
+Branch → PR → CI (GitHub Actions) → merge na `main` → migrações e deploy do Worker. A `main` é protegida: só entra por PR com o CI verde. Mudou o schema? `pnpm db:generate` e commite `drizzle/`; a migração se aplica sozinha no container e no deploy.
 
 ## Documentação
 

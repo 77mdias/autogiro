@@ -1,9 +1,18 @@
 import "server-only";
 import { and, eq, gt } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { tokensEmail } from "@/lib/db/schema";
+import { logins, tokensEmail } from "@/lib/db/schema";
 import { emailConfirmacao, emailRedefinicao } from "@/lib/email";
-import { hashToken, novoToken } from "@/lib/senha";
+import { hashSenha, hashToken, novoToken } from "@/lib/senha";
+
+/** Grava a senha do usuário (login `credential` do Better Auth, account_id = id do usuário); cria se não houver. */
+export async function gravarSenha(usuarioId: string, senha: string) {
+  const password = await hashSenha(senha);
+  await db
+    .insert(logins)
+    .values({ userId: usuarioId, accountId: usuarioId, providerId: "credential", password })
+    .onConflictDoUpdate({ target: [logins.providerId, logins.accountId], set: { password, updatedAt: new Date() } });
+}
 
 const PRAZO = { confirmar: 24 * 60 * 60_000, redefinir: 60 * 60_000 };
 // Um e-mail por minuto por conta e tipo: segura reenvios em sequência (não é rate limit por IP).

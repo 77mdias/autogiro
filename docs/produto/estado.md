@@ -2,13 +2,13 @@
 
 O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md), [SRS](srs.md), [fluxos](fluxos.md), [briefing](briefing.md)) e o que falta. **Atualize este arquivo a cada entrega.**
 
-Última revisão: 2026-11-06. No ar na Vercel, migrando de `autogiro.77mdevseven.tech` para `https://autogiro.wdias.tech` (passos 6 e 7 de [deploy.md](../deploy.md)).
+Última revisão: 2026-11-16. Código pronto para rodar num Cloudflare Worker (vinext) com login pelo Better Auth; a produção continua na Vercel até a [virada](../deploy.md#virada-da-vercel-uma-vez).
 
 ## Pronto
 
 | Área | O que tem | Onde ver |
 |---|---|---|
-| Conta | Login com Google ou e-mail e senha; confirmação por e-mail; "Esqueci a senha"; excluir a conta em Minha loja (guarda só o WhatsApp) | [arquitetura.md › Autenticação](../arquitetura.md#autenticação) |
+| Conta | Login com Google ou e-mail e senha (Better Auth, sessão no banco); confirmação por e-mail; "Esqueci a senha" (também cria senha para quem só usa Google); excluir a conta em Minha loja (guarda só o WhatsApp) | [arquitetura.md › Autenticação](../arquitetura.md#autenticação) |
 | Loja | Onboarding (nome + WhatsApp), slug fixo, dados editáveis em Minha loja | `/onboarding`, `/painel/loja` |
 | Estoque | Cadastrar, editar, marcar vendido, excluir, até 15 fotos, compartilhar o link do carro e da vitrine | `/painel/estoque` |
 | Vitrine | Lista da loja com filtro (disponíveis, vendidos) e busca; vendidos aparecem marcados | `/loja/[slug]` |
@@ -19,7 +19,7 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 | Plano | Mensalidade por vendedores ativos (R$ 59, 99, 139 ou 169), 15 dias grátis sem cartão, um por WhatsApp; assinatura muda de valor ao mudar de faixa; venda assistida (fase 1) e checkout de cartão (fase 2); bloqueio por atraso via webhook | [pagamentos-asaas.md](../pagamentos-asaas.md) |
 | Administrador | MRR, lojas por situação do plano, carros e simulações por loja | `/admin` ([arquitetura.md](../arquitetura.md#rotas)) |
 | LGPD | CNH em bucket privado, link de 5 min só para a loja, cron apaga após 90 dias | [arquitetura.md › Arquivos](../arquitetura.md#arquivos-cloudflare-r2) |
-| Plataforma | PWA, multi-tenant por `loja_id`, segredos no Criptenv, dev em Docker com hot reload, CI nos PRs, deploy na Vercel com migração automática | [deploy.md](../deploy.md) |
+| Plataforma | PWA, multi-tenant por `loja_id`, segredos no Criptenv, dev em Docker com hot reload, CI nos PRs, deploy no Cloudflare Worker (vinext) pelo GitHub Actions com migração antes | [deploy.md](../deploy.md) |
 | Landing | Página simples para o garagista: como funciona, funções, vantagens, preço e perguntas | [decisoes.md](../decisoes.md) |
 
 ## Diferente da especificação (de propósito)
@@ -40,7 +40,9 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 - [ ] **Revisão jurídica da política de privacidade e dos termos de uso** (`/privacidade` e `/termos`, publicados em 2026-11-12 com texto técnico; os termos não têm foro, regra de reembolso nem limite de responsabilidade; controlador: William Henrique Moreira Dias, MEI, CNPJ 61.750.284/0001-28).
 - [ ] **Prazo de guarda da CNH** definido com o jurídico. Hoje: só o arquivo é apagado, em 90 dias; o lead fica. O SRS (REQ-010) fala em apagar CNH **e** lead (ex.: 30 dias).
 - [ ] **Limite de envios** (rate limit ou captcha, ex.: Cloudflare Turnstile) no `POST /api/simulacoes`, que é público.
-- [ ] **Cron de produção**: Worker apontando para o domínio de produção com o `CRON_SECRET` de `production` ([deploy.md › Cron](../deploy.md#cron-limpeza-das-cnhs)).
+- [ ] **Virada para a Cloudflare** ([deploy.md › Virada](../deploy.md#virada-da-vercel-uma-vez)): Hyperdrive, segredos de produção (`ASAAS_CHECKOUT=off`), primeiro deploy, DNS, conferir login com e-mail e com Google, apagar o Worker antigo do cron. O cron passa a ser do próprio Worker.
+- [ ] Remover `usuarios.senha_hash` e `usuarios.email_confirmado_em` numa migração depois da virada (legado do Auth.js).
+- [ ] Prévia por PR no Worker: precisa de Hyperdrive de dev e segredos por modo; hoje não há prévia.
 
 **Validar em produção**
 - [ ] Fluxo completo no ar: cadastro, onboarding, foto no R2 de produção, simulação com CNH, Ver CNH.
@@ -57,6 +59,8 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 - Carros marcados como vendidos antes do passo 5 não têm venda registrada (não havia valor nem vendedor para preencher).
 
 **Melhorias conhecidas**
+- [ ] O cron do Worker não foi disparado em teste local (o plugin da Cloudflare v2 beta não expõe o gatilho manual no dev); conferir nos logs do Worker o primeiro `CNHs apagadas: N` depois da virada.
+- [ ] vinext, `@cloudflare/vite-plugin` v2 e `cf` são novos (betas no caso dos dois últimos): fixar versões e atualizar com teste.
 - [ ] `favicon.ico` responde 404 (o ícone do app existe em `src/app/icon.png`).
 - [ ] Fotos em WebP (REQ-004).
 - [ ] Testes de ponta a ponta automatizados (hoje a validação no navegador é manual, com a conta de teste).

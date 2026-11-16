@@ -2,39 +2,41 @@
 #
 #   pnpm docker:up     (= docker compose -f compose.dev.yaml up --build --watch, credenciais do chaveiro)
 #
-# O Compose Watch copia para o container o que você edita no host; o next dev recarrega na hora.
-# Mudou package.json ou pnpm-lock.yaml: a imagem é refeita sozinha. Mudou next.config.ts ou drizzle/: o container
-# reinicia (e as migrações novas são aplicadas ao subir, por src/instrumentation.ts).
-# Mesmo projeto e serviço do compose.yaml: subir um substitui o outro na porta 3000.
+# O Compose Watch copia para o container o que você edita no host; o vite recarrega na hora.
+# Mudou package.json ou pnpm-lock.yaml: a imagem é refeita sozinha. Mudou a configuração (vite, cloudflare, next)
+# ou drizzle/: o container reinicia, e as migrações novas são aplicadas ao subir (CMD do Dockerfile).
 services:
   app:
-    build:
-      context: .
-      target: dev
+    build: .
     image: autogiro:dev
-    init: true
+    init: true # tini como PID 1: repassa SIGTERM e recolhe processos
     ports:
       - "3000:3000"
     environment:
+      # Projeto `autogiro` no Criptenv (`criptenv projects list`); o ID não é segredo.
       CRIPTENV_PROJECT: ${CRIPTENV_PROJECT:-659a2c2d-a35d-4801-b83e-b3d4d757362b}
       CRIPTENV_ENV: ${CRIPTENV_ENV:-development}
-      MIGRAR_AO_SUBIR: "1" # aplica migrações pendentes ao subir (src/instrumentation.ts)
+    # As duas credenciais vêm do shell (do chaveiro, por docker/compose.sh) e entram como Docker secrets em
+    # /run/secrets: não aparecem em `docker inspect` nem no ambiente do app. Veja docs/segredos.md.
     secrets:
       - criptenv_api_key
       - criptenv_vault_password
+    # Sem read_only: o Compose grava os secrets vindos do shell dentro do container, e no modo só
+    # leitura ele só aceita secrets de arquivo do host (justamente o que não queremos).
     tmpfs:
       - /tmp # sessão temporária do criptenv
-    volumes:
-      - next-dev:/app/.next # cache do Turbopack entre reinícios
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     develop:
       watch:
         - { action: sync, path: ./src, target: /app/src }
         - { action: sync, path: ./public, target: /app/public }
+        - { action: sync+restart, path: ./worker, target: /app/worker }
         - { action: sync+restart, path: ./drizzle, target: /app/drizzle } # migração nova: reinicia e aplica
         - { action: sync, path: ./scripts, target: /app/scripts }
         - { action: sync+restart, path: ./next.config.ts, target: /app/next.config.ts }
+        - { action: sync+restart, path: ./vite.config.ts, target: /app/vite.config.ts }
+        - { action: sync+restart, path: ./cloudflare.config.ts, target: /app/cloudflare.config.ts }
         - { action: sync+restart, path: ./tsconfig.json, target: /app/tsconfig.json }
         - { action: sync, path: ./drizzle.config.ts, target: /app/drizzle.config.ts }
         - { action: rebuild, path: ./package.json }
@@ -45,6 +47,3 @@ secrets:
     environment: CRIPTENV_API_KEY
   criptenv_vault_password:
     environment: CRIPTENV_VAULT_PASSWORD
-
-volumes:
-  next-dev:

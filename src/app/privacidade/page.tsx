@@ -9,7 +9,7 @@ export default function PrivacidadePage() {
   const contato = <ContatoAutoGiro mensagem="Olá! Tenho um pedido sobre meus dados no AutoGiro." />;
 
   return (
-    <PaginaLegal titulo="Política de privacidade" atualizada="12 de novembro de 2026">
+    <PaginaLegal titulo="Política de privacidade" atualizada="16 de novembro de 2026">
       <Secao titulo="Quem somos">
         <p>
           O AutoGiro é um app para garagens de carros usados (estoque, vitrine e pedidos de simulação de financiamento),
@@ -44,8 +44,8 @@ export default function PrivacidadePage() {
 
       <Secao titulo="Com quem os dados ficam">
         <p>
-          Usamos fornecedores para hospedar e operar o app: Vercel (hospedagem), Supabase (banco de dados), Cloudflare (fotos e
-          CNHs), Resend (e-mails da conta), Asaas (cobrança) e Google (entrar com Google). Não vendemos dados.
+          Usamos fornecedores para hospedar e operar o app: Cloudflare (hospedagem, fotos e CNHs), Supabase (banco de
+          dados), Resend (e-mails da conta), Asaas (cobrança) e Google (entrar com Google). Não vendemos dados.
         </p>
       </Secao>
 

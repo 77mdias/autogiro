@@ -2,6 +2,16 @@
 
 Mais recentes primeiro. Cada uma: o que foi decidido e por quê.
 
+## 2026-11-16 · Produção num Cloudflare Worker (vinext), login pelo Better Auth
+Sai a Vercel, entra a Cloudflare: o app inteiro num Worker pelo [vinext](https://vinext.dev), a reimplementação da API do Next.js 16 sobre Vite (o OpenNext não é mais o caminho da Cloudflare). Pedido do Jean.
+- **Login:** o Auth.js depende de partes internas do Next que o vinext não tem (o `vinext check` o marca como incompatível). Troca pelo **Better Auth** 1.7, com sessão no banco. As contas de e-mail passam com o mesmo id e o mesmo hash scrypt (migração 0011); as do Google se ligam de novo no primeiro login, pelo `sub`. Todos entram de novo uma vez (o JWT do Auth.js não vale mais). Google e e-mail com o mesmo endereço viram uma conta só, mas só se o e-mail já foi confirmado.
+- **Sem Cache Components:** o suporte no vinext é experimental e incompleto, e o app não usava `"use cache"`. O vinext renderiza cada página no pedido, sem cache de página.
+- **Banco:** cliente por pedido (exigência do Worker), pelo Hyperdrive. Descartado: conexão direta ao pooler de transação a cada pedido (handshake TLS até us-east-1 em todo request).
+- **Deploy:** GitHub Actions faz migração e deploy na `main`, como a Vercel fazia no build. Descartado: Workers Builds (configuração fora do repositório e as migrações ficariam no painel). Prévia por PR fica para depois: as prévias de Worker usariam o banco de produção.
+- **Cron** dentro do próprio Worker (`scheduled`), sem rota HTTP nem `CRON_SECRET`.
+- Plano Workers Paid: o scrypt do login passa dos 10 ms de CPU do plano grátis.
+- Revê a decisão de 2026-11-03 (Vercel pelo suporte nativo ao Next 16). O vinext cobre o que o app usa; o risco que fica é ele ser novo (ver [estado.md](produto/estado.md)).
+
 ## 2026-11-12 · Excluir conta guarda só o WhatsApp
 O garagista exclui a própria conta em Minha loja. Do gestor, some a loja inteira; do vendedor, a carteira volta ao gestor.
 - Fica só a chave do WhatsApp em `testes_whatsapp`, sem ligação com a loja, para o teste grátis não se repetir (prevenção de fraude, dito na política de privacidade), e os eventos de pagamento do Asaas.

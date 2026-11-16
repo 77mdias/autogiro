@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Saída do vinext e da Cloudflare (vite build, cf workers types)
+    ".cloudflare/**",
+    ".vinext/**",
+    "dist/**",
     // Código de terceiros e ferramentas locais, fora do app
     ".agents/**",
     ".claude/**",

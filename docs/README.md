@@ -30,7 +30,7 @@ PWA mobile-first para garagistas: estoque, vitrine pública por loja e simulaç�
 | [desenvolvimento.md](desenvolvimento.md) | Rodar no Docker, scripts, variáveis, ngrok, migrações e armadilhas conhecidas |
 | [testes.md](testes.md) | Testes automáticos, conta de teste, cartões do Sandbox, o que já foi validado |
 | [segredos.md](segredos.md) | Criptenv: como os segredos chegam ao app, configuração e limites |
-| [deploy.md](deploy.md) | Vercel: fluxo branch → PR → CI → main, migrações no deploy, cron, produção |
+| [deploy.md](deploy.md) | Cloudflare Workers: fluxo branch → PR → CI → main, migrações antes do deploy, cron, segredos, virada da Vercel |
 
 ## Histórico
 
