@@ -23,12 +23,16 @@ import { hashToken, novoToken } from "@/lib/senha";
 export type FormState = { error?: string } | undefined;
 
 const uuid = z.uuid();
-const anoAtual = new Date().getFullYear();
 
 const carroSchema = z.object({
   marca: z.string().trim().min(1, "Informe a marca").max(40),
   modelo: z.string().trim().min(1, "Informe o modelo").max(80),
-  ano: z.coerce.number().int().min(1950, "Ano inválido").max(anoAtual + 1, "Ano inválido"),
+  // O ano atual é lido a cada envio: no Worker, o relógio fica em 1970 enquanto o módulo carrega.
+  ano: z.coerce
+    .number()
+    .int()
+    .min(1950, "Ano inválido")
+    .refine((ano) => ano <= new Date().getFullYear() + 1, "Ano inválido"),
   km: z
     .string()
     .transform((v) => Number(onlyDigits(v) || 0))
