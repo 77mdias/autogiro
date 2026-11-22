@@ -120,22 +120,25 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
               ))}
           </section>
         )}
-        <section aria-labelledby="link-titulo" className="ticks grid grid-cols-1 gap-4 p-5 lg:p-6">
-          <h2 id="link-titulo" className="font-display text-xl font-semibold">
-            Link da vitrine
-          </h2>
-          <p className="num truncate rounded-card bg-paper-2 px-4 py-3 text-ink-2">
-            {host}
-            {vitrine}
-          </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <ShareLinkButton path={vitrine} title={loja?.nome ?? "Vitrine"} variant={pausado ? "outline" : "default"} />
-            <CopyLinkButton path={vitrine} />
-            <a href={vitrine} target="_blank" rel="noopener" className={buttonVariants({ variant: "outline" })}>
-              <Eye aria-hidden /> Ver como cliente
-            </a>
-          </div>
-        </section>
+        {/* Plano vencido: a vitrine está pausada, então não há link para divulgar. */}
+        {!pausado && (
+          <section aria-labelledby="link-titulo" className="ticks grid grid-cols-1 gap-4 p-5 lg:p-6">
+            <h2 id="link-titulo" className="font-display text-xl font-semibold">
+              Link da vitrine
+            </h2>
+            <p className="num truncate rounded-card bg-paper-2 px-4 py-3 text-ink-2">
+              {host}
+              {vitrine}
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <ShareLinkButton path={vitrine} title={loja?.nome ?? "Vitrine"} />
+              <CopyLinkButton path={vitrine} />
+              <a href={vitrine} target="_blank" rel="noopener" className={buttonVariants({ variant: "outline" })}>
+                <Eye aria-hidden /> Ver como cliente
+              </a>
+            </div>
+          </section>
+        )}
 
         <dl className="grid grid-cols-3 border-y border-rule">
           {[
