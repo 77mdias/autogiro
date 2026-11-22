@@ -66,7 +66,7 @@ O Criptenv só aceita o **ID** do projeto (UUID, em `criptenv projects list`), n
 | Para | Comando |
 |---|---|
 | Desenvolver | `pnpm docker:up` (container de dev com hot reload; lê as credenciais do chaveiro por `docker/compose.sh`) |
-| Segredos do Worker de produção | `criptenv integrations sync --provider cloudflare --env production --direction push` ([deploy.md](deploy.md)) |
+| Segredos do Worker de produção | `criptenv integrations sync --provider cloudflare --env production --direction push --project <ID>` ([deploy.md](deploy.md)) |
 | Primeiro deploy do Worker | `criptenv run -e production -p <ID> -- node scripts/primeiro-deploy.mts` (uma vez; [deploy.md](deploy.md)) |
 | Qualquer comando com os segredos | `pnpm docker:exec pnpm loja listar` (vale para `db:migrate` também), com o container de dev no ar |
 | Operação manual do plano em produção | `pnpm loja:prod listar` (container avulso com os segredos de `production`; não precisa do dev no ar) |

@@ -46,10 +46,11 @@ R2 continua igual: dois buckets por ambiente pela API S3 (`R2_*`), como antes.
    O script confere os 19 segredos, aplica as migrações, faz o build e publica. O `--secrets-file` leva só os nomes; o `cf` usa os valores do ambiente do Criptenv, então nenhum segredo vai para o disco.
 5. **Criptenv → Cloudflare**, para trocar segredo depois sem redeploy de código:
    ```bash
-   criptenv integrations connect cloudflare --token <token da Cloudflare> --account-id <id da conta> --project-id autogiro --project <ID do Criptenv>
-   criptenv integrations sync --provider cloudflare --env production --direction push
+   read -s CF_TOKEN   # token da Cloudflare, fora do histórico do shell
+   criptenv integrations connect cloudflare --token "$CF_TOKEN" --account-id <id da conta> --project-id autogiro --project <ID do Criptenv>
+   criptenv integrations sync --provider cloudflare --env production --direction push --project <ID do Criptenv>
    ```
-   O token precisa de **Workers Scripts: Edit**. O sync manda todas as variáveis do ambiente; as que o Worker não declara ficam sem uso.
+   Um token só para isso (API tokens do perfil, Custom, **Workers Scripts: Edit** na conta). Fora de uma pasta ligada ao projeto, todo comando `criptenv integrations` precisa do `--project`; o `validate` também do id da integração (`list`). O sync não é automático: rode o push de novo a cada segredo trocado. Ele manda todas as variáveis do ambiente (inclusive `DATABASE_URL*`, que o Worker não usa) e não apaga no Worker o que saiu do Criptenv.
 6. **GitHub** (Settings → Environments → `production`): secrets `CLOUDFLARE_API_TOKEN` (Workers Scripts: Edit, Workers Routes/Custom Domains, Hyperdrive: Read, Account Settings: Read), `CLOUDFLARE_ACCOUNT_ID` e `DATABASE_URL_DIRECT` (session pooler de produção, para as migrações). Proteção da `main`: exigir PR e o check **"Lint, tipos, testes, build e migrações"**.
 7. **Serviços que apontam para o domínio**: callback do Google OAuth (`https://autogiro.wdias.tech/api/auth/callback/google`, o mesmo caminho do Auth.js) e o webhook do Asaas de produção (`/api/webhooks/asaas`). Ao trocar de domínio, mude esses dois, `AUTH_URL`, `APP_BASE_URL` e `domains`.
 
@@ -72,7 +73,7 @@ A Vercel e o Worker usam o mesmo banco de produção. A ordem evita que os dois 
 5. Conferir: `/`, uma vitrine, entrar com e-mail e senha, entrar com Google. **Todo mundo precisa entrar de novo** (as sessões do Auth.js eram JWT e não valem mais). Quem entrava pelo Google tem a loja ligada de volta no primeiro login.
 6. Merge do PR na `main`: daqui em diante o GitHub Actions faz o deploy.
 7. Domínio antigo `autogiro.77mdevseven.tech`: na Vercel ele era um redirect 308 para o novo. Se a zona `77mdevseven.tech` estiver nesta conta da Cloudflare, crie uma Redirect Rule (Rules → Redirect Rules) de `autogiro.77mdevseven.tech/*` para `https://autogiro.wdias.tech/${1}`, 308. Senão, mantenha o projeto da Vercel só para esse redirect.
-8. Apagar o Worker antigo do cron (o que chamava `/api/cron/delete-expired-cnh`) e o `CRON_SECRET` do Criptenv e da Cloudflare.
+8. Apagar o `CRON_SECRET` do Criptenv e do Worker (feito em 2026-11-22). O Worker de cron que chamava `/api/cron/delete-expired-cnh` nunca chegou a ser criado.
 9. Numa migração seguinte, remover `usuarios.senha_hash` e `usuarios.email_confirmado_em`. Antes, copiar de novo para `logins` quem tiver se cadastrado pela Vercel entre a migração e o passo 3 (o `INSERT … ON CONFLICT DO NOTHING` da 0011 serve).
 
 **Caso raro:** quem tinha uma loja pela conta Google e **outra** loja por e-mail e senha com o mesmo endereço. No primeiro login pelo Google as duas contas viram uma só, e como uma conta tem uma loja, a do Google fica sem dono (`auth_user_id` com o `sub`). Resolver à mão, se aparecer.
