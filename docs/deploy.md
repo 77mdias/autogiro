@@ -73,7 +73,7 @@ A Vercel e o Worker usam o mesmo banco de produção. A ordem evita que os dois 
 5. Conferir: `/`, uma vitrine, entrar com e-mail e senha, entrar com Google. **Todo mundo precisa entrar de novo** (as sessões do Auth.js eram JWT e não valem mais). Quem entrava pelo Google tem a loja ligada de volta no primeiro login.
 6. Merge do PR na `main`: daqui em diante o GitHub Actions faz o deploy.
 7. Domínio antigo `autogiro.77mdevseven.tech`: na Vercel ele era um redirect 308 para o novo. Se a zona `77mdevseven.tech` estiver nesta conta da Cloudflare, crie uma Redirect Rule (Rules → Redirect Rules) de `autogiro.77mdevseven.tech/*` para `https://autogiro.wdias.tech/${1}`, 308. Senão, mantenha o projeto da Vercel só para esse redirect.
-8. Apagar o Worker antigo do cron (o que chamava `/api/cron/delete-expired-cnh`) e o `CRON_SECRET` do Criptenv e da Cloudflare.
+8. Apagar o `CRON_SECRET` do Criptenv e do Worker (feito em 2026-11-22). O Worker de cron que chamava `/api/cron/delete-expired-cnh` nunca chegou a ser criado.
 9. Numa migração seguinte, remover `usuarios.senha_hash` e `usuarios.email_confirmado_em`. Antes, copiar de novo para `logins` quem tiver se cadastrado pela Vercel entre a migração e o passo 3 (o `INSERT … ON CONFLICT DO NOTHING` da 0011 serve).
 
 **Caso raro:** quem tinha uma loja pela conta Google e **outra** loja por e-mail e senha com o mesmo endereço. No primeiro login pelo Google as duas contas viram uma só, e como uma conta tem uma loja, a do Google fica sem dono (`auth_user_id` com o `sub`). Resolver à mão, se aparecer.
