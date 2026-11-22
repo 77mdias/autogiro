@@ -7,6 +7,7 @@
 - `src/lib/signature.test.ts`: comparação do token e do Bearer em tempo constante.
 - `src/lib/senha.test.ts`: hash e conferência da senha, tokens.
 - `src/lib/plano.test.ts`: `planoLiberado()` em cada status e no fim do teste grátis; situação e MRR do painel do administrador.
+- `src/lib/erro.test.ts`: o motivo da tela de erro (sem internet, versão nova, conexão, servidor) e o código só para erro do servidor.
 - `src/lib/admin.test.ts`: quem é admin pela lista `ADMIN_EMAILS`.
 - `src/lib/masks.test.ts`, `src/lib/utils.test.ts`: máscaras e formatação.
 

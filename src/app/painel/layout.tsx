@@ -3,6 +3,7 @@ import { and, count, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { lojas, pedidosEdicao, simulacoesFinanciamento as sim } from "@/lib/db/schema";
 import { getMembro } from "@/lib/session";
+import { planoLiberado } from "@/lib/plano";
 import { Nav, NavAtual } from "@/components/painel-nav";
 
 // Layout só monta a navegação. A autorização fica em cada página (requireLojaId),
@@ -24,8 +25,20 @@ export default function PainelLayout({ children }: LayoutProps<"/painel">) {
 async function NavDaLoja() {
   const membro = await getMembro();
   if (!membro) return <NavAtual />;
-  const [[loja], [{ novas }], [{ pedidos }]] = await Promise.all([
-    db.select({ nome: lojas.nome, slug: lojas.slug }).from(lojas).where(eq(lojas.id, membro.lojaId)).limit(1),
+  const [loja] = await db
+    .select({
+      nome: lojas.nome,
+      slug: lojas.slug,
+      planoStatus: lojas.planoStatus,
+      trialAte: lojas.trialAte,
+      asaasSubscriptionId: lojas.asaasSubscriptionId,
+    })
+    .from(lojas)
+    .where(eq(lojas.id, membro.lojaId))
+    .limit(1);
+  // Plano vencido: as outras telas mandariam de volta para Minha loja, então o menu só mostra ela.
+  if (!loja || !planoLiberado(loja)) return <NavAtual loja={loja && { nome: loja.nome, slug: loja.slug }} liberado={false} />;
+  const [[{ novas }], [{ pedidos }]] = await Promise.all([
     // Só os leads novos de quem está logado: é a fila que ele tem de responder
     db
       .select({ novas: count() })
@@ -39,5 +52,5 @@ async function NavDaLoja() {
           .where(and(eq(pedidosEdicao.lojaId, membro.lojaId), eq(pedidosEdicao.status, "pendente")))
       : [{ pedidos: 0 }],
   ]);
-  return <NavAtual loja={loja} novas={novas} pedidos={pedidos} gestor={membro.papel === "gestor"} />;
+  return <NavAtual loja={{ nome: loja.nome, slug: loja.slug }} novas={novas} pedidos={pedidos} gestor={membro.papel === "gestor"} />;
 }

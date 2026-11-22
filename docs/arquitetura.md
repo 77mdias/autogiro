@@ -53,6 +53,7 @@ src/
     auth.ts               Better Auth: Google + e-mail; adota as contas Google antigas no primeiro login
     session.ts            getSession (usuário + membro ativo), getLojaId/requireLojaId (única fonte de loja_id), requireAdmin
     limpeza-cnh.ts        apagarCnhsVencidas(), chamada pelo cron do Worker
+    erro.ts               tipoDoErro(), codigoDoErro(): o motivo mostrado na tela de erro
     plano.ts              planoLiberado(), situacaoPlano(), resumoAssinaturas(), FAIXAS/valorPlano() (mensalidade por vendedores)
     admin.ts              ehAdmin() (ADMIN_EMAILS)
     asaas.ts              API v3 do Asaas (fetch, sem SDK)
@@ -138,7 +139,9 @@ A mensalidade sai da faixa de vendedores ativos (`valorPlano()`); mudança de fa
 
 **Um teste grátis por WhatsApp.** `criarLoja` grava o WhatsApp em `testes_whatsapp`; se outra loja já teve teste com ele, a loja nasce com `trial_ate = now()` (sem teste) e o gestor vai direto para Minha loja, que diz "Este WhatsApp já usou o teste grátis". Em Minha loja, a loja em teste sem assinatura não pode trocar para o WhatsApp de outra loja (seria o atalho: criar com um número qualquer e trocar depois); com assinatura ou plano ativo, pode. Uma conta continua com uma loja só (`lojas.auth_user_id` e `membros.auth_user_id` únicos).
 
-Plano pausado: as páginas do painel levam para Minha loja (`requireLojaId` com `exigePlano`), a vitrine mostra "Vitrine fora do ar", `POST /api/simulacoes` responde 404 e a CNH responde 402. Minha loja sempre abre (`exigePlano: false`), porque é lá que se paga.
+Plano pausado: as páginas do painel levam para Minha loja (`requireLojaId` com `exigePlano`), a vitrine mostra "Vitrine fora do ar", `POST /api/simulacoes` responde 404 e a CNH responde 402. Minha loja sempre abre (`exigePlano: false`), porque é lá que se paga. O menu do painel (`painel/layout.tsx`) só mostra Minha loja, sem o botão de cadastrar carro nem o link da vitrine, e Minha loja esconde o bloco "Link da vitrine": nada leva a uma tela pausada.
+
+**Telas de erro.** `components/erro-tela.tsx` diz o motivo (regra pura em `lib/erro.ts`): sem internet (tenta de novo sozinho quando a conexão volta), versão nova no ar (recarregar), conexão que caiu, ou falha no servidor (mostra o `digest`, que casa com o log do Worker). Usada em `painel/error.tsx`, `app/error.tsx` (resto do app e o layout do painel, que o `error.tsx` da própria pasta não pega) e `app/global-error.tsx`.
 
 ## Arquivos (Cloudflare R2)
 

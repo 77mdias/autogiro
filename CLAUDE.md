@@ -35,7 +35,7 @@ Before committing: `pnpm test`, `pnpm typecheck`, `pnpm lint`.
 
 **The app only runs in Docker, with secrets from Criptenv. Never create a `.env`/`.env.local`/`.dev.vars` or start `vite dev` (or `next dev`) on the host** (plaintext secrets on disk are what the Criptenv setup removed; see `docs/segredos.md`). Tests, typecheck and lint run on the host and need no secrets. Anything that needs secrets goes through `pnpm docker:exec`.
 
-Tests run under plain `node --test`, so tested files in `src/lib/` must not use the `@/` alias and import siblings with explicit `.ts` extensions. Keep logic worth testing in those pure modules (`plano.ts`, `signature.ts`, `senha.ts`, `masks.ts`, `utils.ts`).
+Tests run under plain `node --test`, so tested files in `src/lib/` must not use the `@/` alias and import siblings with explicit `.ts` extensions. Keep logic worth testing in those pure modules (`plano.ts`, `signature.ts`, `senha.ts`, `masks.ts`, `utils.ts`, `erro.ts`).
 
 ## Architecture
 
