@@ -1,18 +1,15 @@
+import "server-only";
 import { and, inArray, isNotNull, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { simulacoesFinanciamento as sim } from "@/lib/db/schema";
 import { deleteCnhs } from "@/lib/r2";
-import { verifyBearer } from "@/lib/signature";
 
 // Prazo de guarda da CNH. Defina com o jurídico; LGPD exige o mínimo necessário à finalidade.
 const CNH_RETENTION_DAYS = 90;
 const BATCH = 500;
 
-export async function POST(request: Request) {
-  if (!verifyBearer(request.headers.get("authorization"), process.env.CRON_SECRET)) {
-    return Response.json({ error: "não autorizado" }, { status: 401 });
-  }
-
+/** Apaga do R2 as CNHs com mais de 90 dias. Roda pelo cron do Worker (worker/index.ts). Devolve quantas saíram. */
+export async function apagarCnhsVencidas(): Promise<number> {
   const limite = new Date(Date.now() - CNH_RETENTION_DAYS * 24 * 60 * 60 * 1000);
   let total = 0;
 
@@ -32,5 +29,5 @@ export async function POST(request: Request) {
     if (deleted.length < expirados.length) break;
   }
 
-  return Response.json({ ok: true, excluidos: total });
+  return total;
 }

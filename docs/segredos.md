@@ -20,7 +20,7 @@ host (chaveiro do sistema)            container (sem capabilities, usuário node
                                        lê os dois arquivos e faz exec de
                                        criptenv run -e $CRIPTENV_ENV -p $CRIPTENV_PROJECT -- <CMD>
                                        (o criptenv busca e decifra, tira as credenciais do ambiente e faz exec do comando:
-                                        `next dev` no alvo dev, `node server.js` no runtime)
+                                        migrações e `vite dev`)
 ```
 
 - **Build sem segredos:** o app não usa `NEXT_PUBLIC_*`; tudo é lido em execução. O `.dockerignore` tira qualquer `.env*` do contexto.
@@ -66,13 +66,15 @@ O Criptenv só aceita o **ID** do projeto (UUID, em `criptenv projects list`), n
 | Para | Comando |
 |---|---|
 | Desenvolver | `pnpm docker:up` (container de dev com hot reload; lê as credenciais do chaveiro por `docker/compose.sh`) |
-| Testar a imagem de produção | `pnpm docker:prod` |
-| Outro ambiente no Docker | `CRIPTENV_ENV=production pnpm docker:prod` (com a chave no item `api-key-production`) |
+| Segredos do Worker de produção | `criptenv integrations sync --provider cloudflare --env production --direction push` ([deploy.md](deploy.md)) |
+| Primeiro deploy do Worker | `criptenv run -e production -p <ID> -- node scripts/primeiro-deploy.mts` (uma vez; [deploy.md](deploy.md)) |
 | Qualquer comando com os segredos | `pnpm docker:exec pnpm loja listar` (vale para `db:migrate` também), com o container de dev no ar |
 | Operação manual do plano em produção | `pnpm loja:prod listar` (container avulso com os segredos de `production`; não precisa do dev no ar) |
 | Ver o que mudou | `criptenv diff <arquivo> -e development -p <ID>` |
 
-Não há fluxo fora do Docker: nada de `next dev` no host nem `.env` no disco.
+Não há app rodando fora do Docker: nada de `vite dev` no host nem `.env` ou `.dev.vars` no disco. As duas exceções acima (sync e primeiro deploy) rodam na sua máquina com os valores só na memória do processo.
+
+**No Worker** os segredos ficam guardados pela Cloudflare (cifrados, só leitura pelo Worker). A lista do que o Worker lê é `segredos` em `cloudflare.config.ts`; no dev, o plugin da Cloudflare pega esses nomes do ambiente do container.
 
 ## O que isso protege e o que não
 

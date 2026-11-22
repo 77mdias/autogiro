@@ -21,8 +21,11 @@ async function asaas<T>(path: string, body?: unknown, method = body ? "POST" : "
     body: body ? JSON.stringify(body) : undefined,
     cache: "no-store",
   });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new AsaasError(json?.errors?.[0]?.description ?? `Asaas respondeu ${res.status}`, res.status);
+  const json: unknown = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const erro = (json as { errors?: { description?: string }[] }).errors?.[0]?.description;
+    throw new AsaasError(erro ?? `Asaas respondeu ${res.status}`, res.status);
+  }
   return json as T;
 }
 

@@ -1,5 +1,5 @@
-# CI: valida todo PR e todo push na main. Nada aqui usa segredo: o app só lê variáveis em execução.
-# O deploy é da Vercel (integração com o GitHub): prévia por PR e produção a cada merge na main. docs/deploy.md
+# CI: valida todo PR e todo push na main, sem segredo nenhum (o app só lê variáveis em execução).
+# Deploy: a cada push na main, depois dos checks, aplica as migrações e publica o Worker na Cloudflare. docs/deploy.md
 name: CI
 
 on:
@@ -10,9 +10,10 @@ on:
 permissions:
   contents: read
 
+# PR novo cancela a rodada anterior; na main nada é cancelado no meio (o deploy migra o banco).
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   checks:
@@ -30,7 +31,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
-      - run: pnpm build # o mesmo build da Vercel, sem nenhum segredo
+      - run: pnpm build # o Worker do vinext, sem nenhum segredo
       - name: Schema sem migração pendente
         # drizzle-kit generate só compara schema.ts com drizzle/meta (sem banco). Se gerar arquivo, faltou commitar a migração.
         run: |
@@ -40,3 +41,32 @@ jobs:
             git status --porcelain -- drizzle
             exit 1
           fi
+
+  deploy:
+    name: Deploy de produção (Cloudflare)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    concurrency:
+      group: deploy-producao
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Migração antes do código novo: se falhar, nada é publicado e a versão anterior continua no ar.
+      - name: Migrações
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+      - name: Build e deploy do Worker
+        run: pnpm run deploy # `pnpm deploy` sem `run` é outro comando do pnpm
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

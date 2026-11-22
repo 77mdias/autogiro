@@ -29,7 +29,8 @@ export function SimulacaoForm({ carroId, precoReais, lojaNome }: { carroId: stri
       if (cnh instanceof File && cnh.size > 0) fd.set("cnh", await resizeImage(cnh, 2000, 0.85));
       const res = await fetch("/api/simulacoes", { method: "POST", body: fd });
       if (!res.ok) {
-        setErro((await res.json().catch(() => null))?.error ?? "Não foi possível enviar. Tente novamente.");
+        const corpo = (await res.json().catch(() => null)) as { error?: string } | null;
+        setErro(corpo?.error ?? "Não foi possível enviar. Tente novamente.");
         return;
       }
       setEnviado(true);

@@ -2,15 +2,16 @@
 
 import { and, count, eq, gt, gte, isNotNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { carros, convites, lojas, membros, pedidosEdicao, simulacoesFinanciamento as sim, testesWhatsapp, usuarios, vendas } from "@/lib/db/schema";
 import { fotosAprovadas, MAX_FOTOS, type MudancasCarro } from "@/lib/pedidos";
 import { detectFile, MAX_UPLOAD_BYTES } from "@/lib/files";
 import { AsaasError, assinaturasAtivas, cancelarAssinatura, criarCheckoutAssinatura, faturaVencida, mudarValorAssinatura } from "@/lib/asaas";
-import { arquivosDaLoja, cobrancaNaExclusao, confirmouExclusao, contaDeEmail, naoApagados } from "@/lib/exclusao";
+import { arquivosDaLoja, cobrancaNaExclusao, confirmouExclusao, naoApagados } from "@/lib/exclusao";
 import { chaveWhatsapp, MAX_CENTAVOS, onlyDigits, reaisToCentavos, slugify } from "@/lib/masks";
 import { deleteCnhs, deleteFotos, uploadFoto } from "@/lib/r2";
 import { getLojaIdDoGestor, getMembro, getSession, lojaLiberada, type Membro } from "@/lib/session";
@@ -288,7 +289,7 @@ export async function salvarLoja(_prev: FormState, fd: FormData): Promise<FormSt
 }
 
 export async function criarLoja(_prev: FormState, fd: FormData): Promise<FormState> {
-  const session = await auth();
+  const session = await getSession();
   if (!session) return { error: "Sessão expirada. Entre novamente." };
   if (session.user.loja_id) redirect("/painel");
 
@@ -297,15 +298,15 @@ export async function criarLoja(_prev: FormState, fd: FormData): Promise<FormSta
 
   // Sufixo aleatório evita colisão de slug; o slug não muda ao renomear (link da vitrine estável).
   const slug = `${slugify(parsed.data.nome) || "loja"}-${crypto.randomUUID().slice(0, 4)}`;
-  // Conflito = duplo envio; a loja já criada vale. O jwt callback (lib/auth) acha o gestor e põe o loja_id na sessão.
+  // Conflito = duplo envio; a loja já criada vale. lib/session acha o gestor e põe o loja_id na sessão.
   const comTeste = await db.transaction(async (tx) => {
     const [loja] = await tx
       .insert(lojas)
-      .values({ ...parsed.data, slug, authUserId: session.user.id! })
+      .values({ ...parsed.data, slug, authUserId: session.user.id })
       .onConflictDoNothing({ target: lojas.authUserId })
       .returning({ id: lojas.id });
     if (!loja) return true;
-    await tx.insert(membros).values({ lojaId: loja.id, authUserId: session.user.id!, papel: "gestor" });
+    await tx.insert(membros).values({ lojaId: loja.id, authUserId: session.user.id, papel: "gestor" });
     if (await registrarWhatsapp(tx, parsed.data.whatsapp, loja.id)) return true;
     // Um teste grátis por WhatsApp: a loja nasce, mas para usar o painel e a vitrine precisa assinar.
     await tx.update(lojas).set({ trialAte: sql`now()` }).where(eq(lojas.id, loja.id));
@@ -400,7 +401,8 @@ export async function distribuirLead(fd: FormData) {
 }
 
 export async function sair() {
-  await signOut({ redirectTo: "/" });
+  await auth.api.signOut({ headers: await headers() });
+  redirect("/");
 }
 
 /**
@@ -418,9 +420,12 @@ export async function excluirConta(_prev: FormState, fd: FormData): Promise<Form
     const erro = await excluirLoja(membro.lojaId);
     if (erro) return { error: erro };
   }
-  if (sub && contaDeEmail(sub)) await db.delete(usuarios).where(eq(usuarios.id, sub));
-  await signOut({ redirectTo: "/login?aviso=excluida" });
-  return {};
+  // Fecha a sessão (apaga o cookie) e depois o usuário; as sessões e formas de entrar vão junto (cascata).
+  if (sub) {
+    await auth.api.signOut({ headers: await headers() });
+    await db.delete(usuarios).where(eq(usuarios.id, sub));
+  }
+  redirect("/login?aviso=excluida");
 }
 
 async function excluirVendedor({ lojaId, membroId }: Membro) {
@@ -737,7 +742,7 @@ export async function aceitarConvite(token: string): Promise<FormState> {
     throw err;
   }
   await ajustarMensalidade(lojaId);
-  // O jwt (lib/auth) acha o membro na próxima requisição: o painel já abre com a loja.
+  // lib/session acha o membro na próxima requisição: o painel já abre com a loja.
   redirect("/painel/estoque");
 }
 
