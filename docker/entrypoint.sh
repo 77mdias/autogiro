@@ -8,4 +8,9 @@ set -eu
 CRIPTENV_API_KEY="$(cat /run/secrets/criptenv_api_key)"
 CRIPTENV_VAULT_PASSWORD="$(cat /run/secrets/criptenv_vault_password)"
 export CRIPTENV_API_KEY CRIPTENV_VAULT_PASSWORD HOME=/tmp
+# Em development o banco é o Postgres do compose (BANCO_LOCAL), por cima do que vier do Criptenv.
+# `pnpm loja:prod` roda com CRIPTENV_ENV=production e fica com o banco de produção.
+if [ "$CRIPTENV_ENV" = development ] && [ -n "${BANCO_LOCAL:-}" ]; then
+  exec criptenv run -e "$CRIPTENV_ENV" -p "$CRIPTENV_PROJECT" -- env DATABASE_URL="$BANCO_LOCAL" DATABASE_URL_DIRECT="$BANCO_LOCAL" "$@"
+fi
 exec criptenv run -e "$CRIPTENV_ENV" -p "$CRIPTENV_PROJECT" -- "$@"

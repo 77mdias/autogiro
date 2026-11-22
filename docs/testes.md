@@ -37,8 +37,8 @@ Validade: qualquer data futura (ex.: `12/2030`). CVV: `123`. Nome e CPF do titul
 
 | O quê | Onde | Identificador |
 |---|---|---|
-| Conta de teste (navegador) | Supabase de dev | `E2E_EMAIL` / `E2E_SENHA` no `.env.example` (pública de propósito, só dados falsos) |
-| Loja da conta de teste | Supabase de dev | "Garagem Teste AutoGiro", slug `garagem-teste-autogiro-eb5b` (carro e simulações de teste) |
+| Conta de teste (navegador) | banco de dev (Postgres do compose; recrie depois de `down -v`) | `E2E_EMAIL` / `E2E_SENHA` no `.env.example` (pública de propósito, só dados falsos) |
+| Loja da conta de teste | banco de dev | "Garagem Teste AutoGiro", slug `garagem-teste-autogiro-eb5b` (carro e simulações de teste) |
 | Conta Asaas Sandbox | sandbox.asaas.com (conta do dono do projeto) | `ASAAS_API_KEY` no Criptenv (`development`) |
 | Loja de teste da fase 2 | Supabase | slug `auto-giro-hehehe-bcb5` (ativa) |
 | Cliente Sandbox dessa loja | Asaas Sandbox | `cus_000009793589` |

@@ -1,6 +1,6 @@
 # Deploy (Cloudflare Workers)
 
-Banco no Supabase (um projeto para dev, outro para produção), app num **Cloudflare Worker** pelo [vinext](https://vinext.dev), segredos no Criptenv. Produção em **https://autogiro.wdias.tech** (`domains` em `cloudflare.config.ts`).
+Banco de produção no Supabase (o dev usa um Postgres em container, [desenvolvimento.md](desenvolvimento.md)), app num **Cloudflare Worker** pelo [vinext](https://vinext.dev), segredos no Criptenv. Produção em **https://autogiro.wdias.tech** (`domains` em `cloudflare.config.ts`).
 
 Até 2026-11-16 a produção ficava na Vercel; a troca está em [decisoes.md](decisoes.md) e a virada, passo a passo, em [Virada da Vercel](#virada-da-vercel-uma-vez) no fim deste arquivo.
 

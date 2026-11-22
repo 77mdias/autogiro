@@ -150,7 +150,7 @@ test("conta de e-mail ou Google", () => {
 **Arquivos:**
 - Modificar: `docs/arquitetura.md` (rota `/privacidade`, exclusão na seção Plano/Dados), `docs/produto/estado.md` (marca a política como publicada, com revisão jurídica pendente; exclusão de conta pronta), `docs/decisoes.md` (entrada: guardar só o número), `docs/testes.md` (o que foi validado).
 
-- [ ] **Passo 1:** reativar o Supabase de dev (estava pausado em 2026-11-12) e subir `pnpm docker:up` com o ngrok.
+- [ ] **Passo 1:** subir `pnpm docker:up` (banco de dev em container desde 2026-11-22) com o ngrok.
 - [ ] **Passo 2:** no Sandbox, com a conta de teste: loja com carro, foto, simulação com CNH, um vendedor e assinatura de cartão. Excluir a conta do **vendedor** → carros e leads dele com o gestor, mensalidade recalculada.
 - [ ] **Passo 3:** excluir a conta do **gestor** → assinatura some no Asaas Sandbox; `SUBSCRIPTION_DELETED` chega e é ignorado (200); `pnpm docker:exec pnpm loja listar` sem a loja; `testes_whatsapp` com a chave e `loja_id` null; foto e CNH não existem mais no R2.
 - [ ] **Passo 4:** Asaas recusando (chave Sandbox inválida no container): nada apagado, erro na tela; com a chave certa, a nova tentativa conclui.

@@ -9,6 +9,14 @@ pnpm install                         # no host, só para editor, testes, lint e 
 pnpm docker:up                       # http://localhost:3000, com hot reload; aplica as migrações ao subir
 ```
 
+### Banco de dev
+
+Um Postgres 17 em container, o serviço `db` do `compose.dev.yaml`, sobe junto com o app (não é mais o Supabase). Os dados ficam no volume `banco` e sobrevivem a `down`; para zerar, `docker compose -f compose.dev.yaml down -v` (o próximo `docker:up` aplica as migrações de novo).
+
+- Do host (DBeaver, psql, TablePlus): `postgres://autogiro:autogiro@localhost:5432/autogiro`. A senha não é segredo: o banco é descartável e só escuta em `127.0.0.1`.
+- Dentro do container o app usa `db:5432`: `docker/entrypoint.sh` troca o `DATABASE_URL` e o `DATABASE_URL_DIRECT` do Criptenv por `BANCO_LOCAL` quando o ambiente é `development`. `pnpm loja:prod` roda com `production` e continua no banco de produção.
+- Começa vazio: crie a conta pelo cadastro (o e-mail de confirmação sai pelo Resend) ou insira dados com `psql`.
+
 ### Hot reload no container
 
 `pnpm docker:up` sobe o `Dockerfile` pelo `compose.dev.yaml`, com o [Compose Watch](https://docs.docker.com/compose/how-tos/file-watch/). O container aplica as migrações pendentes e roda `vite dev`: o vinext com o plugin da Cloudflare executa o app no **workerd**, o mesmo runtime da produção. Os segredos declarados em `cloudflare.config.ts` vêm do ambiente do container (Criptenv); o Hyperdrive, no dev, conecta direto no `DATABASE_URL`.

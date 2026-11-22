@@ -5,7 +5,26 @@
 # O Compose Watch copia para o container o que você edita no host; o vite recarrega na hora.
 # Mudou package.json ou pnpm-lock.yaml: a imagem é refeita sozinha. Mudou a configuração (vite, cloudflare, next)
 # ou drizzle/: o container reinicia, e as migrações novas são aplicadas ao subir (CMD do Dockerfile).
+#
+# O banco de dev é o Postgres do serviço `db` (volume `banco`), não o Supabase. Zerar: `docker compose -f compose.dev.yaml down -v`.
 services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      # Banco descartável, só nesta máquina: a senha não é segredo.
+      POSTGRES_USER: autogiro
+      POSTGRES_PASSWORD: autogiro
+      POSTGRES_DB: autogiro
+    volumes:
+      - banco:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432" # para abrir no DBeaver, psql etc. do host
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autogiro -d autogiro"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
   app:
     build: .
     image: autogiro:dev
@@ -16,6 +35,11 @@ services:
       # Projeto `autogiro` no Criptenv (`criptenv projects list`); o ID não é segredo.
       CRIPTENV_PROJECT: ${CRIPTENV_PROJECT:-659a2c2d-a35d-4801-b83e-b3d4d757362b}
       CRIPTENV_ENV: ${CRIPTENV_ENV:-development}
+      # Só em development: docker/entrypoint.sh troca o DATABASE_URL do Criptenv por este (production ignora).
+      BANCO_LOCAL: postgres://autogiro:autogiro@db:5432/autogiro
+    depends_on:
+      db:
+        condition: service_healthy
     # As duas credenciais vêm do shell (do chaveiro, por docker/compose.sh) e entram como Docker secrets em
     # /run/secrets: não aparecem em `docker inspect` nem no ambiente do app. Veja docs/segredos.md.
     secrets:
@@ -47,3 +71,6 @@ secrets:
     environment: CRIPTENV_API_KEY
   criptenv_vault_password:
     environment: CRIPTENV_VAULT_PASSWORD
+
+volumes:
+  banco:

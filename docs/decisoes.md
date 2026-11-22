@@ -2,6 +2,12 @@
 
 Mais recentes primeiro. Cada uma: o que foi decidido e por quê.
 
+## 2026-11-22 · Banco de dev em container
+
+- **Decisão:** o dev usa um Postgres 17 em container (serviço `db` do `compose.dev.yaml`), não mais um projeto Supabase. O Supabase de dev vivia pausado por inatividade e travava o `docker:up`; o container sobe junto, zera com `down -v` e abre em qualquer cliente de banco.
+- **Como:** `docker/entrypoint.sh` troca `DATABASE_URL` e `DATABASE_URL_DIRECT` pelo `BANCO_LOCAL` só em `development`; `pnpm loja:prod` segue no banco de produção. As variáveis de banco do ambiente `development` no Criptenv ficam sem uso.
+- **Descartado:** Supabase local (`supabase start`): pesado para o que o app usa (só Postgres; auth, storage e REST do Supabase não entram).
+
 ## 2026-11-16 · Produção num Cloudflare Worker (vinext), login pelo Better Auth
 Sai a Vercel, entra a Cloudflare: o app inteiro num Worker pelo [vinext](https://vinext.dev), a reimplementação da API do Next.js 16 sobre Vite (o OpenNext não é mais o caminho da Cloudflare). Pedido do Jean.
 - **Login:** o Auth.js depende de partes internas do Next que o vinext não tem (o `vinext check` o marca como incompatível). Troca pelo **Better Auth** 1.7, com sessão no banco. As contas de e-mail passam com o mesmo id e o mesmo hash scrypt (migração 0011); as do Google se ligam de novo no primeiro login, pelo `sub`. Todos entram de novo uma vez (o JWT do Auth.js não vale mais). Google e e-mail com o mesmo endereço viram uma conta só, mas só se o e-mail já foi confirmado.
