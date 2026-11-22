@@ -30,7 +30,7 @@ export default async function VitrinePage({ params, searchParams }: PageProps<"/
   const q = typeof sp.q === "string" ? sp.q.trim().slice(0, 60) : "";
 
   const [loja] = await db
-    .select({ id: lojas.id, nome: lojas.nome, cidade: lojas.cidade, whatsapp: lojas.whatsapp })
+    .select({ id: lojas.id, nome: lojas.nome, cidade: lojas.cidade, whatsapp: lojas.whatsapp, logoKey: lojas.logoKey })
     .from(lojas)
     .where(eq(lojas.slug, slug))
     .limit(1);
@@ -75,12 +75,21 @@ export default async function VitrinePage({ params, searchParams }: PageProps<"/
       <header className="border-b border-rule bg-paper">
         <div className="mx-auto grid w-full grid-cols-1 gap-5 px-4 py-6 sm:grid-cols-[1fr_auto] sm:items-center lg:px-8 lg:py-10">
           <div className="flex min-w-0 items-center gap-4">
-            <span
-              className="grid size-14 shrink-0 place-items-center rounded-full bg-navy font-display text-2xl font-semibold text-navy-ink lg:size-16"
-              aria-hidden
-            >
-              {loja.nome.trim()[0]?.toUpperCase()}
-            </span>
+            {loja.logoKey ? (
+              // eslint-disable-next-line @next/next/no-img-element -- logo servida direto pelo R2
+              <img
+                src={fotoUrl(loja.logoKey)}
+                alt={loja.nome}
+                className="size-14 shrink-0 rounded-card border border-rule bg-paper object-contain lg:size-16"
+              />
+            ) : (
+              <span
+                className="grid size-14 shrink-0 place-items-center rounded-full bg-navy font-display text-2xl font-semibold text-navy-ink lg:size-16"
+                aria-hidden
+              >
+                {loja.nome.trim()[0]?.toUpperCase()}
+              </span>
+            )}
             <div className="min-w-0">
               <h1 className="font-display text-2xl leading-tight font-semibold lg:text-[2.5rem]">{loja.nome}</h1>
               {loja.cidade && (

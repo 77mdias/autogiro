@@ -275,19 +275,48 @@ export async function salvarLoja(_prev: FormState, fd: FormData): Promise<FormSt
   const parsed = lojaSchema.safeParse(lojaCampos(fd));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  const erro = await db.transaction(async (tx) => {
-    const [loja] = await tx
-      .select({ planoStatus: lojas.planoStatus, sub: lojas.asaasSubscriptionId })
-      .from(lojas)
-      .where(eq(lojas.id, lojaId))
-      .limit(1);
-    const doTeste = await registrarWhatsapp(tx, parsed.data.whatsapp, lojaId);
-    // Em teste grátis, trocar para o WhatsApp de outra loja seria o jeito de ganhar um segundo teste.
-    if (!doTeste && loja?.planoStatus === "trial" && !loja.sub)
-      return "Esse WhatsApp já usou o teste grátis em outra loja. Para usá-lo aqui, assine o plano.";
-    await tx.update(lojas).set(parsed.data).where(eq(lojas.id, lojaId));
-  });
-  if (erro) return { error: erro };
+  // Logo nova (opcional): valida pelo conteúdo e sobe antes da transação; some do R2 se o salvamento falhar.
+  const arquivo = fd.get("logo");
+  let logoKey: string | undefined;
+  if (arquivo instanceof File && arquivo.size > 0) {
+    if (arquivo.size > MAX_UPLOAD_BYTES) return { error: "A logo deve ter até 5MB" };
+    const bytes = new Uint8Array(await arquivo.arrayBuffer());
+    const tipo = detectFile(bytes, ["image/jpeg", "image/png", "image/webp"]);
+    if (!tipo) return { error: "A logo deve ser JPG, PNG ou WEBP" };
+    logoKey = `${lojaId}/logo/${crypto.randomUUID()}.${tipo.ext}`;
+    try {
+      await uploadFoto(logoKey, bytes, tipo.type);
+    } catch (err) {
+      console.error("salvarLoja: logo", err);
+      return { error: "Não deu para enviar a logo agora. Tente de novo em alguns segundos." };
+    }
+  }
+
+  let res: { erro?: string; logoAntiga?: string | null };
+  try {
+    res = await db.transaction(async (tx) => {
+      const [loja] = await tx
+        .select({ planoStatus: lojas.planoStatus, sub: lojas.asaasSubscriptionId, logoKey: lojas.logoKey })
+        .from(lojas)
+        .where(eq(lojas.id, lojaId))
+        .limit(1)
+        .for("update"); // dois salvamentos ao mesmo tempo: o segundo lê a logo que o primeiro gravou
+      const doTeste = await registrarWhatsapp(tx, parsed.data.whatsapp, lojaId);
+      // Em teste grátis, trocar para o WhatsApp de outra loja seria o jeito de ganhar um segundo teste.
+      if (!doTeste && loja?.planoStatus === "trial" && !loja.sub)
+        return { erro: "Esse WhatsApp já usou o teste grátis em outra loja. Para usá-lo aqui, assine o plano." };
+      await tx.update(lojas).set({ ...parsed.data, ...(logoKey && { logoKey }) }).where(eq(lojas.id, lojaId));
+      return { logoAntiga: logoKey ? loja?.logoKey : null };
+    });
+  } catch (err) {
+    if (logoKey) await deleteFotos([logoKey]).catch(() => {});
+    throw err;
+  }
+  if (res.erro) {
+    if (logoKey) await deleteFotos([logoKey]).catch(() => {});
+    return { error: res.erro };
+  }
+  if (res.logoAntiga) await deleteFotos([res.logoAntiga]).catch(() => {}); // órfã no bucket público não é crítica
   revalidatePath("/painel", "layout");
   return {};
 }
@@ -455,7 +484,7 @@ async function excluirVendedor({ lojaId, membroId }: Membro) {
 /** Apaga a loja. Devolve a mensagem de erro se o Asaas não cancelar a assinatura (aí nada é apagado). */
 async function excluirLoja(lojaId: string): Promise<string | undefined> {
   const [loja] = await db
-    .select({ sub: lojas.asaasSubscriptionId, cliente: lojas.asaasCustomerId, planoStatus: lojas.planoStatus })
+    .select({ sub: lojas.asaasSubscriptionId, cliente: lojas.asaasCustomerId, planoStatus: lojas.planoStatus, logo: lojas.logoKey })
     .from(lojas)
     .where(eq(lojas.id, lojaId))
     .limit(1);
@@ -492,6 +521,7 @@ async function excluirLoja(lojaId: string): Promise<string | undefined> {
     return "Não deu para terminar a exclusão. Tente de novo em alguns minutos.";
   }
   const fotos = arquivosDaLoja(doCarros.map((c) => c.fotos), doPedidos.flatMap((p) => (p.mudancas ? [p.mudancas] : [])));
+  if (loja.logo) fotos.push(loja.logo);
   const chavesCnh = cnhs.flatMap((c) => (c.key ? [c.key] : []));
   // A conta já sumiu: falha no R2 só vai para o log, com as chaves para limpar à mão (a CNH não tem mais
   // linha no banco, então o cron dos 90 dias não a acharia).

@@ -30,9 +30,9 @@ Cron do Worker (06:00 UTC) ──► apagarCnhsVencidas() ──► apaga CNHs v
 | `/painel/vendas?mes=AAAA-MM` | membro | Gestor: vendas do mês, totais, resumo por vendedor e comissão editável em R$ com a %. Vendedor: só as vendas dele, sem comissão |
 | `/painel/vendedores` | gestor | Equipe: gerar link de convite, desativar e reativar vendedores, cancelar convites (até 20, contando convites em aberto) |
 | `/convite/[token]` | quem tem o link | Mostra a loja; logado sem loja aceita e vira vendedor; sem sessão vai para `/login` e volta |
-| `/painel/loja` | membro | Plano, link da vitrine, números; dados da loja e assinatura só para o gestor; "Excluir minha conta" para todos |
+| `/painel/loja` | membro | Plano, link da vitrine, números; dados da loja (com a logo) e assinatura só para o gestor; "Excluir minha conta" para todos |
 | `/admin` | e-mail em `ADMIN_EMAILS` | Dono do SaaS: MRR, lojas por situação do plano, carros e simulações por loja. Outros logados recebem 404 |
-| `/loja/[slug]` | público | Vitrine; fora do ar se o plano estiver pausado (`layout.tsx`) |
+| `/loja/[slug]` | público | Vitrine, com a logo da loja no cabeçalho (sem logo, a inicial do nome); fora do ar se o plano estiver pausado (`layout.tsx`) |
 | `/loja/[slug]/carros/[carroId]` | público | Detalhe do carro, WhatsApp e Simular |
 | `/loja/[slug]/carros/[carroId]/simular` | público | Formulário de simulação (LGPD + CNH opcional) |
 | `POST /api/simulacoes` | público | Grava o lead; `loja_id` sai do carro, nunca do cliente |
@@ -80,7 +80,7 @@ Módulos de `src/lib` com testes (`*.test.ts`) rodam direto no `node --test`: n�
 
 Esquema em `src/lib/db/schema.ts`, migrações SQL em `drizzle/`.
 
-- **lojas**: `auth_user_id` (`usuarios.id` do dono, único; contas Google que ainda não entraram depois da troca para o Better Auth guardam o `sub` do Google), `nome`, `slug` (único), `whatsapp`, `cidade`, `plano_status` (`trial | ativo | inadimplente | cancelado`), `trial_ate` (padrão `now() + 15 dias`), `asaas_customer_id` (único), `asaas_checkout_id`, `asaas_subscription_id` (único), `mensalidade_centavos` (o que a assinatura do Asaas cobra hoje; null sem assinatura).
+- **lojas**: `auth_user_id` (`usuarios.id` do dono, único; contas Google que ainda não entraram depois da troca para o Better Auth guardam o `sub` do Google), `nome`, `slug` (único), `whatsapp`, `cidade`, `logo_key` (chave da logo no bucket público; null = sem logo), `plano_status` (`trial | ativo | inadimplente | cancelado`), `trial_ate` (padrão `now() + 15 dias`), `asaas_customer_id` (único), `asaas_checkout_id`, `asaas_subscription_id` (único), `mensalidade_centavos` (o que a assinatura do Asaas cobra hoje; null sem assinatura).
 - **membros**: quem entra no painel. `loja_id`, `auth_user_id` (`usuarios.id`, único: uma conta, uma loja), `papel` (`gestor | vendedor`), `nome`, `ativo`. O dono que criou a loja é o gestor.
 - **convites**: `loja_id`, `nome` (do vendedor), `token_hash` (sha256; o token só existe no link), `expira_em` (7 dias), `criado_por`. Apagado ao ser aceito.
 - **carros**: `loja_id`, marca, modelo, versão, ano, km, `preco_centavos`, cor, câmbio, combustível, descrição, `fotos` (jsonb com as chaves no R2), `status` (`disponivel | vendido`), `cadastrado_por` (membro que cadastrou).
@@ -132,7 +132,7 @@ A mensalidade sai da faixa de vendedores ativos (`valorPlano()`); mudança de fa
 
 **Excluir conta** (`excluirConta` em `painel/actions.ts`, regras puras em `lib/exclusao.ts`; plano em [produto/excluir-conta.md](produto/excluir-conta.md)). Confirmação digitando `EXCLUIR`.
 - Vendedor: carros e clientes passam ao gestor (`devolverCarteira`, a mesma de desativar), o membro é apagado (pedidos pendentes dele em cascata, fotos novas desses pedidos apagadas do R2; nas vendas, `membro_id` vira null) e a mensalidade é recalculada.
-- Gestor: cancela no Asaas **antes** de tudo (`cobrancaNaExclusao`): com `asaas_subscription_id`, essa assinatura; sem ela mas com `asaas_customer_id` (fase 1: o `liberar` grava o cliente e a assinatura só chega na cobrança seguinte), as assinaturas ativas do cliente (`assinaturasAtivas`); plano pago sem cliente, recusa e manda falar com a AutoGiro. 404 do Asaas conta como cancelada ou sem assinaturas. Se o Asaas recusar, nada é apagado; cancelado, a loja fica `cancelado` e sem ids do Asaas, para a nova tentativa não cancelar de novo. Depois `delete from lojas` (cascata em carros, simulações, membros, convites, pedidos e vendas; `testes_whatsapp.loja_id` vira null) e, por último, fotos e CNHs no R2 (falha, inclusive parcial, só vai para o log com as chaves que sobraram).
+- Gestor: cancela no Asaas **antes** de tudo (`cobrancaNaExclusao`): com `asaas_subscription_id`, essa assinatura; sem ela mas com `asaas_customer_id` (fase 1: o `liberar` grava o cliente e a assinatura só chega na cobrança seguinte), as assinaturas ativas do cliente (`assinaturasAtivas`); plano pago sem cliente, recusa e manda falar com a AutoGiro. 404 do Asaas conta como cancelada ou sem assinaturas. Se o Asaas recusar, nada é apagado; cancelado, a loja fica `cancelado` e sem ids do Asaas, para a nova tentativa não cancelar de novo. Depois `delete from lojas` (cascata em carros, simulações, membros, convites, pedidos e vendas; `testes_whatsapp.loja_id` vira null) e, por último, fotos (com a logo) e CNHs no R2 (falha, inclusive parcial, só vai para o log com as chaves que sobraram).
 - Sem membro ativo (conta sem loja ou vendedor desativado, cuja carteira já voltou ao gestor): apaga o registro inativo em `membros`, se houver. O mesmo botão aparece no `/onboarding`.
 - Conta de e-mail: apaga `usuarios` (tokens em cascata). Conta Google não tem linha própria.
 - Fica guardado: a chave em `testes_whatsapp` e `webhook_events`. Depois, `signOut` para `/login?aviso=excluida`.
@@ -145,7 +145,7 @@ Plano pausado: as páginas do painel levam para Minha loja (`requireLojaId` com 
 
 ## Arquivos (Cloudflare R2)
 
-- **Bucket público** (`R2_PUBLIC_BUCKET`): fotos dos carros, servidas pelo domínio `R2_PUBLIC_URL`. O navegador reduz a foto antes de enviar (`resize-image.ts`, lado maior 1600 px).
+- **Bucket público** (`R2_PUBLIC_BUCKET`): fotos dos carros e logo da loja, servidas pelo domínio `R2_PUBLIC_URL`. O navegador reduz a foto antes de enviar (`resize-image.ts`, lado maior 1600 px, JPEG) e a logo (lado maior 512 px, PNG para manter a transparência). O servidor confere o tipo pelos bytes (JPG, PNG ou WEBP). A logo fica em `{loja_id}/logo/{uuid}.{ext}` (`lojas.logo_key`); `salvarLoja` (só o gestor, também com o plano pausado) troca a chave na mesma transação dos outros dados e depois apaga a antiga; se o salvamento falhar, apaga a nova.
 - **Bucket privado** (`R2_PRIVATE_BUCKET`): CNHs. Só o dono da loja recebe uma URL assinada de 5 minutos. Apagadas pelo cron após 90 dias (prazo a confirmar com o jurídico).
 - Uploads até 5 MB, tipo conferido pelos bytes do arquivo (`files.ts`), não pela extensão.
 
