@@ -61,6 +61,7 @@ Next.js 16 App Router code run by **vinext** (Cloudflare's reimplementation of t
 
 - Worker secrets are the `segredos` list in `cloudflare.config.ts`: add a new env var there and in Criptenv, or the Worker never sees it. `HYPERDRIVE_ID` there must be the real id for deploys.
 - `res.json()` is typed `{}`-ish by the Workers types: cast the result (`as { ... }`).
+- Never read the clock at module scope (`const ano = new Date().getFullYear()` outside a function): in the Worker the clock is frozen at 1970 while the module loads. Read it inside the handler, action or validator.
 - `ASAAS_API_KEY` starts with `$`: in Criptenv store the raw value (`criptenv set 'ASAAS_API_KEY=$aact_...'`, single quotes).
 - Supabase direct connection is IPv6-only; migrations use the session pooler.
 - `postgres` is pinned to 3.4.9: 4.x pipelines queries beyond `max` and through Hyperdrive they never answer (porsager/postgres#1319). `prepare` is off only on the dev transaction pooler (port 6543); Hyperdrive needs it on. Hyperdrive points at the Supabase direct connection.
