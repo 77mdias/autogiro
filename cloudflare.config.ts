@@ -4,7 +4,7 @@ import { bindings, defineConfig, defineWorker, triggers } from "cf/config";
 // Os segredos não ficam aqui: vêm do Criptenv (no dev, pelo ambiente do container; em produção, pela integração).
 
 // Hyperdrive de produção (`cf hyperdrive create`, apontando para o session pooler do Supabase). Não é segredo.
-const HYPERDRIVE_ID = "PREENCHER_NO_PRIMEIRO_DEPLOY";
+const HYPERDRIVE_ID = "6764a2ed1f3d4380bf08d2aefccdfe5a";
 
 // Valores no Criptenv (development e production). scripts/primeiro-deploy.mts usa a mesma lista.
 export const segredos = [
