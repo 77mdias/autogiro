@@ -63,5 +63,6 @@ Next.js 16 App Router code run by **vinext** (Cloudflare's reimplementation of t
 - `res.json()` is typed `{}`-ish by the Workers types: cast the result (`as { ... }`).
 - `ASAAS_API_KEY` starts with `$`: in Criptenv store the raw value (`criptenv set 'ASAAS_API_KEY=$aact_...'`, single quotes).
 - Supabase direct connection is IPv6-only; migrations use the session pooler.
+- `postgres` is pinned to 3.4.9: 4.x pipelines queries beyond `max` and through Hyperdrive they never answer (porsager/postgres#1319). `prepare` is off only on the dev transaction pooler (port 6543); Hyperdrive needs it on. Hyperdrive points at the Supabase direct connection.
 - Design: new type-scale sizes must be registered in `src/lib/utils.ts`, or `cn` will treat them as colors. Tokens are in `src/app/tokens.css`, wired to shadcn in `globals.css`. Lint design with `node ~/.claude/skills/hallmark/scripts/sloplint.mjs src/app src/components --scope app`.
 - In dev, open the app through the ngrok domain and set `AUTH_URL` to it: Better Auth rejects POSTs whose origin is not `AUTH_URL`.
