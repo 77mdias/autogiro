@@ -21,7 +21,7 @@ pnpm test                      # node --test src/**/*.test.ts (native Node TS st
 node --test src/lib/plano.test.ts   # single test file
 pnpm typecheck                 # next typegen (route types) + cf workers types (Worker env types) + tsc --noEmit, no secrets
 pnpm db:generate                    # migration from src/lib/db/schema.ts, on the host: no DB, no secrets (interactive on column renames)
-pnpm docker:exec pnpm db:migrate    # apply drizzle/*.sql (uses DATABASE_URL_DIRECT = Supabase session pooler)
+pnpm docker:exec pnpm db:migrate    # apply drizzle/*.sql to the dev Postgres container (production: GitHub Actions, Supabase session pooler)
 pnpm docker:exec pnpm loja listar | liberar <slug> [cus_...] | pausar <slug> | mensalidades [aplicar]   # manual plan ops (scripts/loja.mts), dev DB
 pnpm loja:prod listar | liberar <slug> [cus_...] | ...   # same ops on the production DB (one-off container, keyring item api-key-production)
 pnpm tunnel -- --url=<domain>  # ngrok, needed for Asaas webhooks and Google OAuth in dev
@@ -63,7 +63,8 @@ Next.js 16 App Router code run by **vinext** (Cloudflare's reimplementation of t
 - `res.json()` is typed `{}`-ish by the Workers types: cast the result (`as { ... }`).
 - Never read the clock at module scope (`const ano = new Date().getFullYear()` outside a function): in the Worker the clock is frozen at 1970 while the module loads. Read it inside the handler, action or validator.
 - `ASAAS_API_KEY` starts with `$`: in Criptenv store the raw value (`criptenv set 'ASAAS_API_KEY=$aact_...'`, single quotes).
-- Supabase direct connection is IPv6-only; migrations use the session pooler.
-- `postgres` is pinned to 3.4.9: 4.x pipelines queries beyond `max` and through Hyperdrive they never answer (porsager/postgres#1319). `prepare` is off only on the dev transaction pooler (port 6543); Hyperdrive needs it on. Hyperdrive points at the Supabase direct connection.
+- Dev database is the `db` Postgres container in `compose.dev.yaml` (volume `banco`, `down -v` resets it; host access `postgres://autogiro:autogiro@localhost:5432/autogiro`). `docker/entrypoint.sh` overrides `DATABASE_URL*` with it only when `CRIPTENV_ENV=development`.
+- Supabase (production only) direct connection is IPv6-only; production migrations use the session pooler.
+- `postgres` is pinned to 3.4.9: 4.x pipelines queries beyond `max` and through Hyperdrive they never answer (porsager/postgres#1319). `prepare` is off only on a transaction pooler URL (port 6543, none in use); Hyperdrive needs it on. Hyperdrive points at the Supabase direct connection.
 - Design: new type-scale sizes must be registered in `src/lib/utils.ts`, or `cn` will treat them as colors. Tokens are in `src/app/tokens.css`, wired to shadcn in `globals.css`. Lint design with `node ~/.claude/skills/hallmark/scripts/sloplint.mjs src/app src/components --scope app`.
 - In dev, open the app through the ngrok domain and set `AUTH_URL` to it: Better Auth rejects POSTs whose origin is not `AUTH_URL`.

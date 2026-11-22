@@ -4,7 +4,8 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-// prepare: false só no pooler de transação do Supabase (porta 6543, o dev), que não aceita prepared statements.
+// prepare: false só se a URL for de um pooler de transação (porta 6543 do Supabase), que não aceita prepared
+// statements. Hoje nenhum ambiente usa: o dev é Postgres em container e a produção, o Hyperdrive.
 // No Hyperdrive (produção) prepare: false deixa consulta pendurada; a Cloudflare pede prepared statements.
 // max 5: o Better Auth segura uma conexão numa transação enquanto chama ganchos que também consultam.
 // postgres fixo em 3.4.9: a 4.x manda consultas além do `max` sem esperar a anterior, e pelo Hyperdrive elas nunca

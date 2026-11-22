@@ -4,7 +4,7 @@
 
 | Serviço | Para quê | Onde configurar |
 |---|---|---|
-| **Supabase** (Postgres) | Banco de dados. Em produção o Worker chega nele pelo Hyperdrive (session pooler); no dev, direto pelo *transaction pooler* (porta 6543); migrações usam o *session pooler* (porta 5432, IPv4) | `DATABASE_URL`, `DATABASE_URL_DIRECT`, `HYPERDRIVE_ID` |
+| **Supabase** (Postgres) | Banco de produção. O Worker chega nele pelo Hyperdrive (conexão direta do Supabase); as migrações usam o *session pooler* (porta 5432, IPv4). No dev, um Postgres 17 em container (`compose.dev.yaml`) | `DATABASE_URL`, `DATABASE_URL_DIRECT`, `HYPERDRIVE_ID` |
 | **Google Cloud** (OAuth) | Login com Google. Cliente "Aplicativo da Web" com o redirecionamento `<APP_BASE_URL>/api/auth/callback/google` | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` |
 | **Cloudflare R2** | Fotos (bucket público) e CNHs (bucket privado), pela API S3 | `R2_*` |
 | **Cloudflare Workers** (plano Paid) | Hospedagem de produção: o app inteiro num Worker pelo vinext, com cron diário da limpeza de CNHs ([deploy.md](deploy.md)) | `cloudflare.config.ts`; segredos pela integração do Criptenv |
