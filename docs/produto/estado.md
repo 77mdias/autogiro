@@ -9,9 +9,9 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 | Área | O que tem | Onde ver |
 |---|---|---|
 | Conta | Login com Google ou e-mail e senha (Better Auth, sessão no banco); confirmação por e-mail; "Esqueci a senha" (também cria senha para quem só usa Google); excluir a conta em Minha loja (guarda só o WhatsApp) | [arquitetura.md › Autenticação](../arquitetura.md#autenticação) |
-| Loja | Onboarding (nome + WhatsApp), slug fixo, dados editáveis em Minha loja | `/onboarding`, `/painel/loja` |
+| Loja | Onboarding (nome + WhatsApp), slug fixo, dados editáveis em Minha loja, logo da vitrine (só o gestor, também em teste ou com o plano pausado) | `/onboarding`, `/painel/loja` |
 | Estoque | Cadastrar, editar, marcar vendido, excluir, até 15 fotos, compartilhar o link do carro e da vitrine | `/painel/estoque` |
-| Vitrine | Lista da loja com filtro (disponíveis, vendidos) e busca; vendidos aparecem marcados | `/loja/[slug]` |
+| Vitrine | Lista da loja com filtro (disponíveis, vendidos) e busca; vendidos aparecem marcados; logo da loja no cabeçalho | `/loja/[slug]` |
 | Carro | Galeria, ficha, WhatsApp com mensagem pronta e link do carro, Simular | `/loja/[slug]/carros/[id]` |
 | Simulação | Nome, WhatsApp, entrada, valor a financiar, 24 a 60x, CNH opcional (foto ou PDF), aceite LGPD obrigatório | `/simular`, `POST /api/simulacoes` |
 | Navegação | Barra lateral no desktop; no celular, gaveta com botões de menu e cadastrar carro embaixo | [decisoes.md](../decisoes.md) |

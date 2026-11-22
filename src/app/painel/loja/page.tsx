@@ -10,6 +10,7 @@ import { LojaForm } from "@/components/loja-form";
 import { faixaPlano, planoLiberado, type PlanoLoja } from "@/lib/plano";
 import { formatBRL } from "@/lib/utils";
 import { whatsappUrl } from "@/lib/masks";
+import { fotoUrl } from "@/lib/r2";
 import { AssinarForm } from "./assinar-form";
 import { ExcluirConta } from "./excluir-conta";
 import { salvarLoja } from "../actions";
@@ -69,6 +70,7 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
       .select({
         nome: lojas.nome,
         whatsapp: lojas.whatsapp,
+        logoKey: lojas.logoKey,
         slug: lojas.slug,
         planoStatus: lojas.planoStatus,
         trialAte: lojas.trialAte,
@@ -159,7 +161,11 @@ export default async function MinhaLojaPage({ searchParams }: PageProps<"/painel
           Dados comerciais
         </h2>
         {gestor ? (
-          <LojaForm action={salvarLoja} inicial={loja} submitLabel="Salvar alterações" />
+          <LojaForm
+            action={salvarLoja}
+            inicial={loja && { ...loja, logoUrl: loja.logoKey ? fotoUrl(loja.logoKey) : null }}
+            submitLabel="Salvar alterações"
+          />
         ) : (
           <p className="text-ink-2">Só o gestor altera os dados da loja.</p>
         )}

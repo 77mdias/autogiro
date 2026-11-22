@@ -30,6 +30,8 @@ export const lojas = pgTable("lojas", {
   slug: text("slug").notNull().unique(),
   whatsapp: text("whatsapp"),
   cidade: text("cidade"),
+  // Logo da vitrine no bucket público do R2 (fotoUrl). null = a vitrine mostra a inicial do nome.
+  logoKey: text("logo_key"),
   asaasCustomerId: text("asaas_customer_id").unique(),
   asaasCheckoutId: text("asaas_checkout_id"),
   asaasSubscriptionId: text("asaas_subscription_id").unique(),
