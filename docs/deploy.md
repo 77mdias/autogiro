@@ -43,7 +43,7 @@ R2 continua igual: dois buckets por ambiente pela API S3 (`R2_*`), como antes.
    pnpm exec cf auth login
    criptenv run -e production -p <ID do projeto> -- node scripts/primeiro-deploy.mts
    ```
-   O script confere os 19 segredos, aplica as migrações, faz o build e publica com os valores pelo stdin (nada em arquivo). Os segredos ficam só na memória desse processo.
+   O script confere os 19 segredos, aplica as migrações, faz o build e publica. O `--secrets-file` leva só os nomes; o `cf` usa os valores do ambiente do Criptenv, então nenhum segredo vai para o disco.
 5. **Criptenv → Cloudflare**, para trocar segredo depois sem redeploy de código:
    ```bash
    criptenv integrations connect cloudflare --token <token da Cloudflare> --account-id <id da conta> --project-id autogiro --project <ID do Criptenv>
