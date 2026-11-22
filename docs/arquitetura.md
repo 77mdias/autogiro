@@ -69,7 +69,7 @@ src/
     api/                                  simulacoes, simulacoes/[id]/cnh, webhooks/asaas, conta, auth
 worker/index.ts           entrada do Worker: escopo de banco por pedido (Hyperdrive) e o cron diário
 scripts/loja.mts          operação manual do plano (fase 1)
-scripts/primeiro-deploy.mts  primeiro deploy do Worker, com os segredos pelo stdin ([deploy.md](deploy.md))
+scripts/primeiro-deploy.mts  primeiro deploy do Worker, com os segredos do ambiente ([deploy.md](deploy.md))
 drizzle/                  migrações SQL geradas pelo drizzle-kit
 ```
 
