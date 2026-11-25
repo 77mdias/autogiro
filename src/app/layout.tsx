@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   title: { default: "AutoGiro", template: "%s | AutoGiro" },
   description: "Vitrine online do estoque, contato por WhatsApp e simulações de financiamento para lojas de seminovos.",
   appleWebApp: { capable: true, title: "AutoGiro", statusBarStyle: "default" },
-  icons: { apple: "/icons/apple-touch-icon.png" },
+  // Sem `icons` aqui: declarar qualquer um faz o vinext ignorar favicon.ico, icon.svg e apple-icon.png de src/app.
 };
 
 export const viewport: Viewport = {
