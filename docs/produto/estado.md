@@ -19,7 +19,7 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 | Plano | Mensalidade por vendedores ativos (R$ 59, 99, 139 ou 169), 15 dias grátis sem cartão, um por WhatsApp; assinatura muda de valor ao mudar de faixa; venda assistida (fase 1) e checkout de cartão (fase 2); bloqueio por atraso via webhook | [pagamentos-asaas.md](../pagamentos-asaas.md) |
 | Administrador | MRR, lojas por situação do plano, carros e simulações por loja | `/admin` ([arquitetura.md](../arquitetura.md#rotas)) |
 | LGPD | CNH em bucket privado, link de 5 min só para a loja, cron apaga após 90 dias | [arquitetura.md › Arquivos](../arquitetura.md#arquivos-cloudflare-r2) |
-| Plataforma | PWA, multi-tenant por `loja_id`, segredos no Criptenv, dev em Docker com hot reload, CI nos PRs, deploy no Cloudflare Worker (vinext) pelo GitHub Actions com migração antes | [deploy.md](../deploy.md) |
+| Plataforma | PWA (favicon em SVG com versão para aba escura em `src/app/icon.svg`, `favicon.ico` 16/32/48 de reserva e `apple-icon.png`, todos por convenção de arquivo, sem `icons` no metadata), multi-tenant por `loja_id`, segredos no Criptenv, dev em Docker com hot reload, CI nos PRs, deploy no Cloudflare Worker (vinext) pelo GitHub Actions com migração antes | [deploy.md](../deploy.md) |
 | Landing | Página simples para o garagista: como funciona, funções, vantagens, preço e perguntas | [decisoes.md](../decisoes.md) |
 
 ## Diferente da especificação (de propósito)
@@ -61,7 +61,6 @@ O que já funciona, onde o app difere da especificação de origem ([PRD](prd.md
 **Melhorias conhecidas**
 - [ ] O cron do Worker não foi disparado em teste local (o plugin da Cloudflare v2 beta não expõe o gatilho manual no dev); conferir nos logs do Worker o primeiro `CNHs apagadas: N` depois da virada.
 - [ ] vinext, `@cloudflare/vite-plugin` v2 e `cf` são novos (betas no caso dos dois últimos): fixar versões e atualizar com teste.
-- [ ] `favicon.ico` responde 404 (o ícone do app existe em `src/app/icon.png`).
 - [ ] Fotos em WebP (REQ-004).
 - [ ] Testes de ponta a ponta automatizados (hoje a validação no navegador é manual, com a conta de teste).
 - [ ] Domínio próprio `.com` (hoje subdomínio `autogiro.wdias.tech`).
